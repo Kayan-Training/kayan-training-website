@@ -1,8 +1,9 @@
-import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
+import { updateEventAction } from "../_actions";
+import { EventForm, type EventFormValues } from "../_components/event-form";
 
 export default async function EditEventPage({
   params,
@@ -12,146 +13,103 @@ export default async function EditEventPage({
   const { locale, id } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
 
-  const event = await db.event.findUnique({
-    where: { id },
-    include: { translations: true },
-  });
+  const [event, allTrainers, allCategories] = await Promise.all([
+    db.event.findUnique({
+      where: { id },
+      include: {
+        translations: true,
+        trainers: {
+          include: { trainer: { include: { translations: true } } },
+          orderBy: { sortOrder: "asc" },
+        },
+        agendaSessions: { orderBy: { order: "asc" } },
+        categories: true,
+        formFields: { include: { translations: true }, orderBy: { order: "asc" } },
+      },
+    }),
+    db.trainer.findMany({ include: { translations: true }, orderBy: { sortOrder: "asc" } }),
+    db.category.findMany({ include: { translations: true }, orderBy: { slug: "asc" } }),
+  ]);
+
   if (!event) notFound();
 
-  const trEn = event.translations.find((item) => item.locale === "en");
-  const trAr = event.translations.find((item) => item.locale === "ar");
+  const trEn = event.translations.find((t) => t.locale === "en");
+  const trAr = event.translations.find((t) => t.locale === "ar");
 
-  async function updateEvent(formData: FormData) {
-    "use server";
+  const defaultValues: Partial<EventFormValues> = {
+    slug: event.slug,
+    status: event.status as EventFormValues["status"],
+    type: event.type as EventFormValues["type"],
+    language: (event.language ?? "both") as EventFormValues["language"],
+    coverImage: event.coverImage ?? "",
+    location: event.location ?? "",
+    capacity: event.capacity?.toString() ?? "",
+    startDate: event.startDate.toISOString().slice(0, 10),
+    endDate: event.endDate.toISOString().slice(0, 10),
+    registrationDeadline: event.registrationDeadline?.toISOString().slice(0, 10) ?? "",
+    price: event.price.toString(),
+    isFree: event.isFree,
+    isFeatured: event.isFeatured,
+    isCertified: event.isCertified,
+    registrationsOpen: event.registrationsOpen,
+    meetingLink: event.meetingLink ?? "",
+    meetingPlatform: (event.meetingPlatform ?? "zoom") as EventFormValues["meetingPlatform"],
+    paymentMethods: (event.paymentMethods ?? "both") as EventFormValues["paymentMethods"],
+    showMapEmbed: event.showMapEmbed,
+    googleMapsLink: event.googleMapsLink ?? "",
+    titleEn: trEn?.title ?? "",
+    titleAr: trAr?.title ?? "",
+    shortEn: trEn?.shortDescription ?? "",
+    shortAr: trAr?.shortDescription ?? "",
+    contentEn: typeof trEn?.description === "string" ? trEn.description : "",
+    contentAr: typeof trAr?.description === "string" ? trAr.description : "",
+    seoTitleEn: trEn?.seoTitle ?? "",
+    seoTitleAr: trAr?.seoTitle ?? "",
+    seoDescriptionEn: trEn?.seoDescription ?? "",
+    seoDescriptionAr: trAr?.seoDescription ?? "",
+    trainerIds: event.trainers.map((et) => et.trainerId),
+    categories: event.categories.map((ec) => ec.categoryId),
+    agenda: event.agendaSessions.map((s) => ({
+      day: s.day,
+      time: s.time,
+      title: s.title,
+      type: s.type as EventFormValues["agenda"][number]["type"],
+      trainerId: s.trainerId ?? undefined,
+    })),
+    registrationFields: event.formFields.map((f) => ({
+      id: f.id,
+      type: f.type as EventFormValues["registrationFields"][number]["type"],
+      required: f.required,
+      labelEn: f.translations.find((t) => t.locale === "en")?.label ?? "",
+      labelAr: f.translations.find((t) => t.locale === "ar")?.label ?? "",
+      placeholderEn: f.translations.find((t) => t.locale === "en")?.placeholder ?? "",
+      placeholderAr: f.translations.find((t) => t.locale === "ar")?.placeholder ?? "",
+      optionsEn: "",
+      optionsAr: "",
+    })),
+  };
 
-    const slug = String(formData.get("slug") ?? "").trim();
-    const titleEn = String(formData.get("titleEn") ?? "").trim();
-    const titleAr = String(formData.get("titleAr") ?? "").trim();
-    const startDate = String(formData.get("startDate") ?? "");
-    const endDate = String(formData.get("endDate") ?? "");
+  const trainerOptions = allTrainers.map((t) => ({
+    value: t.id,
+    label: t.translations.find((tr) => tr.locale === "en")?.name ?? t.name ?? t.id,
+  }));
 
-    if (!slug || !titleEn || !titleAr || !startDate || !endDate) return;
+  const categoryOptions = allCategories.map((c) => ({
+    value: c.id,
+    label: c.translations.find((tr) => tr.locale === "en")?.name ?? c.slug,
+  }));
 
-    await db.event.update({
-      where: { id },
-      data: {
-        coverImage: String(formData.get("coverImage") ?? "") || null,
-        endDate: new Date(endDate),
-        isFeatured: formData.get("isFeatured") === "on",
-        isFree: Number(formData.get("price") ?? 0) <= 0,
-        location: String(formData.get("location") ?? "") || null,
-        price: String(formData.get("price") ?? "0"),
-        slug,
-        startDate: new Date(startDate),
-        status: String(formData.get("status") ?? "draft"),
-        type: String(formData.get("type") ?? "onsite"),
-      },
-    });
-
-    await db.eventTranslation.upsert({
-      where: { eventId_locale: { eventId: id, locale: "en" } },
-      create: { eventId: id, locale: "en", title: titleEn, shortDescription: String(formData.get("shortEn") ?? "") || null },
-      update: { title: titleEn, shortDescription: String(formData.get("shortEn") ?? "") || null },
-    });
-    await db.eventTranslation.upsert({
-      where: { eventId_locale: { eventId: id, locale: "ar" } },
-      create: { eventId: id, locale: "ar", title: titleAr, shortDescription: String(formData.get("shortAr") ?? "") || null },
-      update: { title: titleAr, shortDescription: String(formData.get("shortAr") ?? "") || null },
-    });
-
-    revalidatePath(`/${activeLocale}/dashboard/events`);
-    revalidatePath(`/${activeLocale}/events/${slug}`);
-  }
+  const boundAction = updateEventAction.bind(null, id, activeLocale);
 
   return (
-    <form action={updateEvent} className="event-form-page">
-      <aside className="nav-rail">
-        <div className="nav-rail-title">Event Sections</div>
-        {["Identity", "Schedule", "Location", "Pricing", "Content", "Settings"].map((label) => (
-          <a className="nav-section" href={`#${label.toLowerCase()}`} key={label}>
-            <span className="nav-dot" />
-            <span className="nav-label">{label}</span>
-          </a>
-        ))}
-        <div className="rail-save">
-          <button className="rail-btn-save" type="submit">Save Changes</button>
-          <a className="rail-btn-discard" href={`/${activeLocale}/dashboard/events`}>Discard</a>
-        </div>
-      </aside>
-
-      <main className="main">
-        <header className="page-head">
-          <a className="page-back" href={`/${activeLocale}/dashboard/events`}>Back to Events</a>
-          <div className="page-title-row">
-            <div>
-              <div className="page-kicker">Event editor</div>
-              <h1 className="page-title"><strong>Edit</strong> event</h1>
-            </div>
-          </div>
-        </header>
-
-        <section className="form-section" id="identity">
-          <h2>Identity</h2>
-          <div className="field-grid cols-2">
-            <label className="field-block full"><span>Cover Image</span><input className="field-input" defaultValue={event.coverImage ?? ""} name="coverImage" placeholder="Image URL" /></label>
-            <label className="field-block"><span>Title (EN)</span><input className="field-input" defaultValue={trEn?.title ?? ""} name="titleEn" required /></label>
-            <label className="field-block"><span>Title (AR)</span><input className="field-input" defaultValue={trAr?.title ?? ""} name="titleAr" required /></label>
-            <label className="field-block full"><span>Slug</span><input className="field-input" defaultValue={event.slug} name="slug" required /></label>
-            <label className="field-block"><span>Event Type</span><select className="field-input" defaultValue={event.type} name="type"><option value="onsite">On-site</option><option value="online">Online</option><option value="hybrid">Hybrid</option></select></label>
-          </div>
-        </section>
-
-        <section className="form-section" id="schedule">
-          <h2>Schedule</h2>
-          <div className="field-grid cols-2">
-            <label className="field-block"><span>Start Date</span><input className="field-input" defaultValue={event.startDate.toISOString().slice(0, 10)} name="startDate" type="date" required /></label>
-            <label className="field-block"><span>End Date</span><input className="field-input" defaultValue={event.endDate.toISOString().slice(0, 10)} name="endDate" type="date" required /></label>
-          </div>
-        </section>
-
-        <section className="form-section" id="location">
-          <h2>Location</h2>
-          <label className="field-block"><span>Venue Name / Address</span><input className="field-input" defaultValue={event.location ?? ""} name="location" /></label>
-        </section>
-
-        <section className="form-section" id="pricing">
-          <h2>Pricing</h2>
-          <div className="field-grid cols-2">
-            <label className="field-block"><span>Price (OMR)</span><input className="field-input" defaultValue={event.price.toString()} min="0" name="price" step="0.01" type="number" /></label>
-          </div>
-        </section>
-
-        <section className="form-section" id="content">
-          <h2>Content</h2>
-          <div className="field-grid cols-2">
-            <label className="field-block"><span>Short Description (EN)</span><textarea className="field-input" defaultValue={trEn?.shortDescription ?? ""} maxLength={160} name="shortEn" rows={4} /></label>
-            <label className="field-block"><span>Short Description (AR)</span><textarea className="field-input" defaultValue={trAr?.shortDescription ?? ""} maxLength={160} name="shortAr" rows={4} /></label>
-          </div>
-        </section>
-      </main>
-
-      <aside className="settings-rail">
-        <div className="settings-rail-head">
-          <span className="settings-kicker">Right Rail</span>
-          <h2>Settings</h2>
-          <p>Controls that affect public visibility, registration behavior, and metadata.</p>
-        </div>
-        <div className="settings-stack">
-          <label className="toggle-row featured-row compact">
-            <span className="toggle-icon amber">Feat</span>
-            <span className="toggle-content"><span className="toggle-title">Feature this event</span><span className="toggle-desc">Shows the featured event layout and cards.</span></span>
-            <input defaultChecked={event.isFeatured} name="isFeatured" type="checkbox" />
-          </label>
-          <label className="field-block"><span>Publication Status</span><select className="field-input" defaultValue={event.status} name="status"><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
-        </div>
-      </aside>
-      <div className="action-bar">
-        <span className="action-meta">Event editor</span>
-        <div className="action-btns">
-          <a className="btn-secondary" href={`/${activeLocale}/dashboard/events`}>Discard changes</a>
-          <button className="btn-primary px-4 py-2" type="submit">Save Changes</button>
-        </div>
-      </div>
-    </form>
+    <EventForm
+      categoryOptions={categoryOptions}
+      defaultValues={defaultValues}
+      eventId={id}
+      locale={activeLocale}
+      onSubmit={boundAction}
+      submitLabel="Save Changes"
+      trainerOptions={trainerOptions}
+    />
   );
 }

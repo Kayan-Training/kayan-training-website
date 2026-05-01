@@ -16,7 +16,16 @@ import {
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { cn } from "@/lib/utils";
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
 
 const links = [
   { icon: DashboardSquare01Icon, label: "Overview", segment: "" },
@@ -31,38 +40,52 @@ const links = [
   { icon: Settings01Icon, label: "Settings", segment: "settings" },
 ] as const;
 
-export function AdminSidebar({ locale }: { locale: "ar" | "en" }) {
+export function AdminSidebar({
+  locale,
+  userEmail,
+}: {
+  locale: "ar" | "en";
+  userEmail?: string | null;
+}) {
   const pathname = usePathname();
 
   return (
-    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-e border-border/60 bg-sidebar p-5 text-sidebar-foreground">
-      <div className="mb-8">
+    <Sidebar>
+      <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
         <Link href={`/${locale}/dashboard`}>
-          <Image alt="Kayan" className="h-10 w-auto" height={40} src="/brand/kayan-logo.svg" width={120} />
+          <Image alt="Kayan" className="h-9 w-auto" height={36} src="/brand/kayan-logo.svg" width={110} />
         </Link>
-      </div>
-      <nav className="flex flex-1 flex-col gap-1 text-sm">
-        {links.map((link) => {
-          const href = link.segment ? `/${locale}/dashboard/${link.segment}` : `/${locale}/dashboard`;
-          const active = pathname === href || (link.segment && pathname?.startsWith(href));
-          return (
-            <Link
-              key={link.segment || "overview"}
-              href={href}
-              className={cn(
-                "flex h-10 items-center gap-2 rounded-md px-3 text-sm font-medium transition-colors",
-                active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
-              )}
-            >
-              <HugeiconsIcon icon={link.icon} size={17} strokeWidth={1.8} />
-              <span>{link.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
-      <div className="border-t border-sidebar-border pt-4 text-xs text-sidebar-foreground/70">
-        Kayan Admin
-      </div>
-    </aside>
+      </SidebarHeader>
+      <SidebarContent className="px-2 py-3">
+        <SidebarMenu>
+          {links.map((link) => {
+            const href = link.segment ? `/${locale}/dashboard/${link.segment}` : `/${locale}/dashboard`;
+            const active = pathname === href || (!!link.segment && !!pathname?.startsWith(href));
+            return (
+              <SidebarMenuItem key={link.segment || "overview"}>
+                <SidebarMenuButton isActive={active} render={<Link href={href} />}>
+                  <HugeiconsIcon icon={link.icon} size={17} strokeWidth={1.8} />
+                  <span>{link.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarContent>
+      <SidebarFooter className="border-t border-sidebar-border px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate text-xs font-medium text-sidebar-foreground">{userEmail ?? "Admin"}</p>
+            <p className="text-[11px] text-sidebar-foreground/60">Administrator</p>
+          </div>
+          <Link
+            className="shrink-0 rounded-md px-2 py-1 text-[11px] text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            href={`/${locale}/auth/sign-out`}
+          >
+            Sign out
+          </Link>
+        </div>
+      </SidebarFooter>
+    </Sidebar>
   );
 }

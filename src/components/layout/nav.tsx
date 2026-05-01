@@ -16,19 +16,36 @@ function isActive(pathname: string | null, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function SiteNav({ locale }: { locale: "ar" | "en" }) {
+export type NavMenuItem = {
+  href: string;
+  labelAr: string;
+  labelEn: string;
+};
+
+const fallbackLinks: NavMenuItem[] = [
+  { href: "/LOCALE", labelAr: "الرئيسية", labelEn: "Home" },
+  { href: "/LOCALE/events", labelAr: "الفعاليات", labelEn: "Events" },
+  { href: "/LOCALE/posts", labelAr: "المقالات", labelEn: "Posts" },
+  { href: "/LOCALE/services", labelAr: "خدماتنا", labelEn: "Services" },
+  { href: "/LOCALE/knowledge", labelAr: "المعرفة", labelEn: "Knowledge" },
+  { href: "/LOCALE/about", labelAr: "عن كيان", labelEn: "About" },
+];
+
+export function SiteNav({
+  locale,
+  menuItems,
+}: {
+  locale: "ar" | "en";
+  menuItems?: NavMenuItem[];
+}) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const links = [
-    { href: `/${locale}`, labelAr: "الرئيسية", labelEn: "Home" },
-    { href: `/${locale}/events`, labelAr: "الفعاليات", labelEn: "Events" },
-    { href: `/${locale}/posts`, labelAr: "المقالات", labelEn: "Posts" },
-    { href: `/${locale}/services`, labelAr: "خدماتنا", labelEn: "Services" },
-    { href: `/${locale}/knowledge`, labelAr: "المعرفة", labelEn: "Knowledge" },
-    { href: `/${locale}/about`, labelAr: "عن كيان", labelEn: "About" },
-  ];
+  const links = (menuItems ?? fallbackLinks).map((item) => ({
+    ...item,
+    href: item.href.replace("/LOCALE", `/${locale}`),
+  }));
 
   return (
     <nav className="glass-nav fixed top-0 z-50 w-full border-b border-white/[0.06]">

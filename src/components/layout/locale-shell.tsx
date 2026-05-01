@@ -8,14 +8,16 @@
 import { usePathname } from "next/navigation";
 
 import { SiteFooter } from "@/components/layout/footer";
-import { SiteNav } from "@/components/layout/nav";
+import { SiteNav, type NavMenuItem } from "@/components/layout/nav";
 
 export function LocaleShell({
   children,
   locale,
+  menuItems,
 }: {
   children: React.ReactNode;
   locale: "ar" | "en";
+  menuItems?: NavMenuItem[];
 }) {
   const pathname = usePathname();
   const isAuthRoute = pathname?.startsWith(`/${locale}/auth`);
@@ -27,7 +29,7 @@ export function LocaleShell({
 
   return (
     <div className="frontend-shell bg-background text-on-surface">
-      <SiteNav locale={locale} />
+      <SiteNav locale={locale} menuItems={menuItems} />
       <div className="">{children}</div>
       <SiteFooter locale={locale} />
     </div>

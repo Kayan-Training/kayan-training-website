@@ -30,13 +30,9 @@ function formatTimeRange(startDate: Date, endDate: Date, locale: "ar" | "en") {
   return `${formatter.format(startDate)} – ${formatter.format(endDate)}`;
 }
 
-function plainTextBlocks(value: unknown, fallback: string) {
-  if (!value || typeof value !== "object") return [fallback].filter(Boolean);
-  const doc = value as { content?: Array<{ content?: Array<{ text?: string }>; type?: string }> };
-  const blocks = doc.content
-    ?.map((block) => block.content?.map((child) => child.text ?? "").join("").trim() ?? "")
-    .filter(Boolean);
-  return blocks?.length ? blocks : [fallback].filter(Boolean);
+function renderDescription(value: unknown, fallback: string): string {
+  if (typeof value === "string" && value.trim()) return value;
+  return fallback ? `<p>${fallback}</p>` : "";
 }
 
 function DetailItem({
@@ -119,7 +115,7 @@ export default async function EventDetailPage({
 
   const startDate = new Date(event.startDate);
   const endDate = new Date(event.endDate);
-  const contentBlocks = plainTextBlocks(event.description, event.excerpt);
+  const descriptionHtml = renderDescription(event.description, event.excerpt ?? "");
   const adminEdit =
     session?.user?.role === "admin" ? (
       <Link className="ghost-border inline-flex items-center px-4 py-2 text-xs uppercase tracking-widest text-on-surface-variant hover:text-primary" href={`/${activeLocale}/dashboard/events/${event.id}`}>
@@ -185,7 +181,10 @@ export default async function EventDetailPage({
             <span className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.35em] text-secondary">{activeLocale === "ar" ? "عن الحدث" : "About the Event"}</span>
             <h2 className="mb-6 text-3xl font-semibold leading-tight md:text-4xl">{activeLocale === "ar" ? "لماذا هذا الحدث مختلف؟" : "Why Is This Event Different?"}</h2>
             <div className="mb-10 flex flex-col gap-4 text-sm leading-relaxed text-on-surface-variant">
-              {contentBlocks.map((block) => <p key={block}>{block}</p>)}
+              <div
+                className="rte-content prose prose-sm max-w-none prose-headings:text-on-surface prose-p:text-on-surface-variant prose-strong:text-on-surface prose-a:text-secondary"
+                dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+              />
             </div>
             <AgendaAndTrainers event={event} locale={activeLocale} />
           </div>
@@ -226,9 +225,10 @@ export default async function EventDetailPage({
             {event.location ? <MetaInline icon={Location01Icon} value={event.location} /> : null}
             {event.capacity ? <MetaInline icon={UserGroupIcon} value={`${Math.max(0, event.capacity - event.registrationsCount)} ${activeLocale === "ar" ? "مقعداً متاحاً" : "seats available"}`} /> : null}
           </div>
-          <div className="mb-10 flex flex-col gap-4 text-sm leading-relaxed text-on-surface-variant">
-            {contentBlocks.map((block) => <p key={block}>{block}</p>)}
-          </div>
+          <div
+            className="rte-content prose prose-sm max-w-none mb-10 text-sm leading-relaxed text-on-surface-variant"
+            dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+          />
           <AgendaAndTrainers event={event} locale={activeLocale} />
         </article>
         <aside className="col-span-12 lg:col-span-4">

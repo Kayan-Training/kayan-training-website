@@ -20,15 +20,16 @@ export function LocaleSwitcher({ locale }: { locale: AppLocale }) {
   }
 
   const nextLocale: AppLocale = locale === "en" ? "ar" : "en";
-  const nextLabel = locale === "en" ? "AR" : "EN";
+  const nextLabel = locale === "en" ? "العربية" : "English";
 
   return (
     <button
-      className="lang-toggle-btn ghost-border inline-flex h-9 w-9 items-center justify-center text-[12px] font-semibold text-on-surface-variant transition-colors hover:text-primary"
+      className="lang-toggle-btn ghost-border inline-flex h-9 items-center px-3 text-[12px] font-semibold text-on-surface-variant transition-colors hover:text-primary"
+      dir="ltr"
       onClick={() => switchLocale(nextLocale)}
       type="button"
     >
-      <span>{nextLabel}</span>
+      {nextLabel}
     </button>
   );
 }
