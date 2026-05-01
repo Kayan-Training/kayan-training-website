@@ -1,0 +1,436 @@
+/**
+ * Prisma schema for Kayan Training platform.
+ *
+ * Notes:
+ * - Includes better-auth compatible core tables (`User`, `Session`, `Account`, `Verification`).
+ * - Stores locale-dependent content in translation tables (`ar`, `en`).
+ * - Keeps admin/payment/event CMS entities normalized for dashboard operations.
+ */
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String    @id @default(cuid())
+  name            String?
+  email           String    @unique
+  emailVerified   Boolean   @default(false)
+  image           String?
+  phoneNumber     String?
+  password        String?
+  preferredLocale String    @default("ar")
+  role            String    @default("user")
+  banned          Boolean   @default(false)
+  banReason       String?
+  banExpires      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sessions                 Session[]
+  accounts                 Account[]
+  posts                    Post[]
+  registrations            Registration[]
+  uploadedMedia            Media[]        @relation("UploadedMedia")
+  verifiedPayments         Payment[]      @relation("VerifiedPayments")
+  registrationVerifications Registration[] @relation("RegistrationVerifiedBy")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String   @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, value])
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  icon      String
+  color     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  translations    CategoryTranslation[]
+  eventCategories EventCategory[]
+  postCategories  PostCategory[]
+}
+
+model CategoryTranslation {
+  id          String   @id @default(cuid())
+  categoryId  String
+  locale      String
+  name        String
+  description String?
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, locale])
+}
+
+model Media {
+  id           String   @id @default(cuid())
+  filename     String
+  originalName String
+  url          String
+  mimeType     String
+  size         Int
+  width        Int?
+  height       Int?
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  uploadedBy    User      @relation("UploadedMedia", fields: [uploadedById], references: [id], onDelete: Cascade)
+  eventImages   Event[]   @relation("EventFeaturedImage")
+  postImages    Post[]    @relation("PostFeaturedImage")
+  trainerAvatars Trainer[] @relation("TrainerAvatar")
+}
+
+model Event {
+  id                  String   @id @default(cuid())
+  slug                String   @unique
+  status              String   @default("draft")
+  type                String
+  location            String?
+  featuredImageId     String?
+  coverImage          String?
+  isFeatured          Boolean  @default(false)
+  language            String   @default("both")
+  capacity            Int?
+  registrationDeadline DateTime?
+  meetingLink         String?
+  meetingPlatform     String?
+  registrationsOpen   Boolean  @default(true)
+  isCertified         Boolean  @default(false)
+  startDate           DateTime
+  endDate             DateTime
+  price               Decimal  @default(0)
+  isFree              Boolean  @default(false)
+  paymentMethods      String   @default("both")
+  bankTransferDetails Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  featuredImage Media?                    @relation("EventFeaturedImage", fields: [featuredImageId], references: [id])
+  translations EventTranslation[]
+  trainers     EventTrainer[]
+  agendaSessions AgendaSession[]
+  scheduleItems EventScheduleItem[]
+  formFields   RegistrationFormField[]
+  registrations Registration[]
+  categories   EventCategory[]
+}
+
+model EventTranslation {
+  id               String  @id @default(cuid())
+  eventId          String
+  locale           String
+  title            String
+  shortDescription String? @db.VarChar(160)
+  description      Json?
+  seoTitle         String?
+  seoDescription   String?
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, locale])
+}
+
+model Trainer {
+  id        String   @id @default(cuid())
+  avatarId  String?
+  email     String?
+  name      String?
+  specialization String?
+  imageUrl  String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  avatar        Media?                  @relation("TrainerAvatar", fields: [avatarId], references: [id])
+  translations  TrainerTranslation[]
+  eventTrainers EventTrainer[]
+  scheduleItems EventScheduleItem[]
+  agendaSessions AgendaSession[]
+}
+
+model TrainerTranslation {
+  id        String @id @default(cuid())
+  trainerId String
+  locale    String
+  name      String
+  title     String?
+  bio       String?
+
+  trainer Trainer @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+
+  @@unique([trainerId, locale])
+}
+
+model EventTrainer {
+  id        String @id @default(cuid())
+  eventId   String
+  trainerId String
+  role      String?
+  sortOrder Int    @default(0)
+
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  trainer Trainer @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, trainerId])
+}
+
+model AgendaSession {
+  id        String   @id @default(cuid())
+  eventId   String
+  day       Int
+  time      String
+  title     String
+  type      String
+  trainerId String?
+  order     Int      @default(0)
+
+  event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  trainer Trainer? @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+}
+
+model EventScheduleItem {
+  id        String   @id @default(cuid())
+  eventId   String
+  startTime DateTime
+  endTime   DateTime
+  order     Int
+  speakerId String?
+
+  event        Event                           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  speaker      Trainer?                        @relation(fields: [speakerId], references: [id])
+  translations EventScheduleItemTranslation[]
+}
+
+model EventScheduleItemTranslation {
+  id             String @id @default(cuid())
+  scheduleItemId String
+  locale         String
+  title          String
+  description    String?
+
+  scheduleItem EventScheduleItem @relation(fields: [scheduleItemId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleItemId, locale])
+}
+
+model RegistrationFormField {
+  id       String  @id @default(cuid())
+  eventId  String
+  type     String
+  required Boolean @default(false)
+  order    Int
+  options  Json?
+
+  event        Event                               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  translations RegistrationFormFieldTranslation[]
+}
+
+model RegistrationFormFieldTranslation {
+  id          String @id @default(cuid())
+  fieldId     String
+  locale      String
+  label       String
+  placeholder String?
+
+  field RegistrationFormField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([fieldId, locale])
+}
+
+model Registration {
+  id             String   @id @default(cuid())
+  eventId        String
+  userId         String?
+  formData       Json
+  status         String   @default("submitted")
+  paymentStatus  String   @default("pending")
+  paymentMethod  String
+  amount         Decimal
+  verifiedById   String?
+  cancelledAt    DateTime?
+  cancellationReason String?
+  verificationNote String?
+  createdAt      DateTime @default(now())
+
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  payment    Payment?
+  verifiedBy User?    @relation("RegistrationVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+}
+
+model Payment {
+  id             String   @id @default(cuid())
+  registrationId String   @unique
+  method         String
+  status         String   @default("pending")
+  reference      String?
+  proofUrl       String?
+  verifiedById   String?
+  verifiedAt     DateTime?
+  createdAt      DateTime @default(now())
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  verifiedBy   User?        @relation("VerifiedPayments", fields: [verifiedById], references: [id], onDelete: SetNull)
+}
+
+model Post {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  status          String   @default("draft")
+  type            String   @default("article")
+  featuredImageId String?
+  authorId        String
+  publishedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  featuredImage Media?             @relation("PostFeaturedImage", fields: [featuredImageId], references: [id])
+  author       User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  translations PostTranslation[]
+  categories   PostCategory[]
+}
+
+model PostTranslation {
+  id      String  @id @default(cuid())
+  postId  String
+  locale  String
+  title   String
+  excerpt String?
+  content Json?
+  seoTitle       String?
+  seoDescription String?
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, locale])
+}
+
+model Page {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  status    String   @default("draft")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  translations PageTranslation[]
+}
+
+model PageTranslation {
+  id     String @id @default(cuid())
+  pageId String
+  locale String
+  title  String
+  blocks Json?
+  seoTitle       String?
+  seoDescription String?
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, locale])
+}
+
+model Menu {
+  id       String @id @default(cuid())
+  location String @unique
+
+  items MenuItem[]
+}
+
+model MenuItem {
+  id       String  @id @default(cuid())
+  menuId   String
+  parentId String?
+  order    Int
+  type     String
+  targetId String?
+  url      String?
+
+  menu         Menu                  @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  parent       MenuItem?             @relation("MenuItemChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children     MenuItem[]            @relation("MenuItemChildren")
+  translations MenuItemTranslation[]
+}
+
+model MenuItemTranslation {
+  id         String @id @default(cuid())
+  menuItemId String
+  locale     String
+  label      String
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@unique([menuItemId, locale])
+}
+
+model EventCategory {
+  eventId    String
+  categoryId String
+
+  event    Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, categoryId])
+}
+
+model PostCategory {
+  postId     String
+  categoryId String
+
+  post     Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
