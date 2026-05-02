@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
@@ -5,6 +6,16 @@ import { HugeiconsIcon } from "@hugeicons/react";
 
 import { getLocalizedPosts } from "@/lib/content/queries";
 import { isSupportedLocale } from "@/lib/i18n/config";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    title: locale === "ar" ? "المكتبة المعرفية" : "Knowledge Library",
+    description: locale === "ar"
+      ? "محتوى تحليلي وتطبيقي للقيادات والفرق التنفيذية."
+      : "Applied and analytical content for leaders and execution teams.",
+  };
+}
 
 const fallbackImages = [
   "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1600&q=80",
@@ -86,7 +97,7 @@ export default async function PostsPage({
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-surface-container-lowest via-surface-container-lowest/95 to-surface-container-lowest/90" />
         <div className="relative z-10 mx-auto w-full max-w-[1440px] px-6 md:px-10">
-          <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.35em] text-secondary">
+          <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.35em] text-primary">
             {activeLocale === "ar" ? "تحليلات ومقالات" : "Insights & Editorial"}
           </span>
           <h1 className="mb-4 max-w-4xl text-4xl font-semibold tracking-tight text-on-surface md:text-6xl">

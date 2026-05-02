@@ -25,6 +25,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 
 const links = [
@@ -50,11 +51,15 @@ export function AdminSidebar({
   const pathname = usePathname();
 
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
-        <Link href={`/${locale}/dashboard`}>
-          <Image alt="Kayan" className="h-9 w-auto" height={36} src="/brand/kayan-logo.svg" width={110} />
-        </Link>
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="border-b border-sidebar-border">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton className="h-auto py-3 px-4" render={<Link href="/" />} size="lg" tooltip="Kayan">
+              <Image alt="Kayan" className="h-8 w-auto group-data-[collapsible=icon]:hidden" height={32} src="/brand/kayan-logo.svg" width={100} />
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className="px-2 py-3">
         <SidebarMenu>
@@ -72,7 +77,8 @@ export function AdminSidebar({
           })}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border px-4 py-3">
+      <SidebarSeparator />
+      <SidebarFooter className="px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <p className="truncate text-xs font-medium text-sidebar-foreground">{userEmail ?? "Admin"}</p>

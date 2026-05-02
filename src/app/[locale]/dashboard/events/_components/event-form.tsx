@@ -18,6 +18,22 @@
 //   • Inputs are normalised to h-9 via inputCls
 // ─────────────────────────────────────────────────────────────────────────────
 
+import {
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
@@ -367,6 +383,34 @@ function ToggleControl({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Sortable wrappers (DnD kit)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SortableFieldItem({ id, children }: { id: string; children: (dragHandleProps: React.HTMLAttributes<HTMLButtonElement>) => React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+    >
+      {children({ ...attributes, ...listeners } as React.HTMLAttributes<HTMLButtonElement>)}
+    </div>
+  );
+}
+
+function SortableTrainerItem({ id, children }: { id: string; children: (dragHandleProps: React.HTMLAttributes<HTMLButtonElement>) => React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+    >
+      {children({ ...attributes, ...listeners } as React.HTMLAttributes<HTMLButtonElement>)}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // EventForm
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -553,6 +597,26 @@ export function EventForm({
     } finally {
       setIsCoverUploading(false);
     }
+  }
+
+  // ── DnD ───────────────────────────────────────────────────────────────────
+  const dndSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  function handleFieldDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = regFields.fields.findIndex((f) => f.id === active.id);
+    const to = regFields.fields.findIndex((f) => f.id === over.id);
+    if (from !== -1 && to !== -1) regFields.move(from, to);
+  }
+
+  function handleTrainerDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = form.getValues("trainerIds");
+    const from = ids.indexOf(active.id as string);
+    const to = ids.indexOf(over.id as string);
+    if (from !== -1 && to !== -1) form.setValue("trainerIds", arrayMove(ids, from, to), { shouldDirty: true });
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1296,35 +1360,49 @@ export function EventForm({
                   </div>
 
                   {/* Cards */}
-                  <div className="grid grid-cols-3 gap-3">
-                    {chosenTrainers.map((trainer) => (
-                      <div className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs transition-shadow hover:shadow-sm" key={trainer.value}>
-                        <button
-                          className="absolute right-2 top-2 z-10 flex size-5 items-center justify-center rounded-full bg-white/90 text-zinc-400 opacity-0 shadow-xs transition-all group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
-                          type="button"
-                          onClick={() => removeTrainer(trainer.value)}
-                        >
-                          <X className="size-2.5" />
-                        </button>
-                        <div className="flex h-20 items-center justify-center bg-gradient-to-br from-teal-50 to-zinc-100">
-                          <Users className="size-7 text-zinc-200" />
-                        </div>
-                        <div className="px-3 pb-3 pt-2.5">
-                          <p className="truncate text-[13px] font-semibold text-zinc-800">{trainer.label}</p>
-                          <p className="mt-0.5 text-[11.5px] text-zinc-400">Trainer</p>
-                        </div>
-                        <button className="absolute bottom-2 right-2 cursor-grab text-zinc-300 hover:text-zinc-500" type="button">
-                          <GripVertical className="size-3.5" />
-                        </button>
+                  <DndContext sensors={dndSensors} onDragEnd={handleTrainerDragEnd}>
+                    <SortableContext items={chosenTrainers.map((t) => t.value)} strategy={rectSortingStrategy}>
+                      <div className="grid grid-cols-3 gap-3">
+                        {chosenTrainers.map((trainer) => (
+                          <SortableTrainerItem id={trainer.value} key={trainer.value}>
+                            {(dragHandleProps) => (
+                              <div className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs transition-shadow hover:shadow-sm">
+                                <button
+                                  aria-label={`Remove ${trainer.label}`}
+                                  className="absolute right-2 top-2 z-10 flex size-5 items-center justify-center rounded-full bg-white/90 text-zinc-400 opacity-0 shadow-xs transition-all group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
+                                  type="button"
+                                  onClick={() => removeTrainer(trainer.value)}
+                                >
+                                  <X className="size-2.5" />
+                                </button>
+                                <div className="flex h-20 items-center justify-center bg-gradient-to-br from-teal-50 to-zinc-100">
+                                  <Users className="size-7 text-zinc-200" />
+                                </div>
+                                <div className="px-3 pb-3 pt-2.5">
+                                  <p className="truncate text-[13px] font-semibold text-zinc-800">{trainer.label}</p>
+                                  <p className="mt-0.5 text-[11.5px] text-zinc-400">Trainer</p>
+                                </div>
+                                <button
+                                  {...dragHandleProps}
+                                  aria-label="Drag to reorder"
+                                  className="absolute bottom-2 right-2 cursor-grab text-zinc-300 hover:text-zinc-500 active:cursor-grabbing"
+                                  type="button"
+                                >
+                                  <GripVertical className="size-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </SortableTrainerItem>
+                        ))}
+                        {chosenTrainers.length === 0 && (
+                          <div className="col-span-3 flex flex-col items-center gap-2 rounded-xl border border-dashed border-zinc-200 py-10 text-center">
+                            <Users className="size-6 text-zinc-200" />
+                            <p className="text-[13px] text-zinc-400">No trainers assigned yet</p>
+                          </div>
+                        )}
                       </div>
-                    ))}
-                    {chosenTrainers.length === 0 && (
-                      <div className="col-span-3 flex flex-col items-center gap-2 rounded-xl border border-dashed border-zinc-200 py-10 text-center">
-                        <Users className="size-6 text-zinc-200" />
-                        <p className="text-[13px] text-zinc-400">No trainers assigned yet</p>
-                      </div>
-                    )}
-                  </div>
+                    </SortableContext>
+                  </DndContext>
 
                 </div>
               )}
@@ -1387,6 +1465,8 @@ export function EventForm({
                       during sign-up.
                     </Note>
                   ) : (
+                    <DndContext modifiers={[restrictToVerticalAxis]} sensors={dndSensors} onDragEnd={handleFieldDragEnd}>
+                      <SortableContext items={regFields.fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
                     <div className="space-y-2">
                       {regFields.fields.map((regField, index) => {
                         const isOpen = openFieldId === regField.id;
@@ -1394,13 +1474,24 @@ export function EventForm({
                         const activeLabel = activeLocale === "en" ? cur.labelEn : cur.labelAr;
 
                         return (
-                          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs" key={regField.id}>
+                          <SortableFieldItem id={regField.id} key={regField.id}>
+                            {(dragHandleProps) => (
+                          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
                             {/* Header */}
-                            <button
-                              className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-zinc-50"
-                              type="button"
-                              onClick={() => setOpenFieldId(isOpen ? null : regField.id)}
-                            >
+                            <div className="flex w-full items-center gap-2 px-2 py-3">
+                              <button
+                                {...dragHandleProps}
+                                aria-label="Drag to reorder field"
+                                className="shrink-0 cursor-grab p-1 text-zinc-300 hover:text-zinc-500 active:cursor-grabbing"
+                                type="button"
+                              >
+                                <GripVertical className="size-4" />
+                              </button>
+                              <button
+                                className="flex flex-1 items-center gap-3 text-left"
+                                type="button"
+                                onClick={() => setOpenFieldId(isOpen ? null : regField.id)}
+                              >
                               <Badge className="shrink-0 rounded-full bg-zinc-100 text-[11px] font-bold text-zinc-500" variant="secondary">
                                 Field {index + 1}
                               </Badge>
@@ -1409,7 +1500,8 @@ export function EventForm({
                               </span>
                               <Badge className="shrink-0 text-[11px]" variant="outline">{cur.type}</Badge>
                               <ChevronDown className={cn("size-4 shrink-0 text-zinc-400 transition-transform", isOpen && "rotate-180")} />
-                            </button>
+                              </button>
+                            </div>
 
                             {/* Body */}
                             {isOpen && (
@@ -1464,9 +1556,13 @@ export function EventForm({
                               </div>
                             )}
                           </div>
+                            )}
+                          </SortableFieldItem>
                         );
                       })}
                     </div>
+                      </SortableContext>
+                    </DndContext>
                   )}
 
                 </div>

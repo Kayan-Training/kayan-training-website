@@ -1,8 +1,19 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getPostDetailBySlug } from "@/lib/content/queries";
 import { isSupportedLocale } from "@/lib/i18n/config";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string; slug: string }> }): Promise<Metadata> {
+  const { locale, slug } = await params;
+  const post = await getPostDetailBySlug(isSupportedLocale(locale) ? locale : "ar", slug);
+  if (!post) return {};
+  return {
+    title: post.seoTitle || post.title,
+    description: post.seoDescription || post.excerpt || undefined,
+  };
+}
 
 function readPostBody(content: unknown): string {
   if (typeof content === "string") return content;

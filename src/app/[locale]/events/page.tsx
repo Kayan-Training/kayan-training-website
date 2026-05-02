@@ -1,6 +1,19 @@
+import type { Metadata } from "next";
+
 import { EventsListingClient } from "@/components/events/events-listing-client";
 import { getLocalizedEvents } from "@/lib/content/queries";
 import { isSupportedLocale } from "@/lib/i18n/config";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const ar = locale === "ar";
+  return {
+    title: ar ? "الفعاليات والبرامج" : "Events & Programs",
+    description: ar
+      ? "اكتشف برامجنا التدريبية والفعاليات القادمة."
+      : "Discover our upcoming training programs and events.",
+  };
+}
 
 export default async function EventsPage({
   params,

@@ -38,7 +38,10 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kayan Training & Consulting",
+  title: {
+    default: "Kayan Training & Consulting",
+    template: "%s | Kayan Training & Consulting",
+  },
   description: "Multilingual platform for events, consulting, and knowledge content.",
 };
 

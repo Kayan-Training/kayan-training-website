@@ -200,57 +200,52 @@ export function EventsListingClient({
                 <CarouselItem key={featuredEvent.slug}>
                   <Link
                     href={`/${locale}/events/${featuredEvent.slug}`}
-                    className="group relative flex flex-col overflow-hidden bg-surface-container-highest ghost-border transition-all duration-500 hover:-translate-y-0.5 hover:border-secondary/30 md:flex-row"
+                    className="group relative block h-[480px] overflow-hidden ghost-border md:h-[560px]"
                   >
-                    <div className="relative h-56 w-full shrink-0 overflow-hidden md:h-auto md:w-2/5">
-                      <Image alt={featuredEvent.title} className="object-cover grayscale transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0" fill sizes="(max-width: 768px) 100vw, 40vw" src={featuredEvent.coverImage} />
-                      <div className="absolute inset-0 bg-[linear-gradient(to_left,rgba(51,53,53,0.8),transparent)] rtl:bg-[linear-gradient(to_right,rgba(51,53,53,0.8),transparent)]" />
-                    </div>
-                    <div className="flex flex-1 flex-col justify-between p-8 md:p-12">
-                        <div>
-                          <div className="mb-4 flex items-center gap-3">
-                            <span className="badge-teal font-body">
-                              {locale === "ar" ? "حدث مميّز" : "Featured Event"}
-                            </span>
-                            <span className="text-[10px] uppercase tracking-widest text-on-surface-variant">
-                              {featuredEvent.location || (locale === "ar" ? "مسقط" : "Muscat")}
-                            </span>
-                          </div>
-                          <h2 className="mb-4 text-2xl font-semibold leading-snug transition-colors group-hover:text-secondary md:text-3xl">
-                            {featuredEvent.title}
-                          </h2>
-                          <p className="max-w-lg text-sm leading-relaxed text-on-surface-variant">
-                            {featuredEvent.excerpt}
-                          </p>
-                        </div>
-                        <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
-                          <div className="flex items-center gap-6">
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="font-mono text-4xl font-semibold leading-none text-on-surface">
-                                {formatDayNumber(featuredEvent.dateIso, locale)}
-                              </span>
-                              <span className="text-xs uppercase tracking-widest text-on-surface-variant">
-                                {new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-GB", {
-                                  month: "short",
-                                  year: "numeric",
-                                }).format(new Date(featuredEvent.dateIso))}
-                              </span>
-                            </div>
-                            {featuredEvent.location ? (
-                              <>
-                                <div className="h-10 w-px bg-outline-variant/40" />
-                                <div className="flex items-center gap-1.5 text-on-surface-variant">
-                                  <HugeiconsIcon icon={Location01Icon} size={16} strokeWidth={1.8} />
-                                  <span className="font-body text-xs">{featuredEvent.location}</span>
-                                </div>
-                              </>
-                            ) : null}
-                          </div>
-                          <span className="inline-flex items-center gap-2 bg-secondary px-6 py-3 text-xs uppercase tracking-[0.18em] text-surface-dim transition-colors group-hover:bg-primary">
-                            {locale === "ar" ? "التفاصيل والتسجيل" : "Details & Register"}
-                            <HugeiconsIcon className="rtl:rotate-180" icon={ArrowRight01Icon} size={18} strokeWidth={1.8} />
+                    <Image
+                      alt={featuredEvent.title}
+                      className="absolute inset-0 h-full w-full object-cover grayscale transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0"
+                      fill
+                      priority
+                      sizes="100vw"
+                      src={featuredEvent.coverImage}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/95 via-surface-container-lowest/60 to-transparent" />
+                    <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-12">
+                      <div className="mb-4 flex items-center gap-3">
+                        <span className="badge-teal font-body">
+                          {locale === "ar" ? "حدث مميّز" : "Featured Event"}
+                        </span>
+                        {featuredEvent.location ? (
+                          <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-on-surface-variant">
+                            <HugeiconsIcon icon={Location01Icon} size={12} strokeWidth={1.8} />
+                            {featuredEvent.location}
+                          </span>
+                        ) : null}
+                      </div>
+                      <h2 className="mb-3 max-w-3xl text-2xl font-semibold leading-snug text-on-surface transition-colors group-hover:text-secondary md:text-4xl">
+                        {featuredEvent.title}
+                      </h2>
+                      <p className="mb-8 max-w-xl text-sm leading-relaxed text-on-surface-variant">
+                        {featuredEvent.excerpt}
+                      </p>
+                      <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="font-mono text-4xl font-semibold leading-none text-on-surface">
+                            {formatDayNumber(featuredEvent.dateIso, locale)}
+                          </span>
+                          <span className="text-xs uppercase tracking-widest text-on-surface-variant">
+                            {new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-GB", {
+                              month: "short",
+                              year: "numeric",
+                            }).format(new Date(featuredEvent.dateIso))}
                           </span>
                         </div>
+                        <span className="inline-flex items-center gap-2 bg-primary px-6 py-3 text-xs uppercase tracking-[0.18em] text-primary-foreground transition-colors group-hover:bg-secondary">
+                          {locale === "ar" ? "التفاصيل والتسجيل" : "Details & Register"}
+                          <HugeiconsIcon className="rtl:rotate-180" icon={ArrowRight01Icon} size={18} strokeWidth={1.8} />
+                        </span>
+                      </div>
                     </div>
                   </Link>
                 </CarouselItem>
@@ -286,7 +281,7 @@ export function EventsListingClient({
         </div>
 
         <div className="mt-12 flex items-center justify-center gap-2">
-          <button className="ghost-border flex h-9 w-9 items-center justify-center text-on-surface-variant hover:text-primary rtl:rotate-180" onClick={() => setPage((prev) => Math.max(1, prev - 1))} type="button">
+          <button aria-label="Previous page" className="ghost-border flex h-9 w-9 items-center justify-center text-on-surface-variant hover:text-primary rtl:rotate-180" onClick={() => setPage((prev) => Math.max(1, prev - 1))} type="button">
             <HugeiconsIcon icon={ArrowLeft01Icon} size={18} strokeWidth={1.8} />
           </button>
           {Array.from({ length: totalPagesGrid }).map((_, index) => {
@@ -303,7 +298,7 @@ export function EventsListingClient({
               </button>
             );
           })}
-          <button className="ghost-border flex h-9 w-9 items-center justify-center text-on-surface-variant hover:text-primary rtl:rotate-180" onClick={() => setPage((prev) => Math.min(totalPagesGrid, prev + 1))} type="button">
+          <button aria-label="Next page" className="ghost-border flex h-9 w-9 items-center justify-center text-on-surface-variant hover:text-primary rtl:rotate-180" onClick={() => setPage((prev) => Math.min(totalPagesGrid, prev + 1))} type="button">
             <HugeiconsIcon icon={ArrowRight01Icon} size={18} strokeWidth={1.8} />
           </button>
         </div>
