@@ -23,7 +23,7 @@ type ListingEvent = {
   title: string;
 };
 
-const PAGE_SIZE = 8;
+const DEFAULT_PAGE_SIZE = 8;
 
 function formatDate(dateIso: string, locale: "ar" | "en") {
   return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-GB", {
@@ -41,11 +41,19 @@ function formatDayNumber(dateIso: string, locale: "ar" | "en") {
 }
 
 export function EventsListingClient({
+  eyebrow,
+  heading,
   initialEvents,
   locale,
+  pageSize = DEFAULT_PAGE_SIZE,
+  subheading,
 }: {
+  eyebrow?: string;
+  heading?: string;
   initialEvents: ListingEvent[];
   locale: "ar" | "en";
+  pageSize?: number;
+  subheading?: string;
 }) {
   const [activeFilter, setActiveFilter] = useState<"all" | "consulting" | "evenings" | "featured" | "training">("all");
   const [inputValue, setInputValue] = useState("");
@@ -102,9 +110,9 @@ export function EventsListingClient({
     () => filteredEvents.filter((event) => !featuredSlugs.has(event.slug)),
     [featuredSlugs, filteredEvents],
   );
-  const totalPagesGrid = Math.max(1, Math.ceil(gridPool.length / PAGE_SIZE));
+  const totalPagesGrid = Math.max(1, Math.ceil(gridPool.length / pageSize));
   const safePage = Math.min(page, totalPagesGrid);
-  const pageEvents = gridPool.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const pageEvents = gridPool.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   useEffect(() => {
     if (!carouselApi || featuredEvents.length <= 1) return;
@@ -135,13 +143,16 @@ export function EventsListingClient({
             <span className="text-outline">/</span>
             <span className="text-xs text-primary">{locale === "ar" ? "الفعاليات" : "Events"}</span>
           </div>
+          {eyebrow && (
+            <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.35em] text-primary">{eyebrow}</span>
+          )}
           <h1 className="mb-4 text-[clamp(2.5rem,5vw,4rem)] font-semibold leading-tight tracking-tight text-on-surface">
-            {locale === "ar" ? "الفعاليات والبرامج" : "Events & Programs"}
+            {heading ?? (locale === "ar" ? "الفعاليات والبرامج" : "Events & Programs")}
           </h1>
           <p className="max-w-xl text-sm leading-relaxed text-on-surface-variant">
-            {locale === "ar"
+            {subheading ?? (locale === "ar"
               ? "اكتشف برامجنا التدريبية والفعاليات القادمة المصممة لتطوير الكفاءات وتحقيق النمو."
-              : "Discover our training programs and upcoming events designed to develop capabilities and achieve growth."}
+              : "Discover our training programs and upcoming events designed to develop capabilities and achieve growth.")}
           </p>
         </div>
       </section>

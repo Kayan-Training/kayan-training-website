@@ -3,6 +3,8 @@ import { isSupportedLocale } from "@/lib/i18n/config";
 import { createEventAction } from "../_actions";
 import { EventForm } from "../_components/event-form";
 
+export const metadata = { title: "New Event — Events" };
+
 export default async function NewEventPage({
   params,
 }: {

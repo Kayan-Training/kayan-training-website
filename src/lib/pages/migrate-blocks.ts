@@ -1,0 +1,73 @@
+import type { Block, HeroCta, HeroSlide } from "./block-types";
+
+type RawBlock = Record<string, unknown> & { id: string; type: string };
+type RawSlide = Record<string, unknown> & { id: string };
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+function migrateHeroSlide(raw: RawSlide): HeroSlide {
+  // Already migrated
+  if (Array.isArray(raw.ctas)) return raw as unknown as HeroSlide;
+  // Old shape: ctaText / ctaUrl flat fields → ctas array
+  const ctas: HeroCta[] = [];
+  if (raw.ctaText) {
+    ctas.push({ id: uid(), text: raw.ctaText as string, url: (raw.ctaUrl as string) ?? "", style: "primary" });
+  }
+  return { id: raw.id, heading: (raw.heading as string) ?? "", subheading: (raw.subheading as string) ?? "", ctas };
+}
+
+function migrateHeroBlock(raw: RawBlock): Block {
+  if (Array.isArray(raw.slides)) {
+    // Slides exist — migrate each slide's CTA shape
+    const slides = (raw.slides as RawSlide[]).map(migrateHeroSlide);
+    return { ...raw, slides } as unknown as Block;
+  }
+  return {
+    id: raw.id,
+    type: "hero",
+    fullViewport: true,
+    overlayColor: "#000000",
+    overlayOpacity: 40,
+    media: raw.image ? [{ id: uid(), url: raw.image as string, kind: "image" }] : [],
+    slides: [
+      {
+        id: uid(),
+        heading: (raw.heading as string) ?? "",
+        subheading: (raw.subheading as string) ?? "",
+        ctas: raw.ctaText
+          ? [{ id: uid(), text: raw.ctaText as string, url: (raw.ctaUrl as string) ?? "", style: "primary" as const }]
+          : [],
+      },
+    ],
+  } as Block;
+}
+
+function migratePageHeroBlock(raw: RawBlock): Block {
+  if (Array.isArray(raw.slides)) return raw as unknown as Block;
+  return {
+    id: raw.id,
+    type: "page_hero",
+    eyebrow: (raw.eyebrow as string) ?? "",
+    fullViewport: false,
+    overlayColor: "#000000",
+    overlayOpacity: 40,
+    media: raw.image ? [{ id: uid(), url: raw.image as string, kind: "image" }] : [],
+    slides: [
+      {
+        id: uid(),
+        heading: (raw.heading as string) ?? "",
+        subheading: (raw.subheading as string) ?? "",
+      },
+    ],
+  } as Block;
+}
+
+export function migrateBlocks(raw: unknown[]): Block[] {
+  return (raw as RawBlock[]).map((b) => {
+    if (b.type === "hero") return migrateHeroBlock(b);
+    if (b.type === "page_hero") return migratePageHeroBlock(b);
+    return b as Block;
+  });
+}

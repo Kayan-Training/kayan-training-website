@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import { CategoriesManager, type CategoryItem } from "./categories-manager";
 
+export const metadata = { title: "Categories" };
+
 export default async function CategoriesDashboardPage({
   params,
 }: {
@@ -20,8 +22,11 @@ export default async function CategoriesDashboardPage({
     slug: c.slug,
     icon: c.icon,
     color: c.color,
+    image: c.image ?? "",
     nameEn: c.translations.find((t) => t.locale === "en")?.name ?? c.slug,
     nameAr: c.translations.find((t) => t.locale === "ar")?.name ?? c.slug,
+    descEn: c.translations.find((t) => t.locale === "en")?.description ?? "",
+    descAr: c.translations.find((t) => t.locale === "ar")?.description ?? "",
   }));
 
   return (

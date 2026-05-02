@@ -3,7 +3,7 @@
  */
 import { db } from "@/lib/db";
 
-export async function getLocalizedEvents(locale: "ar" | "en") {
+export async function getLocalizedEvents(locale: "ar" | "en", take = 48) {
   const events = await db.event.findMany({
     where: {
       status: "published",
@@ -14,7 +14,7 @@ export async function getLocalizedEvents(locale: "ar" | "en") {
     orderBy: {
       startDate: "asc",
     },
-    take: 48,
+    take,
     include: {
       categories: {
         include: {
@@ -244,15 +244,16 @@ export async function getEventDetailBySlug(locale: "ar" | "en", slug: string) {
   };
 }
 
-export async function getLocalizedPosts(locale: "ar" | "en") {
+export async function getLocalizedPosts(locale: "ar" | "en", take = 12) {
   const posts = await db.post.findMany({
     where: {
       status: "published",
+      type: "article",
     },
     orderBy: {
       publishedAt: "desc",
     },
-    take: 12,
+    take,
     include: {
       featuredImage: true,
       translations: {
@@ -284,6 +285,8 @@ export async function getPostDetailBySlug(locale: "ar" | "en", slug: string) {
         where: { locale },
         take: 1,
       },
+      featuredImage: true,
+      author: { select: { name: true } },
     },
   });
 
@@ -293,11 +296,70 @@ export async function getPostDetailBySlug(locale: "ar" | "en", slug: string) {
 
   return {
     content: post.translations[0]?.content ?? null,
+    coverImage: post.featuredImage?.url ?? null,
+    authorName: post.author?.name ?? null,
+    publishedAt: post.publishedAt,
     seoDescription: post.translations[0]?.seoDescription ?? post.translations[0]?.excerpt ?? "",
+    seoImage: post.featuredImage?.url ?? null,
     seoTitle: post.translations[0]?.seoTitle ?? post.translations[0]?.title ?? post.slug,
     slug: post.slug,
     title: post.translations[0]?.title ?? post.slug,
     excerpt: post.translations[0]?.excerpt ?? "",
+  };
+}
+
+export async function getLocalizedKnowledgePosts(locale: "ar" | "en", take = 12) {
+  const posts = await db.post.findMany({
+    where: {
+      status: "published",
+      type: "knowledge",
+    },
+    orderBy: {
+      publishedAt: "desc",
+    },
+    take,
+    include: {
+      featuredImage: true,
+      translations: {
+        where: { locale },
+        take: 1,
+      },
+    },
+  });
+
+  return posts.map((post) => ({
+    seoDescription: post.translations[0]?.seoDescription ?? post.translations[0]?.excerpt ?? "",
+    seoTitle: post.translations[0]?.seoTitle ?? post.translations[0]?.title ?? post.slug,
+    image: post.featuredImage?.url ?? null,
+    publishedAt: post.publishedAt ?? post.createdAt,
+    slug: post.slug,
+    title: post.translations[0]?.title ?? post.slug,
+    excerpt: post.translations[0]?.excerpt ?? "",
+  }));
+}
+
+export type ListingConfig = {
+  eyebrow: string;
+  heading: string;
+  subheading: string;
+  resultsPerPage: number;
+};
+
+export async function getListingConfig(locale: "ar" | "en", slug: string): Promise<ListingConfig | null> {
+  const page = await db.page.findFirst({
+    where: { slug },
+    include: { translations: { where: { locale }, take: 1 } },
+  });
+  if (!page) return null;
+  const blocks = page.translations[0]?.blocks;
+  if (!Array.isArray(blocks)) return null;
+  const block = (blocks as Record<string, unknown>[]).find((b) => b?.type === "listing_config");
+  if (!block) return null;
+  return {
+    eyebrow: (block.eyebrow as string) ?? "",
+    heading: (block.heading as string) ?? "",
+    subheading: (block.subheading as string) ?? "",
+    resultsPerPage: (block.resultsPerPage as number) ?? 12,
   };
 }
 

@@ -241,6 +241,29 @@ body {
   --sidebar-accent: oklch(0.95 0.05 183);
   --sidebar-accent-foreground: oklch(0.145 0 0);
   --sidebar-border: oklch(0.922 0 0);
+
+  /* Geist fonts scoped to dashboard */
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-body: var(--font-geist-sans), system-ui, sans-serif;
+  --font-heading: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+
+  /* Ensure text on light backgrounds is dark */
+  color-scheme: light;
+}
+
+.dashboard-theme input,
+.dashboard-theme select,
+.dashboard-theme textarea,
+.dashboard-theme button {
+  color: oklch(0.145 0 0);
+}
+
+.dashboard-theme input::placeholder,
+.dashboard-theme textarea::placeholder {
+  color: oklch(0.556 0 0);
 }
 
 /*---break---

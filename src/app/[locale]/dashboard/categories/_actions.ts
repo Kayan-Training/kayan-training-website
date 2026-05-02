@@ -4,12 +4,24 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
 
+export async function fetchCategoryMediaAction(): Promise<{ id: string; originalName: string; url: string }[]> {
+  const media = await db.media.findMany({
+    where: { mimeType: { startsWith: "image/" } },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, originalName: true, url: true },
+  });
+  return media;
+}
+
 export async function createCategory(
   slug: string,
   nameEn: string,
   nameAr: string,
+  descEn: string,
+  descAr: string,
   icon: string,
   color: string,
+  image: string,
   locale: string,
 ): Promise<{ error?: string }> {
   if (!slug || !nameEn || !nameAr) return { error: "Slug and names required" };
@@ -19,10 +31,11 @@ export async function createCategory(
         slug,
         icon: icon || "tag",
         color: color || "#888888",
+        image: image || null,
         translations: {
           create: [
-            { locale: "en", name: nameEn },
-            { locale: "ar", name: nameAr },
+            { locale: "en", name: nameEn, description: descEn || null },
+            { locale: "ar", name: nameAr, description: descAr || null },
           ],
         },
       },
@@ -31,6 +44,41 @@ export async function createCategory(
     return {};
   } catch {
     return { error: "Failed to create category (slug may already exist)" };
+  }
+}
+
+export async function updateCategory(
+  id: string,
+  slug: string,
+  nameEn: string,
+  nameAr: string,
+  descEn: string,
+  descAr: string,
+  icon: string,
+  color: string,
+  image: string,
+  locale: string,
+): Promise<{ error?: string }> {
+  if (!slug || !nameEn || !nameAr) return { error: "Slug and names required" };
+  try {
+    await db.category.update({
+      where: { id },
+      data: { slug, icon: icon || "tag", color: color || "#888888", image: image || null },
+    });
+    await db.categoryTranslation.upsert({
+      where: { categoryId_locale: { categoryId: id, locale: "en" } },
+      create: { categoryId: id, locale: "en", name: nameEn, description: descEn || null },
+      update: { name: nameEn, description: descEn || null },
+    });
+    await db.categoryTranslation.upsert({
+      where: { categoryId_locale: { categoryId: id, locale: "ar" } },
+      create: { categoryId: id, locale: "ar", name: nameAr, description: descAr || null },
+      update: { name: nameAr, description: descAr || null },
+    });
+    revalidatePath(`/${locale}/dashboard/categories`);
+    return {};
+  } catch {
+    return { error: "Failed to update category" };
   }
 }
 

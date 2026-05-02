@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import { UsersTable, type UserRow } from "./users-table";
 
+export const metadata = { title: "Users" };
+
 export default async function UsersDashboardPage({
   params,
 }: {

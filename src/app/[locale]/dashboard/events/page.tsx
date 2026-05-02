@@ -1,8 +1,13 @@
 import Link from "next/link";
 
-import { EventsTable, type EventRow } from "@/app/[locale]/dashboard/events/events-table";
+import {
+  type EventRow,
+  EventsTable,
+} from "@/app/[locale]/dashboard/events/events-table";
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
+
+export const metadata = { title: "Events" };
 
 export default async function DashboardEventsPage({
   params,
@@ -29,6 +34,7 @@ export default async function DashboardEventsPage({
   const rows: EventRow[] = events.map((event) => ({
     coverImage: event.coverImage,
     endDate: event.endDate,
+    slug: event.slug,
     id: event.id,
     isFeatured: event.isFeatured,
     locale: activeLocale,
@@ -41,7 +47,7 @@ export default async function DashboardEventsPage({
 
   return (
     <section className="space-y-5">
-      <div className="rounded-xl border border-border/70 bg-card p-5">
+      <div className="">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold">
@@ -54,14 +60,14 @@ export default async function DashboardEventsPage({
             </p>
           </div>
           <Link
-            className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-xs font-medium uppercase tracking-widest text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-xs font-medium uppercase tracking-widest text-primary-foreground transition-colors hover:bg-secondary"
             href={`/${activeLocale}/dashboard/events/new`}
           >
             {activeLocale === "ar" ? "فعالية جديدة" : "New Event"}
           </Link>
         </div>
       </div>
-      <EventsTable events={rows} />
+      <EventsTable events={rows} activeLocale={activeLocale} />
     </section>
   );
 }

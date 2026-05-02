@@ -1,8 +1,5 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   Calendar03Icon,
   DashboardSquare01Icon,
@@ -16,6 +13,9 @@ import {
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import {
   Sidebar,
@@ -33,7 +33,7 @@ const links = [
   { icon: Calendar03Icon, label: "Events", segment: "events" },
   { icon: NewsIcon, label: "Posts", segment: "posts" },
   { icon: Mail01Icon, label: "Registrations", segment: "registrations" },
-  { icon: FolderLibraryIcon, label: "Pages", segment: "pages/events" },
+  { icon: FolderLibraryIcon, label: "Pages", segment: "pages" },
   { icon: Menu01Icon, label: "Menus", segment: "menus" },
   { icon: Image01Icon, label: "Media", segment: "media" },
   { icon: Tag01Icon, label: "Categories", segment: "categories" },
@@ -43,10 +43,10 @@ const links = [
 
 export function AdminSidebar({
   locale,
-  userEmail,
+  user,
 }: {
   locale: "ar" | "en";
-  userEmail?: string | null;
+  user: { name: string; email: string | null };
 }) {
   const pathname = usePathname();
 
@@ -81,8 +81,8 @@ export function AdminSidebar({
       <SidebarFooter className="px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <p className="truncate text-xs font-medium text-sidebar-foreground">{userEmail ?? "Admin"}</p>
-            <p className="text-[11px] text-sidebar-foreground/60">Administrator</p>
+            <p className="truncate text-xs font-medium text-sidebar-foreground">{user?.name}</p>
+            <p className="truncate text-xs text-sidebar-foreground">{user?.email}</p>
           </div>
           <Link
             className="shrink-0 rounded-md px-2 py-1 text-[11px] text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"

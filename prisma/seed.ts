@@ -13,8 +13,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { PrismaNeon } from "@prisma/adapter-neon";
-import { PrismaClient } from "../src/generated/prisma/client";
 import { hashPassword } from "better-auth/crypto";
+import { PrismaClient } from "../src/generated/prisma/client";
 
 const prisma = new PrismaClient({
   adapter: new PrismaNeon({
@@ -1136,7 +1136,303 @@ async function main() {
     },
   });
 
-  console.log(`Seeded categories (${categorySeeds.length}), users, media, events, posts, and settings.`);
+  await seedSystemPages();
+  await seedMenus();
+
+  console.log(`Seeded categories (${categorySeeds.length}), users, media, events, posts, settings, system pages, and menus.`);
+}
+
+async function seedMenus() {
+  for (const location of ["header", "footer"]) {
+    await prisma.menu.upsert({
+      where: { location },
+      update: {},
+      create: { location },
+    });
+  }
+
+  const headerMenu = await prisma.menu.findUnique({ where: { location: "header" } });
+  if (!headerMenu) return;
+
+  const existingItems = await prisma.menuItem.count({ where: { menuId: headerMenu.id } });
+  if (existingItems > 0) return;
+
+  const pages = await prisma.page.findMany({
+    include: { translations: { where: { locale: "en" }, take: 1 } },
+  });
+  const pageMap = Object.fromEntries(pages.map((p) => [p.slug, { id: p.id, title: p.translations[0]?.title ?? p.slug }]));
+
+  const navItems: Array<{ slugEn: string; labelEn: string; labelAr: string }> = [
+    { slugEn: "home", labelEn: "Home", labelAr: "الرئيسية" },
+    { slugEn: "about", labelEn: "About", labelAr: "عن كيان" },
+    { slugEn: "services", labelEn: "Services", labelAr: "الخدمات" },
+    { slugEn: "events", labelEn: "Events", labelAr: "الفعاليات" },
+    { slugEn: "posts", labelEn: "Articles", labelAr: "المقالات" },
+  ];
+
+  for (let i = 0; i < navItems.length; i++) {
+    const nav = navItems[i];
+    const page = pageMap[nav.slugEn];
+    const item = await prisma.menuItem.create({
+      data: {
+        menuId: headerMenu.id,
+        order: i,
+        type: "page",
+        targetId: page?.id ?? null,
+        url: `/en/${nav.slugEn}`,
+      },
+    });
+    await prisma.menuItemTranslation.createMany({
+      data: [
+        { menuItemId: item.id, locale: "en", label: nav.labelEn },
+        { menuItemId: item.id, locale: "ar", label: nav.labelAr },
+      ],
+    });
+  }
+}
+
+async function upsertPage(
+  slug: string,
+  titleEn: string,
+  titleAr: string,
+  seoTitleEn: string,
+  seoTitleAr: string,
+  seoDescriptionEn: string,
+  seoDescriptionAr: string,
+  blocksEn: unknown[],
+  blocksAr: unknown[],
+) {
+  const page = await prisma.page.upsert({
+    where: { slug },
+    update: { status: "published" },
+    create: { slug, status: "published" },
+  });
+
+  await prisma.pageTranslation.upsert({
+    where: { pageId_locale: { pageId: page.id, locale: "en" } },
+    update: { title: titleEn, seoTitle: seoTitleEn || null, seoDescription: seoDescriptionEn || null, blocks: blocksEn as never },
+    create: { pageId: page.id, locale: "en", title: titleEn, seoTitle: seoTitleEn || null, seoDescription: seoDescriptionEn || null, blocks: blocksEn as never },
+  });
+
+  await prisma.pageTranslation.upsert({
+    where: { pageId_locale: { pageId: page.id, locale: "ar" } },
+    update: { title: titleAr, seoTitle: seoTitleAr || null, seoDescription: seoDescriptionAr || null, blocks: blocksAr as never },
+    create: { pageId: page.id, locale: "ar", title: titleAr, seoTitle: seoTitleAr || null, seoDescription: seoDescriptionAr || null, blocks: blocksAr as never },
+  });
+}
+
+function id() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+async function seedSystemPages() {
+  // ── About ──────────────────────────────────────────────────────────────────
+  await upsertPage(
+    "about",
+    "About Kayan",
+    "عن كيان",
+    "About Kayan — Training & Consulting",
+    "عن كيان — للتدريب والاستشارات",
+    "We operate as an execution partner that turns development into a sustainable performance system.",
+    "نعمل كشريك تنفيذي يضمن أن يتحول التطوير إلى نظام أداء مستدام داخل المؤسسة.",
+    // EN blocks
+    [
+      { id: id(), type: "page_hero", eyebrow: "Trust & Method", heading: "About Kayan", subheading: "We operate as an execution partner that turns development from a training activity into a sustainable performance system.", image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=1400&q=60" },
+      { id: id(), type: "about_intro", body: "<p>Kayan was established to deliver focused development tracks that help institutions improve performance, strengthen team readiness, and accelerate transformation outcomes.</p><p>We do not provide training content in isolation. We design learning experiences tied to clear performance indicators so each program creates measurable operational impact.</p><p>Through applied training, public knowledge evenings, and execution consulting, we help organizations convert daily challenges into sustainable growth opportunities.</p>", metricsHeading: "Our Metrics", metrics: [{ label: "Years of Experience", value: "+9" }, { label: "Programs Delivered", value: "+200" }, { label: "Partner Institutions", value: "+40" }], ctaText: "Explore Services", ctaUrl: "/en/services" },
+      { id: id(), type: "mission_vision", items: [{ title: "Our Mission", body: "Enable institutions to convert learning into stable operational practice that improves outcomes and supports sustainability." }, { title: "Our Vision", body: "To become the regional reference for connecting capability development with measurable institutional outcomes." }, { title: "Delivery Method", body: "Need diagnosis, solution design, guided execution, and impact measurement with continuous iteration." }] },
+      { id: id(), type: "process_steps", heading: "How We Create Impact", body: "We start from real institutional KPIs, then design training and consulting interventions directly tied to day-to-day operations.", steps: [{ title: "Diagnosis", desc: "Identify performance and capability gaps." }, { title: "Design", desc: "Build a clear learning + execution path." }, { title: "Application", desc: "Activate tools inside the workplace." }, { title: "Measurement", desc: "Review outcomes and continuously improve." }] },
+      { id: id(), type: "values_list", eyebrow: "What Drives Us", heading: "Values & Principles", items: [{ title: "Quality & Efficiency", desc: "Every program is engineered to measurable standards — not theoretical content disconnected from practice." }, { title: "Professionalism & Impact", desc: "We deliver learning experiences with measurable operational impact, not a fleeting positive impression." }, { title: "Credibility & Commitment", desc: "Long-term partnerships built on full transparency and actual delivery against what was agreed." }, { title: "Leadership & Innovation", desc: "We track labour market shifts and integrate modern tools with purpose — not trend-chasing." }, { title: "Time Discipline", desc: "We respect our clients' time as much as participants'. Schedule discipline is not a detail — it is a performance indicator." }, { title: "Social Responsibility", desc: "Our role goes beyond training — we help build the talent driving Oman's economic diversification and knowledge society." }] },
+      { id: id(), type: "accreditation", accredHeading: "QABA Approved Provider", accredBody: "Kayan Training & Consulting holds QABA approval as a Qualified Approved Course Provider, ensuring clients receive internationally-recognized training content, assessment standards, and certifications.", badgeLabel: "QABA", badgeTitle: "Qualified Approved Course Provider", badgeSub: "International recognition — global content & assessment standards", partnersHeading: "Who Trusts Us", partnersBody: "We're trusted by public and private sector institutions across the Sultanate of Oman, from oil & gas companies to government bodies and educational institutions.", partners: [{ name: "OQ" }, { name: "OXY OMAN" }, { name: "Government Entities" }, { name: "Multiple Sectors" }] },
+      { id: id(), type: "cta_banner", eyebrow: "Your Development Partner", heading: "Looking for a Custom Training Track for Your Institution?", body: "We design development tracks built on an actual diagnosis of your team's needs — no off-the-shelf solutions.", buttonText: "training@kayan.om", buttonUrl: "mailto:training@kayan.om", linkText: "Browse All Events →", linkUrl: "/en/events" },
+    ],
+    // AR blocks
+    [
+      { id: id(), type: "page_hero", eyebrow: "الثقة والمنهج", heading: "عن كيان", subheading: "نعمل كشريك تنفيذي يضمن أن يتحول التطوير من نشاط تدريبي إلى نظام أداء مستدام داخل المؤسسة.", image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=1400&q=60" },
+      { id: id(), type: "about_intro", body: "<p>تأسست كيان للتدريب والاستشارات لتقديم مسارات تطوير دقيقة تساعد الجهات الحكومية والشركات على تحسين الأداء، ورفع جاهزية الفرق، وتسريع نتائج التحول.</p><p>نحن لا نقدّم محتوى تدريبيًا فقط؛ بل نصمم تجارب تعلم مرتبطة بمؤشرات أداء واضحة، بحيث يتحول كل برنامج إلى أثر تشغيلي ملموس.</p><p>من خلال مزيج من التدريب التطبيقي، الأمسيات المعرفية، والاستشارات التنفيذية، نعمل مع عملائنا على تحويل التحديات اليومية إلى فرص نمو مستدام.</p>", metricsHeading: "أرقامنا", metrics: [{ label: "سنوات الخبرة", value: "+9" }, { label: "برامج منفذة", value: "+200" }, { label: "جهات شريكة", value: "+40" }], ctaText: "استكشف خدماتنا", ctaUrl: "/ar/services" },
+      { id: id(), type: "mission_vision", items: [{ title: "رسالتنا", body: "تمكين المؤسسات من تحويل التعلم إلى ممارسة تشغيلية مستقرة تُحسن النتائج وتدعم الاستدامة." }, { title: "رؤيتنا", body: "أن تكون كيان المرجع الأول إقليميًا في الربط بين بناء القدرات والنتائج المؤسسية الملموسة." }, { title: "منهجية العمل", body: "تشخيص الاحتياج، تصميم الحل، التنفيذ الموجّه، ثم قياس الأثر وتحديث المسار." }] },
+      { id: id(), type: "process_steps", heading: "كيف نخلق الأثر؟", body: "نبدأ من مؤشرات الأداء الفعلية في المؤسسة، ثم نصمم تدخلات تدريبية واستشارية مرتبطة مباشرة بسياق العمل.", steps: [{ title: "التشخيص", desc: "تحديد فجوات الأداء والمهارات." }, { title: "التصميم", desc: "بناء مسار تعلم وتنفيذ واضح." }, { title: "التطبيق", desc: "تفعيل الأدوات داخل بيئة العمل." }, { title: "القياس", desc: "مراجعة النتائج وتحسين مستمر." }] },
+      { id: id(), type: "values_list", eyebrow: "ما يميّزنا", heading: "قيمنا ومبادئنا", items: [{ title: "الجودة والكفاءة", desc: "نُصمم كل برنامج وفق معايير صارمة تضمن نتائج قابلة للقياس — لا محتوى نظرياً بمعزل عن الواقع." }, { title: "الاحترافية والتأثير", desc: "نُقدّم تجارب تعلم تُحدث أثرًا تشغيليًا ملموسًا، لا انطباعًا إيجابيًا مؤقتًا يتبخر خارج القاعة." }, { title: "المصداقية والالتزام", desc: "نبني علاقات طويلة الأمد مبنية على الشفافية الكاملة والتسليم الفعلي وفق ما اتُّفق عليه." }, { title: "الريادة والابتكار", desc: "نواكب تحولات سوق العمل ونُدرج أدوات التعلم الحديثة في كل مسار — بمنهجية لا بمجاراة الاتجاه." }, { title: "الانضباط في الزمن", desc: "نحترم وقت عملائنا كما نحترم وقت المتدربين. الالتزام بالجدول ليس تفصيلاً — هو مؤشر أداء." }, { title: "المسؤولية المجتمعية", desc: "ندرك أن دورنا يتجاوز التدريب — نحن نُسهم في بناء كوادر تقود تنويع اقتصاد عُمان وتُرسّخ مجتمع المعرفة." }] },
+      { id: id(), type: "accreditation", accredHeading: "معتمدون من QABA", accredBody: "حصلت كيان للتدريب والاستشارات على اعتماد QABA كمزوّد معتمد للدورات التدريبية، مما يضمن لعملائنا جودة المحتوى التدريبي ومعايير التقييم والاعتراف الدولي بالشهادات.", badgeLabel: "QABA", badgeTitle: "مزوّد دورات تدريبية معتمد", badgeSub: "اعتراف دولي — معايير محتوى وتقييم دولية", partnersHeading: "من عملائنا", partnersBody: "نفخر بثقة مؤسسات من القطاعين الحكومي والخاص في سلطنة عُمان، من شركات النفط والغاز إلى الجهات الحكومية والمؤسسات التعليمية.", partners: [{ name: "OQ" }, { name: "OXY OMAN" }, { name: "جهات حكومية" }, { name: "قطاع خاص متعدد" }] },
+      { id: id(), type: "cta_banner", eyebrow: "شريكك في التطوير", heading: "هل تبحث عن مسار تدريبي مخصص لمؤسستك؟", body: "نُصمم مسارات تطوير مبنية على تشخيص فعلي لاحتياجات فريقك — لا حلولاً جاهزة.", buttonText: "training@kayan.om", buttonUrl: "mailto:training@kayan.om", linkText: "استعراض كل الفعاليات →", linkUrl: "/ar/events" },
+    ],
+  );
+
+  // ── Services ───────────────────────────────────────────────────────────────
+  await upsertPage(
+    "services",
+    "Our Services",
+    "خدماتنا",
+    "Services — Kayan Training & Consulting",
+    "خدماتنا — كيان للتدريب والاستشارات",
+    "Each service is tied to a specific operating problem, a clear KPI, and a practical implementation path.",
+    "كل خدمة لدينا مرتبطة بمشكلة تشغيلية محددة، ومؤشر قياس واضح، ومسار تطبيق عملي.",
+    // EN blocks
+    [
+      { id: id(), type: "page_hero", eyebrow: "Outcome-Led Offers", heading: "Our Solutions", subheading: "Each service is tied to a specific operating problem, a clear KPI, and a practical implementation path.", image: "https://images.unsplash.com/photo-1597734187998-e1931acfe2ed?w=1400&q=60" },
+      { id: id(), type: "service_cards", items: [{ badge: "Applied Training", title: "Training Programs", desc: "Need-based programs with execution tracks and post-training impact indicators.", image: "https://images.unsplash.com/photo-1756840210475-1e0f006d6169?w=1200&q=80" }, { badge: "Public Impact", title: "Public Evenings", desc: "Focused knowledge evenings that raise awareness and turn ideas into practical professional habits.", image: "https://images.unsplash.com/photo-1711889067043-579e7f118b6d?w=1200&q=80" }, { badge: "Institutional Improvement", title: "Execution Consulting", desc: "Deep diagnosis, execution roadmap, and operational accompaniment until outcomes are delivered.", image: "https://images.unsplash.com/photo-1756840210349-7bc0ae472ef8?w=1200&q=80" }] },
+      { id: id(), type: "training_domains", eyebrow: "Specializations", heading: "Eight Training Domains" },
+      { id: id(), type: "process_steps", heading: "What Each Track Includes", body: "Each organization receives a tailored mix of training, consulting, and execution support based on maturity stage.", steps: [{ title: "Diagnostic Sessions", desc: "Assess gaps and priorities." }, { title: "Program Design", desc: "Build tailored content per sector." }, { title: "Delivery & Follow-up", desc: "Applied training with operational tasks." }, { title: "Impact Measurement", desc: "Pre/post indicators and improvement reports." }] },
+      { id: id(), type: "cta_banner", eyebrow: "Your Development Partner", heading: "Ready to design a custom development track?", body: "We start with a diagnosis of your team's actual performance gaps, not a catalog of pre-built courses.", buttonText: "training@kayan.om", buttonUrl: "mailto:training@kayan.om", linkText: "Browse All Events →", linkUrl: "/en/events" },
+    ],
+    // AR blocks
+    [
+      { id: id(), type: "page_hero", eyebrow: "عروض موجّهة بالنتائج", heading: "حلولنا", subheading: "كل خدمة لدينا مرتبطة بمشكلة تشغيلية محددة، ومؤشر قياس واضح، ومسار تطبيق عملي.", image: "https://images.unsplash.com/photo-1597734187998-e1931acfe2ed?w=1400&q=60" },
+      { id: id(), type: "service_cards", items: [{ badge: "تدريب تطبيقي", title: "البرامج التدريبية", desc: "برامج مبنية على تحليل الاحتياج مع مسارات تنفيذ ومؤشرات متابعة لما بعد التدريب.", image: "https://images.unsplash.com/photo-1756840210475-1e0f006d6169?w=1200&q=80" }, { badge: "أثر مجتمعي", title: "الأمسيات الجماهيرية", desc: "أمسيات معرفية مركزة ترفع الوعي وتحوّل المفاهيم إلى ممارسات مهنية قابلة للتطبيق.", image: "https://images.unsplash.com/photo-1711889067043-579e7f118b6d?w=1200&q=80" }, { badge: "تحسين مؤسسي", title: "الاستشارات التنفيذية", desc: "تشخيص مؤسسي عميق، خارطة تنفيذ، ومرافقة تشغيلية حتى تحقق النتائج المستهدفة.", image: "https://images.unsplash.com/photo-1756840210349-7bc0ae472ef8?w=1200&q=80" }] },
+      { id: id(), type: "training_domains", eyebrow: "التخصصات", heading: "مجالات التدريب الثمانية" },
+      { id: id(), type: "process_steps", heading: "ماذا يشمل كل مسار؟", body: "نصمّم لكل جهة مزيجًا مناسبًا من التدريب والاستشارات والدعم التنفيذي وفق مستوى النضج المؤسسي.", steps: [{ title: "جلسات تشخيص", desc: "تقييم الفجوات والأولويات." }, { title: "تصميم المسار", desc: "بناء محتوى مخصص لكل قطاع." }, { title: "تنفيذ ومتابعة", desc: "تدريب تطبيقي مع مهام تشغيلية." }, { title: "قياس أثر", desc: "مؤشرات قبل/بعد وتقارير تحسين." }] },
+      { id: id(), type: "cta_banner", eyebrow: "شريكك في التطوير", heading: "هل أنت مستعد لتصميم مسار تطوير مخصص؟", body: "نبدأ بتشخيص فجوات الأداء الفعلية لفريقك — لا من كتالوج برامج جاهزة.", buttonText: "training@kayan.om", buttonUrl: "mailto:training@kayan.om", linkText: "استعراض كل الفعاليات →", linkUrl: "/ar/events" },
+    ],
+  );
+
+  // ── Privacy ────────────────────────────────────────────────────────────────
+  await upsertPage(
+    "privacy",
+    "Privacy Policy",
+    "سياسة الخصوصية",
+    "Privacy Policy — Kayan",
+    "سياسة الخصوصية — كيان",
+    "How Kayan Training & Consulting collects and uses your personal data.",
+    "كيف تجمع كيان للتدريب والاستشارات بياناتك الشخصية وتستخدمها.",
+    // EN blocks
+    [
+      { id: id(), type: "page_hero", eyebrow: "", heading: "Privacy Policy", subheading: "Last updated: 2026", image: "" },
+      {
+        id: id(), type: "richtext", html: `
+<h2>1. Information We Collect</h2>
+<p>We collect only essential registration data: name, email address, and contact number, to confirm event registrations and communicate about training programs.</p>
+<h2>2. How We Use Your Data</h2>
+<p>Your data is used exclusively to confirm registration, send event reminders, and communicate about relevant training programs. It will not be used for marketing purposes outside the scope of our services.</p>
+<h2>3. Data Sharing</h2>
+<p>Your personal data will not be sold or shared with third parties, except approved service providers necessary to operate the website and manage forms.</p>
+<h2>4. Your Rights</h2>
+<p>You have the right at any time to request access to, correction of, or complete deletion of your stored data. Contact us via the official email.</p>
+<h2>5. Contact</h2>
+<p>For any privacy-related inquiries: <a href="mailto:training@kayan.om">training@kayan.om</a></p>
+`.trim(),
+      },
+    ],
+    // AR blocks
+    [
+      { id: id(), type: "page_hero", eyebrow: "", heading: "سياسة الخصوصية", subheading: "آخر تحديث: ٢٠٢٦", image: "" },
+      {
+        id: id(), type: "richtext", html: `
+<h2>١. المعلومات التي نجمعها</h2>
+<p>نقوم بجمع البيانات الأساسية للتسجيل فقط: الاسم، البريد الإلكتروني، ورقم التواصل، وذلك لتأكيد التسجيل في الفعاليات والتواصل بشأن البرامج التدريبية.</p>
+<h2>٢. كيف نستخدم بياناتك</h2>
+<p>تُستخدم بياناتك حصراً لتأكيد التسجيل، إرسال تذكيرات بالفعاليات، والتواصل معك بشأن البرامج التدريبية ذات الصلة. لن نستخدمها لأغراض تسويقية خارج إطار خدماتنا.</p>
+<h2>٣. مشاركة البيانات</h2>
+<p>لن يتم بيع بياناتك الشخصية أو مشاركتها مع أطراف خارجية، باستثناء مزودي الخدمة المعتمدين اللازمين لتشغيل الموقع وإدارة النماذج.</p>
+<h2>٤. حقوقك</h2>
+<p>يحق لك في أي وقت طلب الاطلاع على بياناتك المحفوظة، تعديلها، أو حذفها بالكامل. يمكنك التواصل معنا عبر البريد الإلكتروني الرسمي.</p>
+<h2>٥. التواصل</h2>
+<p>لأي استفسارات تتعلق بخصوصيتك: <a href="mailto:training@kayan.om">training@kayan.om</a></p>
+`.trim(),
+      },
+    ],
+  );
+
+  // ── Terms ──────────────────────────────────────────────────────────────────
+  await upsertPage(
+    "terms",
+    "Terms & Conditions",
+    "الشروط والأحكام",
+    "Terms & Conditions — Kayan",
+    "الشروط والأحكام — كيان",
+    "Terms governing the use of Kayan Training & Consulting services and website.",
+    "الشروط المنظِّمة لاستخدام خدمات وموقع كيان للتدريب والاستشارات.",
+    // EN blocks
+    [
+      { id: id(), type: "page_hero", eyebrow: "", heading: "Terms & Conditions", subheading: "Last updated: 2026", image: "" },
+      {
+        id: id(), type: "richtext", html: `
+<h2>1. Acceptance of Terms</h2>
+<p>By accessing this website or registering for any Kayan event or program, you agree to be bound by these terms and conditions.</p>
+<h2>2. Registration & Payment</h2>
+<p>Registration is confirmed upon receipt of payment. Kayan reserves the right to cancel or reschedule events due to unforeseen circumstances, with full refunds issued in such cases.</p>
+<h2>3. Cancellation Policy</h2>
+<p>Cancellations made more than 7 days before the event date are eligible for a full refund. Cancellations within 7 days may be subject to an administrative fee.</p>
+<h2>4. Intellectual Property</h2>
+<p>All training materials, content, and resources provided by Kayan are proprietary. Reproduction or redistribution without written permission is prohibited.</p>
+<h2>5. Liability</h2>
+<p>Kayan is not liable for indirect, incidental, or consequential damages arising from participation in any program or use of this website.</p>
+<h2>6. Contact</h2>
+<p>For questions about these terms: <a href="mailto:training@kayan.om">training@kayan.om</a></p>
+`.trim(),
+      },
+    ],
+    // AR blocks
+    [
+      { id: id(), type: "page_hero", eyebrow: "", heading: "الشروط والأحكام", subheading: "آخر تحديث: ٢٠٢٦", image: "" },
+      {
+        id: id(), type: "richtext", html: `
+<h2>١. قبول الشروط</h2>
+<p>بالوصول إلى هذا الموقع أو التسجيل في أي فعالية أو برنامج تدريبي من كيان، فإنك توافق على الالتزام بهذه الشروط والأحكام.</p>
+<h2>٢. التسجيل والدفع</h2>
+<p>يُؤكَّد التسجيل عند استلام الدفع. تحتفظ كيان بحق إلغاء الفعاليات أو إعادة جدولتها في حالات استثنائية، مع استرداد كامل المبلغ في هذه الحالات.</p>
+<h2>٣. سياسة الإلغاء</h2>
+<p>يحق استرداد المبلغ كاملاً عند الإلغاء قبل ٧ أيام من تاريخ الفعالية. قد يترتب على الإلغاء خلال ٧ أيام رسوم إدارية.</p>
+<h2>٤. الملكية الفكرية</h2>
+<p>جميع المواد التدريبية والمحتوى والموارد التي تقدمها كيان هي ملكية خاصة. يُحظر نسخها أو إعادة توزيعها دون إذن كتابي.</p>
+<h2>٥. المسؤولية</h2>
+<p>لا تتحمل كيان المسؤولية عن الأضرار غير المباشرة الناجمة عن المشاركة في أي برنامج أو استخدام هذا الموقع.</p>
+<h2>٦. التواصل</h2>
+<p>للاستفسار عن هذه الشروط: <a href="mailto:training@kayan.om">training@kayan.om</a></p>
+`.trim(),
+      },
+    ],
+  );
+
+  // ── Events listing config ──────────────────────────────────────────────────
+  await upsertPage(
+    "events",
+    "Events & Programs",
+    "الفعاليات والبرامج",
+    "Events & Programs — Kayan",
+    "الفعاليات والبرامج — كيان",
+    "Discover upcoming training programs and events from Kayan.",
+    "اكتشف برامجنا التدريبية والفعاليات القادمة من كيان.",
+    [{ id: id(), type: "listing_config", eyebrow: "Upcoming Events", heading: "Events & Programs", subheading: "Applied training, knowledge evenings, and execution consulting programs.", resultsPerPage: 12 }],
+    [{ id: id(), type: "listing_config", eyebrow: "الفعاليات القادمة", heading: "الفعاليات والبرامج", subheading: "برامج تدريبية تطبيقية، وأمسيات معرفية، واستشارات تنفيذية.", resultsPerPage: 12 }],
+  );
+
+  // ── Posts listing config ───────────────────────────────────────────────────
+  await upsertPage(
+    "posts",
+    "Articles & Insights",
+    "المقالات والمعرفة",
+    "Articles — Kayan",
+    "المقالات — كيان",
+    "Insights, articles, and knowledge resources from Kayan.",
+    "مقالات وموارد معرفية من كيان للتدريب والاستشارات.",
+    [{ id: id(), type: "listing_config", eyebrow: "Knowledge", heading: "Articles & Insights", subheading: "Practical insights on leadership, learning, and institutional development.", resultsPerPage: 12 }],
+    [{ id: id(), type: "listing_config", eyebrow: "المعرفة", heading: "المقالات والمعرفة", subheading: "رؤى عملية حول القيادة والتعلم والتطوير المؤسسي.", resultsPerPage: 12 }],
+  );
+
+  // ── Knowledge listing config ───────────────────────────────────────────────
+  await upsertPage(
+    "knowledge",
+    "Knowledge Hub",
+    "مركز المعرفة",
+    "Knowledge Hub — Kayan",
+    "مركز المعرفة — كيان",
+    "Resources, guides, and knowledge content from Kayan Training & Consulting.",
+    "موارد وأدلة ومحتوى معرفي من كيان للتدريب والاستشارات.",
+    [{ id: id(), type: "listing_config", eyebrow: "Resources", heading: "Knowledge Hub", subheading: "Curated resources for professional and institutional development.", resultsPerPage: 12 }],
+    [{ id: id(), type: "listing_config", eyebrow: "الموارد", heading: "مركز المعرفة", subheading: "موارد منتقاة للتطوير المهني والمؤسسي.", resultsPerPage: 12 }],
+  );
+
+  // ── Home (minimal) ─────────────────────────────────────────────────────────
+  await upsertPage(
+    "home",
+    "Home",
+    "الرئيسية",
+    "Kayan Training & Consulting",
+    "كيان للتدريب والاستشارات",
+    "Applied training and execution consulting that turn knowledge into measurable results.",
+    "برامج تدريب واستشارات تنفيذية تحوّل المعرفة إلى نتائج قابلة للقياس.",
+    [],
+    [],
+  );
 }
 
 main()

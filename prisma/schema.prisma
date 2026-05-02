@@ -1,6 +1,5 @@
 /**
  * Prisma schema for Kayan Training platform.
- *
  * Notes:
  * - Includes better-auth compatible core tables (`User`, `Session`, `Account`, `Verification`).
  * - Stores locale-dependent content in translation tables (`ar`, `en`).
@@ -32,12 +31,12 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  sessions                 Session[]
-  accounts                 Account[]
-  posts                    Post[]
-  registrations            Registration[]
-  uploadedMedia            Media[]        @relation("UploadedMedia")
-  verifiedPayments         Payment[]      @relation("VerifiedPayments")
+  sessions                  Session[]
+  accounts                  Account[]
+  posts                     Post[]
+  registrations             Registration[]
+  uploadedMedia             Media[]        @relation("UploadedMedia")
+  verifiedPayments          Payment[]      @relation("VerifiedPayments")
   registrationVerifications Registration[] @relation("RegistrationVerifiedBy")
 }
 
@@ -55,7 +54,7 @@ model Session {
 }
 
 model Account {
-  id                    String   @id @default(cuid())
+  id                    String    @id @default(cuid())
   accountId             String
   providerId            String
   userId                String
@@ -66,8 +65,8 @@ model Account {
   refreshTokenExpiresAt DateTime?
   scope                 String?
   password              String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -90,6 +89,7 @@ model Category {
   slug      String   @unique
   icon      String
   color     String
+  image     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -99,7 +99,7 @@ model Category {
 }
 
 model CategoryTranslation {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   categoryId  String
   locale      String
   name        String
@@ -122,47 +122,61 @@ model Media {
   uploadedById String
   createdAt    DateTime @default(now())
 
-  uploadedBy    User      @relation("UploadedMedia", fields: [uploadedById], references: [id], onDelete: Cascade)
-  eventImages   Event[]   @relation("EventFeaturedImage")
-  postImages    Post[]    @relation("PostFeaturedImage")
-  trainerAvatars Trainer[] @relation("TrainerAvatar")
+  uploadedBy     User               @relation("UploadedMedia", fields: [uploadedById], references: [id], onDelete: Cascade)
+  eventImages    Event[]            @relation("EventFeaturedImage")
+  postImages     Post[]             @relation("PostFeaturedImage")
+  trainerAvatars Trainer[]          @relation("TrainerAvatar")
+  translations   MediaTranslation[]
+}
+
+model MediaTranslation {
+  id          String @id @default(cuid())
+  mediaId     String
+  locale      String
+  title       String @default("")
+  altText     String @default("")
+  description String @default("")
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, locale])
 }
 
 model Event {
-  id                  String   @id @default(cuid())
-  slug                String   @unique
-  status              String   @default("draft")
-  type                String
-  location            String?
-  featuredImageId     String?
-  coverImage          String?
-  isFeatured          Boolean  @default(false)
-  language            String   @default("both")
-  capacity            Int?
+  id                   String    @id @default(cuid())
+  slug                 String    @unique
+  status               String    @default("draft")
+  type                 String
+  location             String?
+  featuredImageId      String?
+  coverImage           String?
+  isFeatured           Boolean   @default(false)
+  language             String    @default("both")
+  capacity             Int?
   registrationDeadline DateTime?
-  meetingLink         String?
-  meetingPlatform     String?
-  registrationsOpen   Boolean  @default(true)
-  isCertified         Boolean  @default(false)
-  showMapEmbed        Boolean  @default(false)
-  googleMapsLink      String?
-  startDate           DateTime
-  endDate             DateTime
-  price               Decimal  @default(0)
-  isFree              Boolean  @default(false)
-  paymentMethods      String   @default("both")
-  bankTransferDetails Json?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  meetingLink          String?
+  meetingPlatform      String?
+  registrationsOpen    Boolean   @default(true)
+  isCertified          Boolean   @default(false)
+  showMapEmbed         Boolean   @default(false)
+  googleMapsLink       String?
+  startDate            DateTime
+  endDate              DateTime
+  price                Decimal   @default(0)
+  isFree               Boolean   @default(false)
+  paymentMethods       String    @default("both")
+  bankTransferDetails  Json?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  featuredImage Media?                    @relation("EventFeaturedImage", fields: [featuredImageId], references: [id])
-  translations EventTranslation[]
-  trainers     EventTrainer[]
+  featuredImage  Media?                  @relation("EventFeaturedImage", fields: [featuredImageId], references: [id])
+  translations   EventTranslation[]
+  trainers       EventTrainer[]
   agendaSessions AgendaSession[]
-  scheduleItems EventScheduleItem[]
-  formFields   RegistrationFormField[]
-  registrations Registration[]
-  categories   EventCategory[]
+  scheduleItems  EventScheduleItem[]
+  formFields     RegistrationFormField[]
+  registrations  Registration[]
+  categories     EventCategory[]
 }
 
 model EventTranslation {
@@ -181,24 +195,24 @@ model EventTranslation {
 }
 
 model Trainer {
-  id        String   @id @default(cuid())
-  avatarId  String?
-  email     String?
-  name      String?
+  id             String   @id @default(cuid())
+  avatarId       String?
+  email          String?
+  name           String?
   specialization String?
-  imageUrl  String?
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
+  imageUrl       String?
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
 
-  avatar        Media?                  @relation("TrainerAvatar", fields: [avatarId], references: [id])
-  translations  TrainerTranslation[]
-  eventTrainers EventTrainer[]
-  scheduleItems EventScheduleItem[]
+  avatar         Media?               @relation("TrainerAvatar", fields: [avatarId], references: [id])
+  translations   TrainerTranslation[]
+  eventTrainers  EventTrainer[]
+  scheduleItems  EventScheduleItem[]
   agendaSessions AgendaSession[]
 }
 
 model TrainerTranslation {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   trainerId String
   locale    String
   name      String
@@ -211,11 +225,11 @@ model TrainerTranslation {
 }
 
 model EventTrainer {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   eventId   String
   trainerId String
   role      String?
-  sortOrder Int    @default(0)
+  sortOrder Int     @default(0)
 
   event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
   trainer Trainer @relation(fields: [trainerId], references: [id], onDelete: Cascade)
@@ -224,14 +238,14 @@ model EventTrainer {
 }
 
 model AgendaSession {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   eventId   String
   day       Int
   time      String
   title     String
   type      String
   trainerId String?
-  order     Int      @default(0)
+  order     Int     @default(0)
 
   event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   trainer Trainer? @relation(fields: [trainerId], references: [id], onDelete: SetNull)
@@ -245,13 +259,13 @@ model EventScheduleItem {
   order     Int
   speakerId String?
 
-  event        Event                           @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  speaker      Trainer?                        @relation(fields: [speakerId], references: [id])
+  event        Event                          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  speaker      Trainer?                       @relation(fields: [speakerId], references: [id])
   translations EventScheduleItemTranslation[]
 }
 
 model EventScheduleItemTranslation {
-  id             String @id @default(cuid())
+  id             String  @id @default(cuid())
   scheduleItemId String
   locale         String
   title          String
@@ -270,12 +284,12 @@ model RegistrationFormField {
   order    Int
   options  Json?
 
-  event        Event                               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event        Event                              @relation(fields: [eventId], references: [id], onDelete: Cascade)
   translations RegistrationFormFieldTranslation[]
 }
 
 model RegistrationFormFieldTranslation {
-  id          String @id @default(cuid())
+  id          String  @id @default(cuid())
   fieldId     String
   locale      String
   label       String
@@ -287,19 +301,19 @@ model RegistrationFormFieldTranslation {
 }
 
 model Registration {
-  id             String   @id @default(cuid())
-  eventId        String
-  userId         String?
-  formData       Json
-  status         String   @default("submitted")
-  paymentStatus  String   @default("pending")
-  paymentMethod  String
-  amount         Decimal
-  verifiedById   String?
-  cancelledAt    DateTime?
+  id                 String    @id @default(cuid())
+  eventId            String
+  userId             String?
+  formData           Json
+  status             String    @default("submitted")
+  paymentStatus      String    @default("pending")
+  paymentMethod      String
+  amount             Decimal
+  verifiedById       String?
+  cancelledAt        DateTime?
   cancellationReason String?
-  verificationNote String?
-  createdAt      DateTime @default(now())
+  verificationNote   String?
+  createdAt          DateTime  @default(now())
 
   event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -308,44 +322,44 @@ model Registration {
 }
 
 model Payment {
-  id             String   @id @default(cuid())
-  registrationId String   @unique
+  id             String    @id @default(cuid())
+  registrationId String    @unique
   method         String
-  status         String   @default("pending")
+  status         String    @default("pending")
   reference      String?
   proofUrl       String?
   verifiedById   String?
   verifiedAt     DateTime?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
 
   registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
   verifiedBy   User?        @relation("VerifiedPayments", fields: [verifiedById], references: [id], onDelete: SetNull)
 }
 
 model Post {
-  id              String   @id @default(cuid())
-  slug            String   @unique
-  status          String   @default("draft")
-  type            String   @default("article")
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  status          String    @default("draft")
+  type            String    @default("article")
   featuredImageId String?
   authorId        String
   publishedAt     DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  featuredImage Media?             @relation("PostFeaturedImage", fields: [featuredImageId], references: [id])
-  author       User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  translations PostTranslation[]
-  categories   PostCategory[]
+  featuredImage Media?            @relation("PostFeaturedImage", fields: [featuredImageId], references: [id])
+  author        User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  translations  PostTranslation[]
+  categories    PostCategory[]
 }
 
 model PostTranslation {
-  id      String  @id @default(cuid())
-  postId  String
-  locale  String
-  title   String
-  excerpt String?
-  content Json?
+  id             String  @id @default(cuid())
+  postId         String
+  locale         String
+  title          String
+  excerpt        String?
+  content        Json?
   seoTitle       String?
   seoDescription String?
 
@@ -365,11 +379,11 @@ model Page {
 }
 
 model PageTranslation {
-  id     String @id @default(cuid())
-  pageId String
-  locale String
-  title  String
-  blocks Json?
+  id             String  @id @default(cuid())
+  pageId         String
+  locale         String
+  title          String
+  blocks         Json?
   seoTitle       String?
   seoDescription String?
 

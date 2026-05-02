@@ -4,16 +4,18 @@ import Link from "next/link";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
-import { getLocalizedPosts } from "@/lib/content/queries";
+import { getListingConfig, getLocalizedPosts } from "@/lib/content/queries";
 import { isSupportedLocale } from "@/lib/i18n/config";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
+  const activeLocale = isSupportedLocale(locale) ? locale : "ar";
+  const config = await getListingConfig(activeLocale, "posts");
   return {
-    title: locale === "ar" ? "المكتبة المعرفية" : "Knowledge Library",
-    description: locale === "ar"
+    title: config?.heading || (activeLocale === "ar" ? "المكتبة المعرفية" : "Knowledge Library"),
+    description: config?.subheading || (activeLocale === "ar"
       ? "محتوى تحليلي وتطبيقي للقيادات والفرق التنفيذية."
-      : "Applied and analytical content for leaders and execution teams.",
+      : "Applied and analytical content for leaders and execution teams."),
   };
 }
 
@@ -79,7 +81,8 @@ export default async function PostsPage({
 }) {
   const { locale } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
-  const posts = await getLocalizedPosts(activeLocale);
+  const listingConfig = await getListingConfig(activeLocale, "posts");
+  const posts = await getLocalizedPosts(activeLocale, listingConfig?.resultsPerPage ?? 12);
   const [featured, ...rest] = posts;
 
   return (
@@ -97,16 +100,18 @@ export default async function PostsPage({
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-surface-container-lowest via-surface-container-lowest/95 to-surface-container-lowest/90" />
         <div className="relative z-10 mx-auto w-full max-w-[1440px] px-6 md:px-10">
-          <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.35em] text-primary">
-            {activeLocale === "ar" ? "تحليلات ومقالات" : "Insights & Editorial"}
-          </span>
+          {listingConfig?.eyebrow && (
+            <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.35em] text-primary">
+              {listingConfig.eyebrow}
+            </span>
+          )}
           <h1 className="mb-4 max-w-4xl text-4xl font-semibold tracking-tight text-on-surface md:text-6xl">
-            {activeLocale === "ar" ? "مكتبة كيان المعرفية" : "Kayan Knowledge Library"}
+            {listingConfig?.heading ?? (activeLocale === "ar" ? "مكتبة كيان المعرفية" : "Kayan Knowledge Library")}
           </h1>
           <p className="max-w-2xl text-sm leading-7 text-on-surface-variant">
-            {activeLocale === "ar"
+            {listingConfig?.subheading ?? (activeLocale === "ar"
               ? "محتوى تحليلي وتطبيقي موجه للقيادات والفرق التنفيذية، مع تركيز على الأداء، التحول، وبناء القدرات."
-              : "Applied and analytical content for leaders and execution teams, focused on performance, transformation, and capability building."}
+              : "Applied and analytical content for leaders and execution teams, focused on performance, transformation, and capability building.")}
           </p>
         </div>
       </section>

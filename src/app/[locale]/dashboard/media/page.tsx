@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import { MediaGrid, type MediaItem } from "./media-grid";
 
+export const metadata = { title: "Media" };
+
 export default async function MediaDashboardPage({
   params,
 }: {
@@ -10,7 +12,10 @@ export default async function MediaDashboardPage({
   const { locale } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
 
-  const media = await db.media.findMany({ orderBy: { createdAt: "desc" } });
+  const media = await db.media.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { translations: true },
+  });
 
   const items: MediaItem[] = media.map((m) => ({
     id: m.id,
@@ -19,6 +24,12 @@ export default async function MediaDashboardPage({
     mimeType: m.mimeType,
     size: m.size,
     createdAt: m.createdAt,
+    translations: m.translations.map((t) => ({
+      locale: t.locale,
+      title: t.title,
+      altText: t.altText,
+      description: t.description,
+    })),
   }));
 
   return (

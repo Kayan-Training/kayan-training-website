@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import { PostsTable, type PostRow } from "./posts-table";
 
+export const metadata = { title: "Posts" };
+
 export default async function PostsDashboardPage({
   params,
 }: {

@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import { RegistrationsTable, type RegistrationRow } from "./registrations-table";
 
+export const metadata = { title: "Registrations" };
+
 export default async function RegistrationsDashboardPage({
   params,
 }: {

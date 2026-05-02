@@ -13,6 +13,8 @@ import {
   IBM_Plex_Sans_Arabic,
   Montserrat,
 } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import NextTopLoader from 'nextjs-toploader';
 import "./globals.css";
 
@@ -40,7 +42,7 @@ const dmMono = DM_Mono({
 export const metadata: Metadata = {
   title: {
     default: "Kayan Training & Consulting",
-    template: "%s | Kayan Training & Consulting",
+    template: "%s — Kayan",
   },
   description: "Multilingual platform for events, consulting, and knowledge content.",
 };
@@ -59,6 +61,8 @@ export default function RootLayout({
         alexandria.variable,
         ibmPlexArabic.variable,
         dmMono.variable,
+        GeistSans.variable,
+        GeistMono.variable,
       )}
     >
       <body className="min-h-full">
