@@ -1,8 +1,8 @@
 "use client";
 
-import { FilePlus2Icon } from "lucide-react";
+import { Add01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useState, useTransition } from "react";
-
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -34,12 +34,14 @@ export function NewPageDialog({
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger
-        className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-xs font-medium uppercase tracking-widest text-primary-foreground transition-colors hover:bg-secondary"
         type="button"
-      >
-        <FilePlus2Icon className="size-3.5" />
-        New Page
-      </DialogTrigger>
+        render={
+          <Button className="inline-flex h-10 items-center bg-primary/80 text-xs font-semibold uppercase tracking-widest text-primary-container! transition-colors hover:bg-secondary cursor-pointer rounded-[4px] bg-linear-to-t from-black/10 from-20% via-black/5 via-40% to-transparent border-primary border">
+            <HugeiconsIcon icon={Add01Icon} className="size-3.5" />
+            New Page
+          </Button>
+        }
+      ></DialogTrigger>
 
       <DialogContent className="max-w-md">
         <DialogHeader>

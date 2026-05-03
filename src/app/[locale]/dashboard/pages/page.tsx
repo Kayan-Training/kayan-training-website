@@ -98,7 +98,7 @@ export default async function PagesDashboardPage({
   }
 
   return (
-    <section className="space-y-5">
+    <section className="space-y-5 mx-auto max-w-6xl">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -129,25 +129,6 @@ export default async function PagesDashboardPage({
           </div>
         </div>
       )}
-
-      {/* System pages */}
-      <div className="overflow-hidden rounded-xl border border-border/70 bg-card">
-        <div className="border-b border-border/50 bg-muted/20 px-5 py-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            System Pages
-          </h2>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Pre-defined site pages — edit titles, SEO, and content blocks.
-          </p>
-        </div>
-        {systemPages.length === 0 ? (
-          <p className="px-5 py-6 text-sm text-muted-foreground">
-            No system pages found. Run the database seed to create them.
-          </p>
-        ) : (
-          systemPages.map((page) => <PageRow key={page.id} page={page} />)
-        )}
-      </div>
 
       {/* User-created pages */}
       <div className="overflow-hidden rounded-xl border border-border/70 bg-card">
@@ -184,6 +165,25 @@ export default async function PagesDashboardPage({
           </div>
         ) : (
           userPages.map((page) => <PageRow key={page.id} page={page} />)
+        )}
+      </div>
+
+      {/* System pages */}
+      <div className="overflow-hidden rounded-xl border border-border/70 bg-card">
+        <div className="border-b border-border/50 bg-muted/20 px-5 py-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            System Pages
+          </h2>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            Pre-defined site pages — edit titles, SEO, and content blocks.
+          </p>
+        </div>
+        {systemPages.length === 0 ? (
+          <p className="px-5 py-6 text-sm text-muted-foreground">
+            No system pages found. Run the database seed to create them.
+          </p>
+        ) : (
+          systemPages.map((page) => <PageRow key={page.id} page={page} />)
         )}
       </div>
     </section>

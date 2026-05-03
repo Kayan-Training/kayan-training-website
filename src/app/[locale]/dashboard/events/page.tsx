@@ -1,11 +1,14 @@
+import { Add01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
-
 import {
   type EventRow,
   EventsTable,
 } from "@/app/[locale]/dashboard/events/events-table";
+import { buttonVariants } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
+import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Events" };
 
@@ -46,7 +49,7 @@ export default async function DashboardEventsPage({
   }));
 
   return (
-    <section className="space-y-5">
+    <section className="space-y-5 max-w-6xl mx-auto">
       <div className="">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -60,9 +63,13 @@ export default async function DashboardEventsPage({
             </p>
           </div>
           <Link
-            className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-xs font-medium uppercase tracking-widest text-primary-foreground transition-colors hover:bg-secondary"
+            className={cn(
+              buttonVariants(),
+              "inline-flex h-10 items-center bg-primary/80 text-xs font-semibold uppercase tracking-widest text-primary-container! transition-colors hover:bg-secondary cursor-pointer rounded-[4px] bg-linear-to-t from-black/10 from-20% via-black/5 via-40% to-transparent border-primary border",
+            )}
             href={`/${activeLocale}/dashboard/events/new`}
           >
+            <HugeiconsIcon icon={Add01Icon} className="size-3.5" />
             {activeLocale === "ar" ? "فعالية جديدة" : "New Event"}
           </Link>
         </div>

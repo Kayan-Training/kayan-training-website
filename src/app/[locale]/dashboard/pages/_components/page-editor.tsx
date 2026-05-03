@@ -873,7 +873,7 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: BlockType) => void }) {
       <DropdownMenuTrigger
         render={
           <button
-            className="inline-flex h-9 items-center gap-2 rounded-md border border-dashed border-primary/40 bg-primary/5 px-4 text-xs font-medium text-primary hover:border-primary/70 hover:bg-primary/10"
+            className="inline-flex h-9 items-center gap-2 rounded-md border border-dashed border-primary/40 bg-primary/5 px-4 text-xs font-medium text-primary hover:border-primary/70 hover:bg-primary/10 cursor-pointer"
             type="button"
           >
             <Plus className="size-3.5" />
@@ -892,7 +892,7 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: BlockType) => void }) {
         <div className="grid grid-cols-1 gap-1">
           {ADD_BLOCK_OPTIONS.map(({ type, label }) => (
             <button
-              className="flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-2 text-left transition-colors hover:border-border/50 hover:bg-muted/40"
+              className="flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-2 text-left transition-colors hover:border-border/50 hover:bg-secondary group cursor-pointer"
               key={type}
               type="button"
               onClick={() => {
@@ -902,8 +902,10 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: BlockType) => void }) {
             >
               <BlockWireframe type={type} />
               <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">{label}</p>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-sm font-medium text-foreground group-hover:text-primary-container">
+                  {label}
+                </p>
+                <p className="text-[11px] text-muted-foreground group-hover:text-primary-container/80">
                   {BLOCK_DESCRIPTIONS[type]}
                 </p>
               </div>
@@ -2227,10 +2229,16 @@ function HeroBlockFields({
                 <div className="mt-2 space-y-2">
                   <span className={labelCls}>CTAs</span>
                   {(slide.ctas ?? []).map((cta, ci) => (
-                    <div className="flex items-start gap-2 rounded-md border border-border/40 bg-background/50 p-2" key={cta.id}>
+                    <div
+                      className="flex items-start gap-2 rounded-md border border-border/40 bg-background/50 p-2"
+                      key={cta.id}
+                    >
                       <div className="flex-1 space-y-1.5">
                         <input
-                          className={cn(inputCls, dir === "rtl" && "text-right")}
+                          className={cn(
+                            inputCls,
+                            dir === "rtl" && "text-right",
+                          )}
                           dir={dir}
                           placeholder="Button label"
                           value={cta.text}
@@ -2238,7 +2246,14 @@ function HeroBlockFields({
                             onChange({
                               slides: block.slides.map((s, j) =>
                                 j === i
-                                  ? { ...s, ctas: s.ctas.map((c, k) => k === ci ? { ...c, text: e.target.value } : c) }
+                                  ? {
+                                      ...s,
+                                      ctas: s.ctas.map((c, k) =>
+                                        k === ci
+                                          ? { ...c, text: e.target.value }
+                                          : c,
+                                      ),
+                                    }
                                   : s,
                               ),
                             })
@@ -2253,7 +2268,12 @@ function HeroBlockFields({
                             onChange({
                               slides: block.slides.map((s, j) =>
                                 j === i
-                                  ? { ...s, ctas: s.ctas.map((c, k) => k === ci ? { ...c, url } : c) }
+                                  ? {
+                                      ...s,
+                                      ctas: s.ctas.map((c, k) =>
+                                        k === ci ? { ...c, url } : c,
+                                      ),
+                                    }
                                   : s,
                               ),
                             })
@@ -2274,7 +2294,14 @@ function HeroBlockFields({
                             onChange({
                               slides: block.slides.map((s, j) =>
                                 j === i
-                                  ? { ...s, ctas: s.ctas.map((c, k) => k === ci ? { ...c, style: "primary" as const } : c) }
+                                  ? {
+                                      ...s,
+                                      ctas: s.ctas.map((c, k) =>
+                                        k === ci
+                                          ? { ...c, style: "primary" as const }
+                                          : c,
+                                      ),
+                                    }
                                   : s,
                               ),
                             })
@@ -2295,7 +2322,17 @@ function HeroBlockFields({
                             onChange({
                               slides: block.slides.map((s, j) =>
                                 j === i
-                                  ? { ...s, ctas: s.ctas.map((c, k) => k === ci ? { ...c, style: "secondary" as const } : c) }
+                                  ? {
+                                      ...s,
+                                      ctas: s.ctas.map((c, k) =>
+                                        k === ci
+                                          ? {
+                                              ...c,
+                                              style: "secondary" as const,
+                                            }
+                                          : c,
+                                      ),
+                                    }
                                   : s,
                               ),
                             })
@@ -2311,7 +2348,10 @@ function HeroBlockFields({
                             onChange({
                               slides: block.slides.map((s, j) =>
                                 j === i
-                                  ? { ...s, ctas: s.ctas.filter((_, k) => k !== ci) }
+                                  ? {
+                                      ...s,
+                                      ctas: s.ctas.filter((_, k) => k !== ci),
+                                    }
                                   : s,
                               ),
                             })
@@ -2328,7 +2368,18 @@ function HeroBlockFields({
                       onChange({
                         slides: block.slides.map((s, j) =>
                           j === i
-                            ? { ...s, ctas: [...(s.ctas ?? []), { id: makeId(), text: "", url: "", style: "primary" as const }] }
+                            ? {
+                                ...s,
+                                ctas: [
+                                  ...(s.ctas ?? []),
+                                  {
+                                    id: makeId(),
+                                    text: "",
+                                    url: "",
+                                    style: "primary" as const,
+                                  },
+                                ],
+                              }
                             : s,
                         ),
                       })
@@ -2797,9 +2848,9 @@ export function PageEditor({
   const dir = activeLocale === "ar" ? "rtl" : "ltr";
 
   return (
-    <div className="event-editor">
+    <div className="event-editor -m-6 relative">
       {/* Left rail */}
-      <nav className="event-editor__rail">
+      <nav className="event-editor__rail_ flex-col flex gap-2 h-[calc(100vh-4rem)] p-0 sticky top-14">
         <div className="px-4 py-5">
           <Button
             className="mb-6 h-8 w-full justify-start gap-2 text-xs"
@@ -2858,7 +2909,7 @@ export function PageEditor({
       {/* Main panel */}
       <div className="flex min-h-0 flex-col">
         {/* Toolbar */}
-        <div className="flex items-center justify-between border-b border-border/50 bg-card/80 px-6 py-3 backdrop-blur-sm">
+        <div className="flex items-center justify-between border-b border-border/50 bg-card/80 px-6 py-3 backdrop-blur-sm sticky top-14 z-10">
           <div className="flex items-center gap-3">
             <span className="text-[13px] font-semibold text-foreground">
               {activeLocale === "en" ? titleEn : titleAr}
@@ -2899,7 +2950,7 @@ export function PageEditor({
         </div>
 
         {/* Sections */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="flex-1 overflow-y-auto px-6 py-6 isolate">
           {/* Identity */}
           {activeSection === "identity" && (
             <div className="mx-auto max-w-2xl space-y-5">
@@ -2942,68 +2993,68 @@ export function PageEditor({
 
           {/* Blocks */}
           {activeSection === "blocks" && (
-            <div className="flex gap-6">
-            <div className="min-w-0 flex-1 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <SectionHeading
-                    icon={AlignLeft}
-                    index="02"
-                    title="Content Blocks"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-muted-foreground">
-                    {activeLocale === "en" ? "English" : "Arabic"} ·{" "}
-                    {blocks.length} block{blocks.length !== 1 ? "s" : ""}
-                  </span>
-                  <AddBlockMenu onAdd={addBlock} />
-                </div>
-              </div>
-
-              {blocks.length === 0 && (
-                <div className="flex flex-col items-center rounded-xl border border-dashed border-border/50 py-14 text-center">
-                  <AlignLeft className="mb-3 size-8 text-muted-foreground/40" />
-                  <p className="text-sm font-medium text-muted-foreground">
-                    No blocks yet
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground/60">
-                    Use the Add Block button above to build this page.
-                  </p>
-                </div>
-              )}
-
-              <DndContext
-                collisionDetection={closestCenter}
-                modifiers={[restrictToVerticalAxis]}
-                sensors={sensors}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={blocks.map((b) => b.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-3">
-                    {blocks.map((block) => (
-                      <SortableBlock
-                        id={block.id}
-                        key={block.id}
-                        label={BLOCK_LABELS[block.type]}
-                        onRemove={() => removeBlock(block.id)}
-                      >
-                        {renderBlockFields(
-                          block,
-                          dir,
-                          (patch) => updateBlock(block.id, patch),
-                          pickerEntities,
-                        )}
-                      </SortableBlock>
-                    ))}
+            <div className="flex gap-6 justify-between relative">
+              <div className="min-w-0 flex-1 space-y-4 max-w-5xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <SectionHeading
+                      icon={AlignLeft}
+                      index="02"
+                      title="Content Blocks"
+                    />
                   </div>
-                </SortableContext>
-              </DndContext>
-            </div>
-            <BlockNavSidebar blocks={blocks} />
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-muted-foreground">
+                      {activeLocale === "en" ? "English" : "Arabic"} ·{" "}
+                      {blocks.length} block{blocks.length !== 1 ? "s" : ""}
+                    </span>
+                    <AddBlockMenu onAdd={addBlock} />
+                  </div>
+                </div>
+
+                {blocks.length === 0 && (
+                  <div className="flex flex-col items-center rounded-xl border border-dashed border-border/50 py-14 text-center">
+                    <AlignLeft className="mb-3 size-8 text-muted-foreground/40" />
+                    <p className="text-sm font-medium text-muted-foreground">
+                      No blocks yet
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground/60">
+                      Use the Add Block button above to build this page.
+                    </p>
+                  </div>
+                )}
+
+                <DndContext
+                  collisionDetection={closestCenter}
+                  modifiers={[restrictToVerticalAxis]}
+                  sensors={sensors}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={blocks.map((b) => b.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-3">
+                      {blocks.map((block) => (
+                        <SortableBlock
+                          id={block.id}
+                          key={block.id}
+                          label={BLOCK_LABELS[block.type]}
+                          onRemove={() => removeBlock(block.id)}
+                        >
+                          {renderBlockFields(
+                            block,
+                            dir,
+                            (patch) => updateBlock(block.id, patch),
+                            pickerEntities,
+                          )}
+                        </SortableBlock>
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </div>
+              <BlockNavSidebar blocks={blocks} />
             </div>
           )}
 
