@@ -1421,7 +1421,7 @@ async function seedSystemPages() {
     [{ id: id(), type: "listing_config", eyebrow: "الموارد", heading: "مركز المعرفة", subheading: "موارد منتقاة للتطوير المهني والمؤسسي.", resultsPerPage: 12 }],
   );
 
-  // ── Home (minimal) ─────────────────────────────────────────────────────────
+  // ── Home ──────────────────────────────────────────────────────────────────
   await upsertPage(
     "home",
     "Home",
@@ -1430,8 +1430,178 @@ async function seedSystemPages() {
     "كيان للتدريب والاستشارات",
     "Applied training and execution consulting that turn knowledge into measurable results.",
     "برامج تدريب واستشارات تنفيذية تحوّل المعرفة إلى نتائج قابلة للقياس.",
-    [],
-    [],
+    // EN blocks
+    [
+      {
+        id: id(),
+        type: "hero",
+        fullViewport: true,
+        overlayColor: "#0c0e0e",
+        overlayOpacity: 75,
+        grayscaleMedia: true,
+        showFeaturedEvent: true,
+        media: [
+          { id: id(), url: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1800&q=80", kind: "image" },
+          { id: id(), url: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=1800&q=80", kind: "image" },
+          { id: id(), url: "https://images.unsplash.com/photo-1544531586-fde5298cdd40?w=1800&q=80", kind: "image" },
+        ],
+        slides: [
+          {
+            id: id(),
+            heading: "We Build Teams and Accelerate Institutional Impact",
+            subheading: "Applied training and execution consulting that turn knowledge into daily performance and measurable results.",
+            ctas: [
+              { id: id(), text: "Browse Events", url: "/en/events", style: "primary" },
+              { id: id(), text: "About Us", url: "/en/about", style: "secondary" },
+            ],
+          },
+          {
+            id: id(),
+            heading: "Need-Based Programs with Measurable Outcomes",
+            subheading: "Each training track is tied to clear performance indicators — not just a content catalog.",
+            ctas: [
+              { id: id(), text: "Our Services", url: "/en/services", style: "primary" },
+              { id: id(), text: "Browse Events", url: "/en/events", style: "secondary" },
+            ],
+          },
+          {
+            id: id(),
+            heading: "Your Execution Partner from Diagnosis to Results",
+            subheading: "We design, deliver, and measure development that creates real organizational change.",
+            ctas: [
+              { id: id(), text: "Get in Touch", url: "mailto:training@kayan.om", style: "primary" },
+            ],
+          },
+        ],
+      },
+      {
+        id: id(),
+        type: "accreditation_bar",
+        eyebrow: "Accredited by",
+        badgeLabel: "QABA",
+        badgeTitle: "Qualified Approved Course Provider",
+        badgeSub: "International recognition — global content & assessment standards",
+        clientsHeading: "Trusted by leading organizations",
+        clients: ["OQ", "OXY OMAN", "Ministry of Education", "OPAL", "PDO", "Omantel", "National Bank of Oman", "Oman Air"],
+      },
+      {
+        id: id(),
+        type: "training_domains",
+        eyebrow: "Specializations",
+        heading: "Eight Training Domains",
+      },
+      {
+        id: id(),
+        type: "home_events_carousel",
+        eyebrow: "Upcoming Events",
+        heading: "Explore Our Programs",
+        limit: 6,
+      },
+      {
+        id: id(),
+        type: "home_posts_grid",
+        eyebrow: "Knowledge",
+        heading: "Articles & Insights",
+        limit: 6,
+      },
+      {
+        id: id(),
+        type: "cta_banner",
+        eyebrow: "Your Development Partner",
+        heading: "Looking for a Custom Training Track for Your Institution?",
+        body: "We design development tracks built on an actual diagnosis of your team's needs — no off-the-shelf solutions.",
+        buttonText: "training@kayan.om",
+        buttonUrl: "mailto:training@kayan.om",
+        linkText: "Browse All Events →",
+        linkUrl: "/en/events",
+      },
+    ],
+    // AR blocks
+    [
+      {
+        id: id(),
+        type: "hero",
+        fullViewport: true,
+        overlayColor: "#0c0e0e",
+        overlayOpacity: 75,
+        grayscaleMedia: true,
+        showFeaturedEvent: true,
+        media: [
+          { id: id(), url: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1800&q=80", kind: "image" },
+          { id: id(), url: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=1800&q=80", kind: "image" },
+          { id: id(), url: "https://images.unsplash.com/photo-1544531586-fde5298cdd40?w=1800&q=80", kind: "image" },
+        ],
+        slides: [
+          {
+            id: id(),
+            heading: "نطوّر الفرق ونُسرّع الأثر المؤسسي",
+            subheading: "برامج تدريب واستشارات تنفيذية مصممة لتحويل المعرفة إلى أداء يومي واضح ونتائج قابلة للقياس.",
+            ctas: [
+              { id: id(), text: "استعراض الفعاليات", url: "/ar/events", style: "primary" },
+              { id: id(), text: "تعرّف علينا", url: "/ar/about", style: "secondary" },
+            ],
+          },
+          {
+            id: id(),
+            heading: "برامج مبنية على الاحتياج بنتائج قابلة للقياس",
+            subheading: "كل مسار تدريبي لدينا مرتبط بمؤشرات أداء واضحة — لا مجرد فهرس محتوى.",
+            ctas: [
+              { id: id(), text: "خدماتنا", url: "/ar/services", style: "primary" },
+              { id: id(), text: "استعراض الفعاليات", url: "/ar/events", style: "secondary" },
+            ],
+          },
+          {
+            id: id(),
+            heading: "شريكك التنفيذي من التشخيص إلى النتائج",
+            subheading: "نصمّم وننفّذ ونقيس التطوير الذي يُحدث تغييراً مؤسسياً حقيقياً.",
+            ctas: [
+              { id: id(), text: "تواصل معنا", url: "mailto:training@kayan.om", style: "primary" },
+            ],
+          },
+        ],
+      },
+      {
+        id: id(),
+        type: "accreditation_bar",
+        eyebrow: "معتمدون من",
+        badgeLabel: "QABA",
+        badgeTitle: "مزوّد دورات تدريبية معتمد",
+        badgeSub: "اعتراف دولي — معايير محتوى وتقييم دولية",
+        clientsHeading: "نفخر بثقة كبرى المؤسسات",
+        clients: ["OQ", "OXY OMAN", "وزارة التربية", "OPAL", "PDO", "عُمانتل", "بنك عُمان الوطني", "طيران عُمان"],
+      },
+      {
+        id: id(),
+        type: "training_domains",
+        eyebrow: "التخصصات",
+        heading: "مجالات التدريب الثمانية",
+      },
+      {
+        id: id(),
+        type: "home_events_carousel",
+        eyebrow: "الفعاليات القادمة",
+        heading: "استكشف برامجنا",
+        limit: 6,
+      },
+      {
+        id: id(),
+        type: "home_posts_grid",
+        eyebrow: "المعرفة",
+        heading: "المقالات والمعرفة",
+        limit: 6,
+      },
+      {
+        id: id(),
+        type: "cta_banner",
+        eyebrow: "شريكك في التطوير",
+        heading: "هل تبحث عن مسار تدريبي مخصص لمؤسستك؟",
+        body: "نُصمم مسارات تطوير مبنية على تشخيص فعلي لاحتياجات فريقك — لا حلولاً جاهزة.",
+        buttonText: "training@kayan.om",
+        buttonUrl: "mailto:training@kayan.om",
+        linkText: "استعراض كل الفعاليات →",
+        linkUrl: "/ar/events",
+      },
+    ],
   );
 }
 

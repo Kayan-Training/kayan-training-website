@@ -110,6 +110,32 @@ export type HeroBlock = {
   overlayOpacity: number;
   media: HeroMedia[];
   slides: HeroSlide[];
+  showFeaturedEvent?: boolean;
+  grayscaleMedia?: boolean;
+};
+
+export type AccreditationBarBlock = {
+  type: "accreditation_bar";
+  eyebrow: string;
+  badgeLabel: string;
+  badgeTitle: string;
+  badgeSub: string;
+  clientsHeading: string;
+  clients: string[];
+};
+
+export type HomeEventsCarouselBlock = {
+  type: "home_events_carousel";
+  eyebrow: string;
+  heading: string;
+  limit: number;
+};
+
+export type HomePostsGridBlock = {
+  type: "home_posts_grid";
+  eyebrow: string;
+  heading: string;
+  limit: number;
 };
 
 export type CtaBlock = {
@@ -140,6 +166,9 @@ export type Block = (
   | CtaBannerBlock
   | RichTextBlock
   | HeroBlock
+  | AccreditationBarBlock
+  | HomeEventsCarouselBlock
+  | HomePostsGridBlock
   | CtaBlock
   | ListingConfigBlock
 ) & { id: string };

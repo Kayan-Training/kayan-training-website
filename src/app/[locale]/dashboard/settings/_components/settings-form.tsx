@@ -6,6 +6,62 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { upsertSettings } from "../_actions";
 
+function MaintenanceModeCard({ initialOn }: { initialOn: boolean }) {
+  const [on, setOn] = useState(initialOn);
+  const [isPending, startTransition] = useTransition();
+
+  function toggle(next: boolean) {
+    setOn(next);
+    startTransition(async () => {
+      const result = await upsertSettings([{ key: "site.maintenance", value: next ? "1" : "0" }]);
+      if (result.error) {
+        toast.error(result.error);
+        setOn(!next);
+      } else {
+        toast.success(next ? "Maintenance mode enabled." : "Site is now live.");
+      }
+    });
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/70 bg-card">
+      <div className="border-b border-border/50 bg-muted/20 px-5 py-3">
+        <h2 className="text-sm font-semibold text-foreground">Site Mode</h2>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">
+          When maintenance mode is on, all public pages show a placeholder. Dashboard remains accessible.
+        </p>
+      </div>
+      <div className="flex items-center justify-between px-5 py-4">
+        <div>
+          <p className="text-sm font-medium">{on ? "Maintenance Mode" : "Live"}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {on ? "Frontend routes redirect to maintenance page." : "Site is publicly accessible."}
+          </p>
+        </div>
+        <button
+          className={cn(
+            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50",
+            on ? "bg-destructive" : "bg-muted",
+          )}
+          disabled={isPending}
+          aria-checked={on ? "true" : "false"}
+          role="switch"
+          title={on ? "Disable maintenance mode" : "Enable maintenance mode"}
+          type="button"
+          onClick={() => toggle(!on)}
+        >
+          <span
+            className={cn(
+              "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform duration-200",
+              on ? "translate-x-5" : "translate-x-0",
+            )}
+          />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 type SettingField = {
   key: string;
   label: string;
@@ -138,6 +194,7 @@ function SettingGroupCard({
 export function SettingsForm({ initialValues }: { initialValues: Record<string, string> }) {
   return (
     <div className="space-y-5">
+      <MaintenanceModeCard initialOn={initialValues["site.maintenance"] === "1"} />
       {SETTINGS_SCHEMA.map((group) => (
         <SettingGroupCard group={group} initialValues={initialValues} key={group.group} />
       ))}

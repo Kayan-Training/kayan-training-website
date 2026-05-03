@@ -1,13 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { getLocalizedEvents, getLocalizedPosts } from "@/lib/content/queries";
 import type {
+  AccreditationBarBlock,
   AccreditationBlock,
   AboutIntroBlock,
   Block,
   CtaBannerBlock,
   CtaBlock,
   HeroBlock,
+  HomeEventsCarouselBlock,
+  HomePostsGridBlock,
   ListingConfigBlock,
   MissionVisionBlock,
   PageHeroBlock,
@@ -17,6 +21,7 @@ import type {
   TrainingDomainsBlock,
   ValuesListBlock,
 } from "@/lib/pages/block-types";
+import { type FeaturedEventCard, HeroSlider } from "./hero-slider";
 
 type Category = {
   slug: string;
@@ -464,62 +469,196 @@ function RichTextRenderer({ block }: { block: RichTextBlock }) {
   );
 }
 
-function HeroBlockRenderer({ block, locale }: { block: HeroBlock; locale: "ar" | "en" }) {
-  const bgUrl = (block.media ?? [])[0]?.url;
-  const slide = (block.slides ?? [])[0];
-  const overlayAlpha = (block.overlayOpacity ?? 40) / 100;
+async function HeroBlockRenderer({ block, locale }: { block: HeroBlock; locale: "ar" | "en" }) {
+  let featuredEvent: FeaturedEventCard | null = null;
+  if (block.showFeaturedEvent) {
+    const events = await getLocalizedEvents(locale, 10);
+    const ev = events.find((e) => e.isFeatured) ?? events[0] ?? null;
+    if (ev) {
+      featuredEvent = {
+        slug: ev.slug,
+        title: ev.title,
+        location: ev.location,
+        startDate: ev.startDate.toISOString(),
+        coverImage: ev.coverImage,
+      };
+    }
+  }
+  return <HeroSlider block={block} featuredEvent={featuredEvent} locale={locale} />;
+}
+
+async function AccreditationBarRenderer({ block, locale }: { block: AccreditationBarBlock; locale: "ar" | "en" }) {
+  const isAr = locale === "ar";
   return (
-    <section
-      className={`relative overflow-hidden bg-surface-container-lowest${block.fullViewport ? " min-h-screen" : " py-16 md:py-24"} flex items-center`}
-    >
-      {bgUrl && (
-        <>
-          <div
-            className="absolute inset-0"
-            style={{ background: `url('${bgUrl}') center/cover no-repeat` }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background: block.overlayColor ?? "#000000",
-              opacity: overlayAlpha,
-            }}
-          />
-        </>
-      )}
-      <div className="relative z-10 mx-auto w-full max-w-[1440px] px-6 py-16 md:px-10 md:py-24">
-        {slide?.heading && (
-          <h1
-            className="mb-4 font-black tracking-tight text-on-surface"
-            style={{ fontSize: "clamp(2.4rem,5vw,4rem)" }}
-          >
-            {slide.heading}
-          </h1>
-        )}
-        {slide?.subheading && (
-          <p className="mb-8 max-w-2xl text-sm text-on-surface-variant">{slide.subheading}</p>
-        )}
-        {(slide?.ctas ?? []).length > 0 && (
-          <div className="flex flex-wrap gap-3">
-            {(slide?.ctas ?? []).map((cta) =>
-              cta.style === "secondary" ? (
-                <Link
-                  className="inline-flex items-center gap-3 border border-on-surface/40 px-7 py-4 text-[12px] uppercase tracking-widest text-on-surface transition-all duration-300 hover:border-secondary hover:text-secondary"
-                  href={cta.url}
-                  key={cta.id}
-                >
-                  {cta.text}
-                </Link>
-              ) : (
-                <Link
-                  className="inline-flex items-center gap-3 bg-primary-container px-7 py-4 text-[12px] uppercase tracking-widest text-on-primary-container transition-all duration-300 hover:bg-secondary hover:text-surface-dim"
-                  href={cta.url}
-                  key={cta.id}
-                >
-                  {cta.text}
-                </Link>
-              ),
+    <section className="border-y border-outline-variant/20 bg-surface py-16 md:py-20">
+      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-10 px-6 md:px-10 lg:flex-row lg:items-center lg:gap-16">
+        <div className="shrink-0">
+          {block.eyebrow && (
+            <span className="mb-5 block text-[11px] font-semibold uppercase tracking-[0.3em] text-secondary">
+              {block.eyebrow}
+            </span>
+          )}
+          <div className="accred-highlight">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-secondary/40 bg-secondary/15 text-secondary">
+              <svg fill="none" height="28" viewBox="0 0 28 28" width="28" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 2L17.5 8.5L25 9.5L19.5 15L21 22.5L14 19L7 22.5L8.5 15L3 9.5L10.5 8.5L14 2Z" fill="rgba(40,180,115,0.15)" stroke="#28b473" strokeLinejoin="round" strokeWidth="1.5" />
+                <path d="M10 14L13 17L18 11" stroke="#28b473" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+              </svg>
+            </div>
+            <div>
+              {block.badgeLabel && <span className="accred-highlight-label">{block.badgeLabel}</span>}
+              {block.badgeTitle && <div className="accred-highlight-title">{block.badgeTitle}</div>}
+              {block.badgeSub && <div className="accred-highlight-sub">{block.badgeSub}</div>}
+            </div>
+          </div>
+        </div>
+        <div className="hidden w-px self-stretch bg-outline-variant/25 lg:block" />
+        <div className="min-w-0 flex-1">
+          {block.clientsHeading && (
+            <span className="mb-5 block text-[11px] font-semibold uppercase tracking-[0.3em] text-on-surface-variant">
+              {block.clientsHeading}
+            </span>
+          )}
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+            {(block.clients ?? []).map((client) => (
+              <span
+                className="font-display text-sm font-black uppercase tracking-widest text-on-surface-variant/50"
+                key={client}
+              >
+                {client}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+async function HomeEventsCarouselRenderer({
+  block,
+  locale,
+}: {
+  block: HomeEventsCarouselBlock;
+  locale: "ar" | "en";
+}) {
+  const events = await getLocalizedEvents(locale, block.limit ?? 5);
+
+  function formatDate(date: Date) {
+    return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(date);
+  }
+
+  return (
+    <section className="bg-surface-container-lowest py-24 md:py-32">
+      <div className="mx-auto w-full max-w-[1440px] px-6 md:px-10">
+        <div className="mb-10 flex items-end justify-between gap-6">
+          <div>
+            {block.eyebrow && (
+              <span className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.35em] text-secondary">
+                {block.eyebrow}
+              </span>
             )}
+            <h2 className="font-semibold leading-tight" style={{ fontSize: "clamp(2rem,4vw,3.2rem)" }}>
+              {block.heading}
+            </h2>
+          </div>
+          <Link
+            className="hidden text-xs uppercase tracking-widest text-secondary transition-colors hover:text-primary sm:inline-flex"
+            href={`/${locale}/events`}
+          >
+            {locale === "ar" ? "كل الفعاليات" : "All Events"}
+          </Link>
+        </div>
+        {events.length === 0 ? (
+          <p className="text-sm text-on-surface-variant">{locale === "ar" ? "لا توجد فعاليات." : "No events."}</p>
+        ) : (
+          <div className="no-scrollbar flex gap-4 overflow-x-auto pb-2">
+            {events.map((event) => (
+              <Link
+                className="ghost-border group relative min-h-[420px] w-[280px] flex-none overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-secondary/40 sm:w-[340px]"
+                href={`/${locale}/events/${event.slug}`}
+                key={event.slug}
+              >
+                <Image
+                  alt={event.title}
+                  className="object-cover grayscale transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0"
+                  fill
+                  sizes="340px"
+                  src={event.coverImage}
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(13,15,15,0.97)_0%,rgba(13,15,15,0.5)_56%,rgba(13,15,15,0.1)_100%)]" />
+                <div className="relative z-10 flex h-full flex-col justify-between p-5">
+                  <span className="badge-teal w-fit font-body">
+                    {event.isFeatured ? (locale === "ar" ? "مميّز" : "Featured") : locale === "ar" ? "تدريب" : "Training"}
+                  </span>
+                  <div>
+                    <h3 className="mb-4 line-clamp-3 text-lg font-semibold leading-snug transition-colors group-hover:text-secondary">
+                      {event.title}
+                    </h3>
+                    <p className="text-xs text-on-surface-variant">{formatDate(event.startDate)}</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+async function HomePostsGridRenderer({
+  block,
+  locale,
+}: {
+  block: HomePostsGridBlock;
+  locale: "ar" | "en";
+}) {
+  const posts = await getLocalizedPosts(locale, block.limit ?? 3);
+
+  return (
+    <section className="bg-surface py-24 md:py-32">
+      <div className="mx-auto w-full max-w-[1440px] px-6 md:px-10">
+        <div className="mb-10 flex items-end justify-between gap-6">
+          <div>
+            {block.eyebrow && (
+              <span className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.35em] text-secondary">
+                {block.eyebrow}
+              </span>
+            )}
+            <h2 className="font-semibold leading-tight" style={{ fontSize: "clamp(2rem,4vw,3.2rem)" }}>
+              {block.heading}
+            </h2>
+          </div>
+          <Link
+            className="text-xs uppercase tracking-widest text-secondary transition-colors hover:text-primary"
+            href={`/${locale}/posts`}
+          >
+            {locale === "ar" ? "كل المقالات" : "All Posts"}
+          </Link>
+        </div>
+        {posts.length === 0 ? (
+          <p className="text-sm text-on-surface-variant">{locale === "ar" ? "لا توجد مقالات." : "No posts."}</p>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-3">
+            {posts.map((post) => (
+              <Link
+                className="ghost-border group block bg-surface-container-highest p-6 transition-colors hover:border-secondary/40"
+                href={`/${locale}/posts/${post.slug}`}
+                key={post.slug}
+              >
+                <h3 className="mb-3 line-clamp-2 text-lg font-semibold transition-colors group-hover:text-secondary">
+                  {post.title}
+                </h3>
+                <p className="line-clamp-3 text-sm leading-relaxed text-on-surface-variant">
+                  {post.excerpt || "..."}
+                </p>
+              </Link>
+            ))}
           </div>
         )}
       </div>
@@ -580,6 +719,12 @@ export function BlockRenderer({ blocks, locale, categories = [] }: BlockRenderer
             return <RichTextRenderer block={block} key={block.id} />;
           case "hero":
             return <HeroBlockRenderer block={block} key={block.id} locale={locale} />;
+          case "accreditation_bar":
+            return <AccreditationBarRenderer block={block} key={block.id} locale={locale} />;
+          case "home_events_carousel":
+            return <HomeEventsCarouselRenderer block={block} key={block.id} locale={locale} />;
+          case "home_posts_grid":
+            return <HomePostsGridRenderer block={block} key={block.id} locale={locale} />;
           case "cta":
             return <CtaBlockRenderer block={block} key={block.id} />;
           case "listing_config":

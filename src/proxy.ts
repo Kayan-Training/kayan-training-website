@@ -49,7 +49,7 @@ function getPreferredLocale(request: NextRequest): (typeof SUPPORTED_LOCALES)[nu
   return detectLocaleFromAcceptLanguage(request.headers.get("accept-language"));
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/_next") || pathname.startsWith("/api") || pathname.includes(".")) {
@@ -60,36 +60,56 @@ export function proxy(request: NextRequest) {
     (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
   );
 
-  if (hasLocalePrefix) {
-    const localeFromPath = pathname.split("/")[1];
-    const response = NextResponse.next();
+  const localeFromPath = hasLocalePrefix ? pathname.split("/")[1] : null;
+  const resolvedLocale = (localeFromPath && isSupportedLocale(localeFromPath))
+    ? localeFromPath
+    : getPreferredLocale(request);
 
-    if (isSupportedLocale(localeFromPath)) {
-      response.cookies.set(LOCALE_COOKIE_KEY, localeFromPath, {
-        maxAge: 60 * 60 * 24 * 365,
-        path: "/",
-        sameSite: "lax",
-      });
+  // Maintenance mode check — skip dashboard and maintenance routes
+  const isDashboard = /^\/(ar|en)\/dashboard(\/|$)/.test(pathname);
+  const isMaintenancePage = /^\/(ar|en)\/maintenance$/.test(pathname);
 
-      const isDashboard = pathname === `/${localeFromPath}/dashboard` || pathname.startsWith(`/${localeFromPath}/dashboard/`);
-      const hasSessionCookie =
-        Boolean(request.cookies.get("better-auth.session_token")?.value) ||
-        Boolean(request.cookies.get("__Secure-better-auth.session_token")?.value);
-
-      if (isDashboard && !hasSessionCookie) {
-        const loginUrl = request.nextUrl.clone();
-        loginUrl.pathname = `/${localeFromPath}/auth`;
-        return NextResponse.redirect(loginUrl);
+  if (!isDashboard && !isMaintenancePage) {
+    try {
+      const res = await fetch(new URL("/api/maintenance-status", request.url));
+      if (res.ok) {
+        const data = (await res.json()) as { maintenance: boolean };
+        if (data.maintenance) {
+          return NextResponse.redirect(new URL(`/${resolvedLocale}/maintenance`, request.url));
+        }
       }
+    } catch {
+      // Maintenance check failed — let request through
     }
-
-    return response;
   }
 
-  const locale = getPreferredLocale(request);
-  const url = request.nextUrl.clone();
-  url.pathname = `/${locale}${pathname}`;
-  return NextResponse.redirect(url);
+  if (!hasLocalePrefix) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${resolvedLocale}${pathname}`;
+    return NextResponse.redirect(url);
+  }
+
+  const response = NextResponse.next();
+
+  if (isSupportedLocale(localeFromPath!)) {
+    response.cookies.set(LOCALE_COOKIE_KEY, localeFromPath!, {
+      maxAge: 60 * 60 * 24 * 365,
+      path: "/",
+      sameSite: "lax",
+    });
+
+    const hasSessionCookie =
+      Boolean(request.cookies.get("better-auth.session_token")?.value) ||
+      Boolean(request.cookies.get("__Secure-better-auth.session_token")?.value);
+
+    if (isDashboard && !hasSessionCookie) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = `/${localeFromPath}/auth`;
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  return response;
 }
 
 export const config = {

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
 import { FilterResetIcon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import Link from "next/link";
+import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
@@ -20,11 +20,17 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { bulkUpdateRegistrationStatus, deleteRegistrations } from "./_actions";
+import { bulkUpdateRegistrationStatus, deleteRegistrations, rejectPayment, verifyPayment } from "./_actions";
 
 export type RegistrationRow = {
   id: string;
@@ -34,6 +40,9 @@ export type RegistrationRow = {
   registrantEmail: string;
   status: string;
   paymentStatus: string;
+  paymentMethod: string;
+  paymentProofUrl?: string | null;
+  paymentRef?: string | null;
   amount: string | null;
   createdAt: Date;
   locale: string;
@@ -69,6 +78,86 @@ function exportCsv(rows: RegistrationRow[]) {
   URL.revokeObjectURL(url);
 }
 
+function PaymentDialog({
+  row,
+  locale,
+  onClose,
+}: {
+  row: RegistrationRow;
+  locale: string;
+  onClose: () => void;
+}) {
+  const [note, setNote] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  function handleVerify() {
+    startTransition(async () => {
+      const result = await verifyPayment(row.id, note, locale);
+      if (result.error) toast.error(result.error);
+      else { toast.success("Payment verified — registration confirmed."); onClose(); }
+    });
+  }
+
+  function handleReject() {
+    startTransition(async () => {
+      const result = await rejectPayment(row.id, note, locale);
+      if (result.error) toast.error(result.error);
+      else { toast.success("Payment rejected — registration cancelled."); onClose(); }
+    });
+  }
+
+  const canAct = row.paymentStatus === "pending";
+
+  return (
+    <DialogContent className="max-w-lg">
+      <DialogHeader>
+        <DialogTitle>Payment — {row.registrantName}</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4 text-sm">
+        <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/60 bg-muted/20 p-4">
+          <div><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Method</p><p className="capitalize">{row.paymentMethod}</p></div>
+          <div><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</p><p className="capitalize">{row.paymentStatus}</p></div>
+          <div><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Amount</p><p>{row.amount ? `${row.amount} OMR` : "—"}</p></div>
+          <div><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Reference</p><p className="font-mono text-xs">{row.paymentRef ?? "—"}</p></div>
+        </div>
+        {row.paymentProofUrl && (
+          <div>
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Proof</p>
+            <a className="block overflow-hidden rounded-md border border-border/60" href={row.paymentProofUrl} rel="noreferrer" target="_blank">
+              <img alt="Payment proof" className="max-h-48 w-full object-contain bg-muted" src={row.paymentProofUrl} />
+            </a>
+          </div>
+        )}
+        {canAct && (
+          <div>
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Note / Reason</p>
+            <Input
+              placeholder="Optional note for verification or rejection reason"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
+        )}
+        {canAct && (
+          <div className="flex gap-2 pt-1">
+            <Button className="flex-1" disabled={isPending} onClick={handleVerify}>
+              {isPending ? "Processing…" : "Verify Payment"}
+            </Button>
+            <Button className="flex-1" disabled={isPending} variant="destructive" onClick={handleReject}>
+              Reject
+            </Button>
+          </div>
+        )}
+        {!canAct && (
+          <p className="text-xs text-muted-foreground">
+            Payment already processed ({row.paymentStatus}). Use bulk status controls to update if needed.
+          </p>
+        )}
+      </div>
+    </DialogContent>
+  );
+}
+
 export function RegistrationsTable({
   locale,
   registrations,
@@ -79,6 +168,7 @@ export function RegistrationsTable({
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [paymentRow, setPaymentRow] = useState<RegistrationRow | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const filtered = useMemo(() => {
@@ -145,6 +235,10 @@ export function RegistrationsTable({
   }
 
   return (
+    <>
+    <Dialog open={!!paymentRow} onOpenChange={(open) => { if (!open) setPaymentRow(null); }}>
+      {paymentRow && <PaymentDialog locale={locale} row={paymentRow} onClose={() => setPaymentRow(null)} />}
+    </Dialog>
     <div className="grid gap-4">
       <div className="rounded-xl border border-border/70 bg-card p-4">
         <div className="grid gap-3 lg:grid-cols-[1fr_160px_auto_auto]">
@@ -269,7 +363,20 @@ export function RegistrationsTable({
                       {r.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="capitalize text-xs text-muted-foreground">{r.paymentStatus}</TableCell>
+                  <TableCell>
+                    <button
+                      className={cn(
+                        "rounded px-2 py-0.5 text-[11px] font-medium capitalize transition-colors hover:bg-muted",
+                        r.paymentStatus === "pending" && r.paymentMethod === "bank"
+                          ? "text-yellow-600 underline underline-offset-2"
+                          : "text-muted-foreground",
+                      )}
+                      type="button"
+                      onClick={() => setPaymentRow(r)}
+                    >
+                      {r.paymentStatus}
+                    </button>
+                  </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(r.createdAt)}
                   </TableCell>
@@ -280,5 +387,6 @@ export function RegistrationsTable({
         </Table>
       </div>
     </div>
+    </>
   );
 }

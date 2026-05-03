@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
+
 import { RegistrationsTable, type RegistrationRow } from "../registrations-table";
 
 export default async function EventRegistrationsPage({
@@ -17,7 +18,10 @@ export default async function EventRegistrationsPage({
     include: {
       translations: { where: { locale: activeLocale }, take: 1 },
       registrations: {
-        include: { user: { select: { email: true, name: true } } },
+        include: {
+          user: { select: { email: true, name: true } },
+          payment: { select: { proofUrl: true, reference: true, status: true } },
+        },
         orderBy: { createdAt: "desc" },
       },
     },
@@ -34,6 +38,9 @@ export default async function EventRegistrationsPage({
     registrantEmail: r.user?.email ?? "",
     status: r.status,
     paymentStatus: r.paymentStatus,
+    paymentMethod: r.paymentMethod,
+    paymentProofUrl: r.payment?.proofUrl ?? null,
+    paymentRef: r.payment?.reference ?? null,
     amount: r.amount?.toString() ?? null,
     createdAt: r.createdAt,
     locale: activeLocale,

@@ -3,8 +3,11 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { getLocalizedEvents, getLocalizedPosts } from "@/lib/content/queries";
+import { getLocalizedEvents, getLocalizedPosts, getStaticPageBySlug } from "@/lib/content/queries";
+import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
+import { migrateBlocks } from "@/lib/pages/migrate-blocks";
+import { BlockRenderer } from "@/components/pages/block-renderer";
 
 const domains = [
   { accent: "#c2b59b", ar: "الفنون", en: "Arts", img: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=700&q=75", icon: "kayan_profile_Arts.svg" },
@@ -32,6 +35,38 @@ export default async function LocaleHomePage({
 }) {
   const { locale } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
+
+  // Try CMS-managed homepage first
+  const cmsData = await getStaticPageBySlug(activeLocale, "home");
+  if (cmsData?.blocks && Array.isArray(cmsData.blocks) && cmsData.blocks.length > 0) {
+    const rawBlocks = (cmsData.blocks as unknown[]).filter(
+      (b) => b && typeof b === "object" && "type" in (b as object),
+    );
+    const blocks = migrateBlocks(rawBlocks);
+
+    const needsCategories = blocks.some((b) => b.type === "training_domains");
+    let categories: { slug: string; color: string; nameEn: string; nameAr: string }[] = [];
+    if (needsCategories) {
+      const cats = await db.category.findMany({
+        include: { translations: true },
+        orderBy: { slug: "asc" },
+      });
+      categories = cats.map((cat) => ({
+        slug: cat.slug,
+        color: cat.color,
+        nameEn: cat.translations.find((t) => t.locale === "en")?.name ?? cat.slug,
+        nameAr: cat.translations.find((t) => t.locale === "ar")?.name ?? cat.slug,
+      }));
+    }
+
+    return (
+      <main>
+        <BlockRenderer blocks={blocks} categories={categories} locale={activeLocale} />
+      </main>
+    );
+  }
+
+  // Fallback: hardcoded homepage (until seed runs)
   const [events, posts] = await Promise.all([
     getLocalizedEvents(activeLocale),
     getLocalizedPosts(activeLocale),
@@ -64,17 +99,9 @@ export default async function LocaleHomePage({
             </div>
             <h1 className="text-glow mb-6 text-[clamp(2rem,5.2vw,4.25rem)] font-semibold leading-[1.12] tracking-tight text-on-surface">
               {activeLocale === "ar" ? (
-                <>
-                  نطوّر الفرق <span className="text-secondary">ونُسرّع</span>
-                  <br className="hidden sm:block" />
-                  الأثر المؤسسي
-                </>
+                <>نطوّر الفرق <span className="text-secondary">ونُسرّع</span><br className="hidden sm:block" />الأثر المؤسسي</>
               ) : (
-                <>
-                  We Build Teams and <span className="text-secondary">Accelerate</span>
-                  <br className="hidden sm:block" />
-                  Institutional Impact
-                </>
+                <>We Build Teams and <span className="text-secondary">Accelerate</span><br className="hidden sm:block" />Institutional Impact</>
               )}
             </h1>
             <p className="mb-10 max-w-[36rem] text-[clamp(0.9rem,1.15vw,1.02rem)] leading-relaxed text-on-surface-variant">
@@ -190,7 +217,7 @@ export default async function LocaleHomePage({
                   </div>
                   <div>
                     <span className="mb-2 block font-mono text-[10px] uppercase tracking-widest" style={{ color: domain.accent }}>{String(index + 1).padStart(2, "0")}</span>
-                    <h3 className="text-lg font-semibold text-on-surface transition-colors" style={{ color: undefined }}>{activeLocale === "ar" ? domain.ar : domain.en}</h3>
+                    <h3 className="text-lg font-semibold text-on-surface">{activeLocale === "ar" ? domain.ar : domain.en}</h3>
                   </div>
                 </div>
               </Link>

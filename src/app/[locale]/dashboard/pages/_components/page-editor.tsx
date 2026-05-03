@@ -801,6 +801,36 @@ function BlockWireframe({ type }: { type: BlockType }) {
         ))}
       </>
     ),
+    accreditation_bar: (
+      <>
+        <rect width="120" height="68" fill={bg} />
+        <rect x="8" y="10" width="30" height="6" rx="2" fill={accent} opacity="0.8" />
+        <rect x="8" y="20" width="50" height="4" rx="1.5" fill={el} />
+        {[0, 1, 2, 3].map((i) => (
+          <rect key={i} x={8 + i * 29} y="32" width="24" height="22" rx="2" fill={el} opacity="0.5" />
+        ))}
+      </>
+    ),
+    home_events_carousel: (
+      <>
+        <rect width="120" height="68" fill={bg} />
+        <rect x="8" y="8" width="40" height="5" rx="1.5" fill={el} />
+        <rect x="8" y="16" width="60" height="4" rx="1.5" fill={elLight} opacity="0.5" />
+        {[0, 1, 2].map((i) => (
+          <rect key={i} x={8 + i * 38} y="26" width="34" height="34" rx="3" fill={el} opacity="0.5" />
+        ))}
+      </>
+    ),
+    home_posts_grid: (
+      <>
+        <rect width="120" height="68" fill={bg} />
+        <rect x="8" y="8" width="40" height="5" rx="1.5" fill={el} />
+        <rect x="8" y="16" width="60" height="4" rx="1.5" fill={elLight} opacity="0.5" />
+        {[0, 1, 2].map((i) => (
+          <rect key={i} x={8 + i * 38} y="26" width="34" height="34" rx="3" fill={el} opacity="0.4" />
+        ))}
+      </>
+    ),
   };
 
   return (
@@ -829,6 +859,9 @@ const ADD_BLOCK_OPTIONS: { label: string; type: BlockType }[] = [
   { type: "hero", label: "Hero (simple)" },
   { type: "cta", label: "CTA (simple)" },
   { type: "listing_config", label: "Listing Config" },
+  { type: "accreditation_bar", label: "Accreditation Bar" },
+  { type: "home_events_carousel", label: "Events Carousel" },
+  { type: "home_posts_grid", label: "Posts Grid" },
 ];
 
 const BLOCK_LABELS: Record<BlockType, string> = Object.fromEntries(
@@ -935,6 +968,9 @@ const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
   cta: "Compact call-to-action with heading, body text, and button",
   listing_config:
     "Configure heading, subheading, and results per page for listing pages",
+  accreditation_bar: "Horizontal bar with accreditation badge and client logos",
+  home_events_carousel: "Auto-populated horizontal scroll of upcoming events",
+  home_posts_grid: "Auto-populated 3-column grid of recent blog posts",
 };
 
 // ─── Sortable block wrapper ───────────────────────────────────────────────────
@@ -2407,6 +2443,28 @@ function HeroBlockFields({
           }
         />
       </div>
+
+      <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/20 p-3">
+        <Switch
+          checked={!!block.showFeaturedEvent}
+          id="showFeaturedEvent"
+          onCheckedChange={(v) => onChange({ showFeaturedEvent: v })}
+        />
+        <label className="cursor-pointer text-sm" htmlFor="showFeaturedEvent">
+          Show featured event card
+        </label>
+      </div>
+
+      <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/20 p-3">
+        <Switch
+          checked={!!block.grayscaleMedia}
+          id="grayscaleMedia"
+          onCheckedChange={(v) => onChange({ grayscaleMedia: v })}
+        />
+        <label className="cursor-pointer text-sm" htmlFor="grayscaleMedia">
+          Grayscale background media
+        </label>
+      </div>
     </>
   );
 }
@@ -2519,6 +2577,176 @@ function ListingConfigFields({
         </Field>
       </FieldRow>
     </>
+  );
+}
+
+function AccreditationBarFields({
+  block,
+  dir,
+  onChange,
+}: {
+  block: Extract<Block, { type: "accreditation_bar" }>;
+  dir: "ltr" | "rtl";
+  onChange: (patch: Partial<typeof block>) => void;
+}) {
+  return (
+    <>
+      <FieldRow>
+        <Field label="Eyebrow">
+          <input
+            className={cn(inputCls, dir === "rtl" && "text-right")}
+            dir={dir}
+            placeholder="e.g. Accredited by"
+            title="Eyebrow"
+            value={block.eyebrow}
+            onChange={(e) => onChange({ eyebrow: e.target.value })}
+          />
+        </Field>
+        <Field label="Badge Label">
+          <input
+            className={inputCls}
+            placeholder="e.g. QABA"
+            title="Badge Label"
+            value={block.badgeLabel}
+            onChange={(e) => onChange({ badgeLabel: e.target.value })}
+          />
+        </Field>
+      </FieldRow>
+      <FieldRow>
+        <Field label="Badge Title">
+          <input
+            className={cn(inputCls, dir === "rtl" && "text-right")}
+            dir={dir}
+            placeholder="Quality Assurance Body"
+            title="Badge Title"
+            value={block.badgeTitle}
+            onChange={(e) => onChange({ badgeTitle: e.target.value })}
+          />
+        </Field>
+        <Field label="Badge Subtitle">
+          <input
+            className={cn(inputCls, dir === "rtl" && "text-right")}
+            dir={dir}
+            placeholder="Certified Training Provider"
+            title="Badge Subtitle"
+            value={block.badgeSub}
+            onChange={(e) => onChange({ badgeSub: e.target.value })}
+          />
+        </Field>
+      </FieldRow>
+      <Field label="Clients Heading">
+        <input
+          className={cn(inputCls, dir === "rtl" && "text-right")}
+          dir={dir}
+          placeholder="Our clients"
+          title="Clients Heading"
+          value={block.clientsHeading}
+          onChange={(e) => onChange({ clientsHeading: e.target.value })}
+        />
+      </Field>
+      <div>
+        <label className={labelCls}>Client Names (one per line)</label>
+        <textarea
+          className={cn(inputCls, "h-24 resize-none py-2", dir === "rtl" && "text-right")}
+          dir={dir}
+          placeholder={"Client A\nClient B\nClient C"}
+          value={block.clients.join("\n")}
+          onChange={(e) =>
+            onChange({ clients: e.target.value.split("\n").map((s) => s.trimEnd()) })
+          }
+        />
+      </div>
+    </>
+  );
+}
+
+function HomeEventsCarouselFields({
+  block,
+  dir,
+  onChange,
+}: {
+  block: Extract<Block, { type: "home_events_carousel" }>;
+  dir: "ltr" | "rtl";
+  onChange: (patch: Partial<typeof block>) => void;
+}) {
+  return (
+    <FieldRow>
+      <Field label="Eyebrow">
+        <input
+          className={cn(inputCls, dir === "rtl" && "text-right")}
+          dir={dir}
+          placeholder="Upcoming events"
+          title="Eyebrow"
+          value={block.eyebrow}
+          onChange={(e) => onChange({ eyebrow: e.target.value })}
+        />
+      </Field>
+      <Field label="Heading">
+        <input
+          className={cn(inputCls, dir === "rtl" && "text-right")}
+          dir={dir}
+          placeholder="Explore our events"
+          title="Heading"
+          value={block.heading}
+          onChange={(e) => onChange({ heading: e.target.value })}
+        />
+      </Field>
+      <Field label="Max Events">
+        <input
+          className={inputCls}
+          min={1}
+          title="Max Events"
+          type="number"
+          value={block.limit}
+          onChange={(e) => onChange({ limit: Number(e.target.value) || 6 })}
+        />
+      </Field>
+    </FieldRow>
+  );
+}
+
+function HomePostsGridFields({
+  block,
+  dir,
+  onChange,
+}: {
+  block: Extract<Block, { type: "home_posts_grid" }>;
+  dir: "ltr" | "rtl";
+  onChange: (patch: Partial<typeof block>) => void;
+}) {
+  return (
+    <FieldRow>
+      <Field label="Eyebrow">
+        <input
+          className={cn(inputCls, dir === "rtl" && "text-right")}
+          dir={dir}
+          placeholder="Latest articles"
+          title="Eyebrow"
+          value={block.eyebrow}
+          onChange={(e) => onChange({ eyebrow: e.target.value })}
+        />
+      </Field>
+      <Field label="Heading">
+        <input
+          className={cn(inputCls, dir === "rtl" && "text-right")}
+          dir={dir}
+          placeholder="From the blog"
+          title="Heading"
+          value={block.heading}
+          onChange={(e) => onChange({ heading: e.target.value })}
+        />
+      </Field>
+      <Field label="Max Posts">
+        <input
+          className={inputCls}
+          min={1}
+          title="Max Posts"
+          type="number"
+          value={block.limit}
+          onChange={(e) => onChange({ limit: Number(e.target.value) || 6 })}
+        />
+      </Field>
+    </FieldRow>
   );
 }
 
@@ -2640,6 +2868,30 @@ function renderBlockFields(
           onChange={onChange as (p: Partial<typeof block>) => void}
         />
       );
+    case "accreditation_bar":
+      return (
+        <AccreditationBarFields
+          block={block}
+          dir={dir}
+          onChange={onChange as (p: Partial<typeof block>) => void}
+        />
+      );
+    case "home_events_carousel":
+      return (
+        <HomeEventsCarouselFields
+          block={block}
+          dir={dir}
+          onChange={onChange as (p: Partial<typeof block>) => void}
+        />
+      );
+    case "home_posts_grid":
+      return (
+        <HomePostsGridFields
+          block={block}
+          dir={dir}
+          onChange={onChange as (p: Partial<typeof block>) => void}
+        />
+      );
     default:
       return null;
   }
@@ -2744,6 +2996,21 @@ function makeBlock(type: BlockType): Block {
         subheading: "",
         resultsPerPage: 12,
       };
+    case "accreditation_bar":
+      return {
+        id,
+        type,
+        eyebrow: "",
+        badgeLabel: "QABA",
+        badgeTitle: "",
+        badgeSub: "",
+        clientsHeading: "",
+        clients: [],
+      };
+    case "home_events_carousel":
+      return { id, type, eyebrow: "", heading: "", limit: 6 };
+    case "home_posts_grid":
+      return { id, type, eyebrow: "", heading: "", limit: 6 };
   }
 }
 

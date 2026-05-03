@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
+
 import { RegistrationsTable, type RegistrationRow } from "./registrations-table";
 
 export const metadata = { title: "Registrations" };
@@ -16,6 +17,7 @@ export default async function RegistrationsDashboardPage({
     include: {
       event: { include: { translations: { where: { locale: activeLocale }, take: 1 } } },
       user: { select: { email: true, name: true } },
+      payment: { select: { proofUrl: true, reference: true, status: true } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -28,6 +30,9 @@ export default async function RegistrationsDashboardPage({
     registrantEmail: r.user?.email ?? "",
     status: r.status,
     paymentStatus: r.paymentStatus,
+    paymentMethod: r.paymentMethod,
+    paymentProofUrl: r.payment?.proofUrl ?? null,
+    paymentRef: r.payment?.reference ?? null,
     amount: r.amount?.toString() ?? null,
     createdAt: r.createdAt,
     locale: activeLocale,
