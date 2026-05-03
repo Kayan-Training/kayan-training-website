@@ -245,6 +245,19 @@ async function main() {
     },
   });
 
+  await prisma.user.upsert({
+    where: { email: "learner@kayan.local" },
+    update: { name: "Demo Learner", role: "user", preferredLocale: "en", password: learnerPasswordHash },
+    create: {
+      name: "Demo Learner",
+      email: "learner@kayan.local",
+      role: "user",
+      preferredLocale: "en",
+      emailVerified: true,
+      password: learnerPasswordHash,
+    },
+  });
+
   const learner = await prisma.user.findUniqueOrThrow({
     where: { email: "learner@kayan.local" },
     select: { id: true },
@@ -265,19 +278,6 @@ async function main() {
       userId: learner.id,
       providerId: "credential",
       accountId: learner.id,
-      password: learnerPasswordHash,
-    },
-  });
-
-  await prisma.user.upsert({
-    where: { email: "learner@kayan.local" },
-    update: { name: "Demo Learner", role: "user", preferredLocale: "en", password: learnerPasswordHash },
-    create: {
-      name: "Demo Learner",
-      email: "learner@kayan.local",
-      role: "user",
-      preferredLocale: "en",
-      emailVerified: true,
       password: learnerPasswordHash,
     },
   });
