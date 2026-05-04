@@ -2,6 +2,7 @@ import { ArrowRight01Icon, Calendar03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export type EventCardItem = {
   coverImage: string;
@@ -9,13 +10,25 @@ export type EventCardItem = {
   slug: string;
   tag: string;
   title: string;
+  className?: string;
 };
 
-export function EventCard({ event, locale }: { event: EventCardItem; locale: "ar" | "en" }) {
+export function EventCard({
+  event,
+  locale,
+  className,
+}: {
+  event: EventCardItem;
+  locale: "ar" | "en";
+  className?: string;
+}) {
   return (
     <Link
       href={`/${locale}/events/${event.slug}`}
-      className="event-card group relative overflow-hidden ghost-border"
+      className={cn(
+        "event-card group relative overflow-hidden ghost-border",
+        className,
+      )}
     >
       <Image
         alt={event.title}
@@ -35,7 +48,12 @@ export function EventCard({ event, locale }: { event: EventCardItem; locale: "ar
             <HugeiconsIcon icon={Calendar03Icon} size={13} strokeWidth={1.8} />
             {event.dateLabel}
           </span>
-          <HugeiconsIcon className="text-outline rtl:rotate-180 transition-colors group-hover:text-secondary" icon={ArrowRight01Icon} size={18} strokeWidth={1.8} />
+          <HugeiconsIcon
+            className="text-outline rtl:rotate-180 transition-colors group-hover:text-secondary"
+            icon={ArrowRight01Icon}
+            size={18}
+            strokeWidth={1.8}
+          />
         </div>
       </div>
     </Link>

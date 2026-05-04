@@ -1,13 +1,14 @@
-import { ArrowRight01Icon, Calendar03Icon, Location01Icon, StarIcon } from "@hugeicons/core-free-icons";
+import { ArrowRight01Icon, Calendar03Icon, StarIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { BlockRenderer } from "@/components/pages/block-renderer";
+import { FeaturedEventCyclerCard } from "@/components/pages/hero-slider";
 import { getLocalizedEvents, getLocalizedPosts, getStaticPageBySlug } from "@/lib/content/queries";
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import { migrateBlocks } from "@/lib/pages/migrate-blocks";
-import { BlockRenderer } from "@/components/pages/block-renderer";
 
 const domains = [
   { accent: "#c2b59b", ar: "الفنون", en: "Arts", img: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=700&q=75", icon: "kayan_profile_Arts.svg" },
@@ -71,7 +72,14 @@ export default async function LocaleHomePage({
     getLocalizedEvents(activeLocale),
     getLocalizedPosts(activeLocale),
   ]);
-  const featuredEvent = events.find((event) => event.isFeatured) ?? events[0];
+  const featuredRaw = events.filter((e) => e.isFeatured);
+  const featuredEvents = (featuredRaw.length > 0 ? featuredRaw : events.slice(0, 1)).map((e) => ({
+    slug: e.slug,
+    title: e.title,
+    location: e.location,
+    startDate: e.startDate.toISOString(),
+    coverImage: e.coverImage,
+  }));
 
   return (
     <main>
@@ -120,48 +128,11 @@ export default async function LocaleHomePage({
             </div>
           </div>
 
-          {featuredEvent ? (
+          {featuredEvents.length > 0 && (
             <div className="col-span-12 hidden lg:col-span-5 lg:col-start-8 lg:block xl:col-span-4 xl:col-start-9">
-              <div className="glass-panel ghost-border group relative p-5 xl:p-6">
-                <div className="absolute top-0 start-0 h-px w-full bg-gradient-to-r from-secondary/50 to-transparent" />
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <HugeiconsIcon className="text-secondary" icon={StarIcon} size={16} strokeWidth={1.8} />
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-on-surface-variant">
-                      {activeLocale === "ar" ? "الفعالية المميّزة" : "Featured Event"}
-                    </span>
-                  </div>
-                  <span className="badge-teal font-body">{featuredEvent.location || (activeLocale === "ar" ? "مسقط" : "Muscat")}</span>
-                </div>
-                <Link className="block" href={`/${activeLocale}/events/${featuredEvent.slug}`}>
-                  <div className="relative mb-4 h-32 overflow-hidden">
-                    <Image alt={featuredEvent.title} className="object-cover grayscale transition-all duration-700 group-hover:scale-100 group-hover:grayscale-0" fill sizes="400px" src={featuredEvent.coverImage} />
-                    <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(13,15,15,0.95),rgba(13,15,15,0.22))]" />
-                    <div className="absolute bottom-0 inset-x-0 flex items-end justify-between bg-gradient-to-t from-surface/90 to-transparent p-3">
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="font-mono text-xl leading-none text-secondary">{new Intl.NumberFormat(activeLocale === "ar" ? "ar-OM" : "en-GB", { minimumIntegerDigits: 2 }).format(featuredEvent.startDate.getDate())}</span>
-                        <span className="text-[10px] uppercase tracking-widest text-on-surface-variant">{new Intl.DateTimeFormat(activeLocale === "ar" ? "ar-OM" : "en-GB", { month: "short", year: "numeric" }).format(featuredEvent.startDate)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <h3 className="mb-4 text-lg font-semibold leading-[1.3] text-on-surface transition-colors group-hover:text-secondary">{featuredEvent.title}</h3>
-                  <div className="mb-4 flex items-center gap-4 text-on-surface-variant">
-                    <div className="flex min-w-0 items-center gap-1.5">
-                      <HugeiconsIcon className="shrink-0 text-secondary" icon={Location01Icon} size={13} strokeWidth={1.8} />
-                      <span className="truncate text-[11px]">{featuredEvent.location || "Muscat"}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between border-t border-outline-variant/30 pt-4">
-                    <span className="text-[10px] uppercase tracking-[0.18em] text-secondary">{activeLocale === "ar" ? "الحجز متاح" : "Registration Open"}</span>
-                    <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-on-surface transition-colors group-hover:text-secondary">
-                      {activeLocale === "ar" ? "التفاصيل" : "Details"}
-                      <HugeiconsIcon className="rtl:rotate-180" icon={ArrowRight01Icon} size={15} strokeWidth={1.8} />
-                    </span>
-                  </div>
-                </Link>
-              </div>
+              <FeaturedEventCyclerCard events={featuredEvents} locale={activeLocale} />
             </div>
-          ) : null}
+          )}
         </div>
       </section>
 
