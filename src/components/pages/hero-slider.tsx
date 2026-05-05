@@ -317,7 +317,7 @@ export function HeroSlider({
         >
           <div className="mb-8 flex items-center gap-3">
             <div className="h-px w-8 bg-secondary" />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-secondary">
+            <span className="text-[11px] font-semibold uppercase text-secondary">
               {locale === "ar"
                 ? "كيان للتدريب والاستشارات • عُمان"
                 : "Kayan Training & Consulting • Oman"}

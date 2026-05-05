@@ -1018,6 +1018,48 @@ export function EventForm({
                     )} />
                   </div>
 
+                  <div className="h-px bg-zinc-100" />
+
+                  {/* SEO moved from right sidebar into Identity tab */}
+                  <div className="space-y-3">
+                    <p className={cn(labelCls, "mb-0")}>SEO Metadata</p>
+                    <FormField
+                      control={form.control}
+                      name={activeLocale === "en" ? "seoTitleEn" : "seoTitleAr"}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FL>SEO Title ({activeLocale.toUpperCase()})</FL>
+                          <FormControl>
+                            <Input
+                              className={inputCls}
+                              dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={activeLocale === "en" ? "seoDescriptionEn" : "seoDescriptionAr"}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FL>SEO Description ({activeLocale.toUpperCase()})</FL>
+                          <FormControl>
+                            <Textarea
+                              className={cn(inputCls, "h-auto resize-none py-2")}
+                              dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                              rows={3}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                 </div>
               )}
 
@@ -1933,36 +1975,6 @@ export function EventForm({
                     title="Issue certificate"
                     onCheckedChange={field.onChange}
                   />
-                )} />
-              </div>
-            </div>
-
-            <div className="h-px bg-zinc-100" />
-
-            {/* ── SEO ── */}
-            <div>
-              <p className={cn(labelCls, "mb-2.5")}>SEO Metadata</p>
-              <div className="space-y-3">
-                <FormField control={form.control} name={activeLocale === "en" ? "seoTitleEn" : "seoTitleAr"} render={({ field }) => (
-                  <FormItem>
-                    <FL>SEO Title ({activeLocale.toUpperCase()})</FL>
-                    <FormControl><Input className={inputCls} dir={activeLocale === "ar" ? "rtl" : "ltr"} {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name={activeLocale === "en" ? "seoDescriptionEn" : "seoDescriptionAr"} render={({ field }) => (
-                  <FormItem>
-                    <FL>SEO Description ({activeLocale.toUpperCase()})</FL>
-                    <FormControl>
-                      <Textarea
-                        className={cn(inputCls, "h-auto resize-none py-2")}
-                        dir={activeLocale === "ar" ? "rtl" : "ltr"}
-                        rows={3}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
                 )} />
               </div>
             </div>

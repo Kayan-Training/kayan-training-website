@@ -102,7 +102,7 @@ export default async function LocaleHomePage({
           <div className="stagger col-span-12 lg:col-span-7 xl:col-span-6">
             <div className="mb-8 flex items-center gap-3">
               <div className="h-px w-8 bg-secondary" />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-secondary">
+              <span className="text-[11px] font-semibold uppercase text-secondary">
                 {activeLocale === "ar" ? "كيان للتدريب والاستشارات • عُمان" : "Kayan Training & Consulting • Oman"}
               </span>
             </div>
@@ -140,7 +140,7 @@ export default async function LocaleHomePage({
       <section className="border-y border-outline-variant/20 bg-surface py-16 md:py-20">
         <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-10 px-6 md:px-10 lg:flex-row lg:items-center lg:gap-16">
           <div className="shrink-0">
-            <span className="mb-5 block text-[11px] font-semibold uppercase tracking-[0.3em] text-secondary">{activeLocale === "ar" ? "الاعتماد المهني" : "Professional Accreditation"}</span>
+            <span className="mb-5 block text-[11px] font-semibold uppercase text-secondary">{activeLocale === "ar" ? "الاعتماد المهني" : "Professional Accreditation"}</span>
             <div className="accred-highlight">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-secondary/40 bg-secondary/15 text-secondary">
                 <HugeiconsIcon icon={StarIcon} size={28} strokeWidth={1.5} />
@@ -154,7 +154,7 @@ export default async function LocaleHomePage({
           </div>
           <div className="hidden w-px self-stretch bg-outline-variant/25 lg:block" />
           <div className="min-w-0 flex-1">
-            <span className="mb-5 block text-[11px] font-semibold uppercase tracking-[0.3em] text-on-surface-variant">{activeLocale === "ar" ? "من عملائنا" : "Clients Include"}</span>
+            <span className="mb-5 block text-[11px] font-semibold uppercase text-on-surface-variant">{activeLocale === "ar" ? "من عملائنا" : "Clients Include"}</span>
             <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
               {["OQ", "OXY OMAN", activeLocale === "ar" ? "جهات حكومية" : "Government Entities", activeLocale === "ar" ? "قطاع خاص" : "Private Sector"].map((client) => (
                 <span className="font-display text-sm font-black uppercase tracking-widest text-on-surface-variant/50" key={client}>{client}</span>
@@ -168,7 +168,7 @@ export default async function LocaleHomePage({
         <div className="mx-auto w-full max-w-[1440px] px-6 md:px-10">
           <div className="mb-14 flex flex-col justify-between gap-8 md:flex-row md:items-end">
             <div>
-              <span className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.35em] text-secondary">{activeLocale === "ar" ? "التخصصات" : "Specializations"}</span>
+              <span className="mb-3 block text-[11px] font-semibold uppercase text-secondary">{activeLocale === "ar" ? "التخصصات" : "Specializations"}</span>
               <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-semibold leading-tight text-on-surface">{activeLocale === "ar" ? "مجالات التدريب" : "Training Domains"}</h2>
             </div>
             <p className="max-w-sm text-sm leading-relaxed text-on-surface-variant">
@@ -202,7 +202,7 @@ export default async function LocaleHomePage({
         <div className="mx-auto w-full max-w-[1440px] px-6 md:px-10">
           <div className="mb-10 flex items-end justify-between gap-6">
             <div>
-              <span className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.35em] text-secondary">{activeLocale === "ar" ? "الفعاليات القادمة" : "Upcoming Events"}</span>
+              <span className="mb-3 block text-[11px] font-semibold uppercase text-secondary">{activeLocale === "ar" ? "الفعاليات القادمة" : "Upcoming Events"}</span>
               <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-semibold leading-tight">{activeLocale === "ar" ? "برامج مختارة" : "Selected Programs"}</h2>
             </div>
             <Link className="hidden text-xs uppercase tracking-widest text-secondary transition-colors hover:text-primary sm:inline-flex" href={`/${activeLocale}/events`}>
@@ -234,7 +234,7 @@ export default async function LocaleHomePage({
         <div className="mx-auto w-full max-w-[1440px] px-6 md:px-10">
           <div className="mb-10 flex items-end justify-between gap-6">
             <div>
-              <span className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.35em] text-secondary">{activeLocale === "ar" ? "المعرفة" : "Knowledge"}</span>
+              <span className="mb-3 block text-[11px] font-semibold uppercase text-secondary">{activeLocale === "ar" ? "المعرفة" : "Knowledge"}</span>
               <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-semibold leading-tight">{activeLocale === "ar" ? "أحدث المقالات" : "Latest Posts"}</h2>
             </div>
             <Link className="text-xs uppercase tracking-widest text-secondary transition-colors hover:text-primary" href={`/${activeLocale}/posts`}>

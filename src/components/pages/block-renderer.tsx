@@ -511,7 +511,7 @@ function CtaBannerRenderer({
           <div className="flex flex-col items-start justify-between gap-10 lg:flex-row lg:items-end">
             <div className="max-w-[36rem]">
               {block.eyebrow && (
-                <span className="mb-5 block font-body text-[10px] font-bold uppercase tracking-[0.32em] text-secondary">
+                <span className="mb-5 block font-body text-[10px] font-bold uppercase text-secondary">
                   {block.eyebrow}
                 </span>
               )}
@@ -601,7 +601,7 @@ async function AccreditationBarRenderer({
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-10 px-6 md:px-10 lg:flex-row lg:items-center lg:gap-16">
         <div className="shrink-0">
           {block.eyebrow && (
-            <span className="mb-5 block text-[11px] font-semibold uppercase tracking-[0.3em] text-secondary">
+            <span className="mb-5 block text-[11px] font-semibold uppercase text-secondary">
               {block.eyebrow}
             </span>
           )}
@@ -691,7 +691,7 @@ async function HomeEventsCarouselRenderer({
         <div className="mb-10 flex items-end justify-between gap-6">
           <div>
             {block.eyebrow && (
-              <span className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.35em] text-secondary">
+              <span className="mb-3 block text-[11px] font-semibold uppercase text-secondary">
                 {block.eyebrow}
               </span>
             )}
@@ -757,7 +757,7 @@ async function HomePostsGridRenderer({
         <div className="mb-10 flex items-end justify-between gap-6">
           <div>
             {block.eyebrow && (
-              <span className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.35em] text-secondary">
+              <span className="mb-3 block text-[11px] font-semibold uppercase text-secondary">
                 {block.eyebrow}
               </span>
             )}

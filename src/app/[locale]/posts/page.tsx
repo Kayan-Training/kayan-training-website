@@ -101,7 +101,7 @@ export default async function PostsPage({
         <div className="absolute inset-0 bg-gradient-to-b from-surface-container-lowest via-surface-container-lowest/95 to-surface-container-lowest/90" />
         <div className="relative z-10 mx-auto w-full max-w-[1440px] px-6 md:px-10">
           {listingConfig?.eyebrow && (
-            <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.35em] text-primary">
+            <span className="mb-3 block text-[11px] font-bold uppercase text-primary">
               {listingConfig.eyebrow}
             </span>
           )}

@@ -85,7 +85,7 @@ export default async function KnowledgePage({
         </div>
         <div className="relative z-10 mx-auto w-full max-w-360 px-6 py-20 md:px-10 md:py-28">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-7 items-center rounded-full border border-primary/30 bg-primary/10 px-3 text-[10px] font-bold uppercase tracking-[0.3em] text-primary">
+            <span className="inline-flex h-7 items-center rounded-full border border-primary/30 bg-primary/10 px-3 text-[10px] font-bold uppercase text-primary">
               {eyebrow}
             </span>
           </div>

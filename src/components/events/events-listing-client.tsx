@@ -144,7 +144,7 @@ export function EventsListingClient({
             <span className="text-xs text-primary">{locale === "ar" ? "الفعاليات" : "Events"}</span>
           </div>
           {eyebrow && (
-            <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.35em] text-primary">{eyebrow}</span>
+            <span className="mb-3 block text-[11px] font-bold uppercase text-primary">{eyebrow}</span>
           )}
           <h1 className="mb-4 text-[clamp(2.5rem,5vw,4rem)] font-semibold leading-tight tracking-tight text-on-surface">
             {heading ?? (locale === "ar" ? "الفعاليات والبرامج" : "Events & Programs")}
