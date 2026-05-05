@@ -1463,17 +1463,39 @@ export function EventForm({
                           </div>
                           <div className="border-r border-zinc-100">
                             <FormField control={form.control} name={`agenda.${index}.type`} render={({ field }) => (
-                              <select className="h-10 w-full appearance-none bg-transparent px-3 text-[12px] font-medium text-zinc-600 outline-none focus:bg-teal-50/40" value={field.value} onChange={(e) => field.onChange(e.target.value)}>
-                                {Object.entries(agendaTypeLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                              </select>
+                              <Select value={field.value} onValueChange={(v) => field.onChange(v ?? "talk")}>
+                                <SelectTrigger className="!h-10 w-full rounded-none border-0 bg-transparent px-3 text-[12px] font-medium text-zinc-600 shadow-none focus:ring-0">
+                                  <span>{agendaTypeLabels[field.value as keyof typeof agendaTypeLabels] ?? "Talk"}</span>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.entries(agendaTypeLabels).map(([v, l]) => (
+                                    <SelectItem key={v} value={v}>
+                                      {l}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             )} />
                           </div>
                           <div className="border-r border-zinc-100">
                             <FormField control={form.control} name={`agenda.${index}.trainerId`} render={({ field }) => (
-                              <select className="h-10 w-full appearance-none bg-transparent px-3 text-[12px] text-zinc-600 outline-none focus:bg-teal-50/40" value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value || undefined)}>
-                                <option value="">No speaker</option>
-                                {trainerOptions.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                              </select>
+                              <Select value={field.value ?? "__none__"} onValueChange={(v) => field.onChange(v === "__none__" ? undefined : v)}>
+                                <SelectTrigger className="!h-10 w-full rounded-none border-0 bg-transparent px-3 text-[12px] text-zinc-600 shadow-none focus:ring-0">
+                                  <span>
+                                    {field.value
+                                      ? trainerOptions.find((t) => t.value === field.value)?.label ?? "Speaker"
+                                      : "No speaker"}
+                                  </span>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__none__">No speaker</SelectItem>
+                                  {trainerOptions.map((t) => (
+                                    <SelectItem key={t.value} value={t.value}>
+                                      {t.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             )} />
                           </div>
                           <div className="flex items-center justify-center">

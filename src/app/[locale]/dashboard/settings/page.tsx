@@ -19,8 +19,8 @@ export default async function SettingsDashboardPage({
   }
 
   return (
-    <section className="space-y-5 max-w-6xl mx-auto">
-      <div className="">
+    <section className="mx-auto max-w-6xl space-y-5">
+      <div>
         <h1 className="text-2xl font-semibold">Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Configure site-wide information, contact details, and social links.
