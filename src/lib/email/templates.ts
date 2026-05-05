@@ -11,17 +11,24 @@ type BaseTemplateInput = {
 };
 
 const brand = {
-  border: "#d9e3df",
-  card: "#f7fbf9",
-  primary: "#28b473",
+  bg: "#edf3f1",
+  border: "#d5e3dc",
+  card: "#f8fcfa",
+  footerBg: "#f2f7f4",
+  headerBg: "#10221a",
+  primary: "#1fa66a",
   text: "#10221a",
   textMuted: "#4b6358",
+  white: "#ffffff",
 };
 
 const appBaseUrl =
   process.env.NEXT_PUBLIC_APP_URL ?? process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
-const logoUrl = `${appBaseUrl.replace(/\/$/, "")}/brand/kayan-logo.svg`;
+const logoUrl = `${appBaseUrl.replace(/\/$/, "")}/brand/kayan-logo.png`;
+const supportEmail = process.env.EMAIL_SUPPORT ?? "support@kayan.om";
+const supportPhone = process.env.EMAIL_SUPPORT_PHONE ?? "+968 0000 0000";
+const websiteUrl = appBaseUrl.replace(/\/$/, "");
 
 function withShell({
   ctaLabel,
@@ -33,25 +40,56 @@ function withShell({
   title,
 }: BaseTemplateInput) {
   const isAr = locale === "ar";
+  const currentYear = new Date().getFullYear();
+  const securityNote = isAr
+    ? "إذا لم تكن أنت صاحب هذا الطلب، تجاهل هذا البريد. لا تشارك هذا الرابط مع أي شخص."
+    : "If you did not make this request, you can ignore this email. Do not share this link with anyone.";
+  const automatedNotice = isAr
+    ? "هذه رسالة آلية من كيان. الرجاء عدم الرد على هذا البريد."
+    : "This is an automated message from Kayan. Please do not reply to this email.";
+  const supportLabel = isAr ? "الدعم" : "Support";
+  const phoneLabel = isAr ? "الهاتف" : "Phone";
+  const websiteLabel = isAr ? "الموقع" : "Website";
+  const legalLine = isAr
+    ? `© ${currentYear} كيان. جميع الحقوق محفوظة.`
+    : `© ${currentYear} Kayan. All rights reserved.`;
   const html = `
-    <div style="margin:0;padding:32px 16px;background:#f2f7f5;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid ${brand.border};border-radius:14px;overflow:hidden;">
+    <div style="margin:0;padding:32px 16px;background:${brand.bg};">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:${brand.white};border:1px solid ${brand.border};border-radius:14px;overflow:hidden;">
         <tr>
-          <td style="padding:24px 24px 10px 24px;border-bottom:1px solid ${brand.border};">
-            <img src="${logoUrl}" alt="Kayan" style="height:36px;width:auto;display:block;" />
+          <td style="padding:20px 24px;background:${brand.headerBg};">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+              <tr>
+                <td>
+                  <img src="${logoUrl}" alt="Kayan" style="height:34px;width:auto;display:block;" />
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
         <tr>
-          <td style="padding:24px;background:${brand.card};font-family:Arial,sans-serif;line-height:1.7;color:${brand.text};direction:${isAr ? "rtl" : "ltr"};text-align:${isAr ? "right" : "left"};">
+          <td style="padding:26px 24px;background:${brand.card};font-family:Arial,sans-serif;line-height:1.7;color:${brand.text};direction:${isAr ? "rtl" : "ltr"};text-align:${isAr ? "right" : "left"};">
             <h1 style="margin:0 0 12px 0;font-size:22px;line-height:1.4;color:${brand.text};">${title}</h1>
             <p style="margin:0 0 16px 0;color:${brand.textMuted};font-size:15px;">${intro}</p>
             ${
               ctaLabel && ctaUrl
-                ? `<p style="margin:0 0 18px 0;"><a href="${ctaUrl}" style="display:inline-block;background:${brand.primary};color:#ffffff;text-decoration:none;font-weight:700;padding:11px 16px;border-radius:10px;">${ctaLabel}</a></p>
+                ? `<p style="margin:0 0 16px 0;"><a href="${ctaUrl}" style="display:inline-block;background:${brand.primary};color:${brand.white};text-decoration:none;font-weight:700;padding:12px 18px;border-radius:10px;">${ctaLabel}</a></p>
                   <p style="margin:0 0 18px 0;color:${brand.textMuted};font-size:13px;word-break:break-all;">${ctaUrl}</p>`
                 : ""
             }
             <p style="margin:0;color:${brand.text};font-size:14px;">${signature}</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 24px;background:${brand.footerBg};border-top:1px solid ${brand.border};font-family:Arial,sans-serif;direction:${isAr ? "rtl" : "ltr"};text-align:${isAr ? "right" : "left"};">
+            <p style="margin:0 0 10px 0;font-size:12px;line-height:1.6;color:${brand.textMuted};">${securityNote}</p>
+            <p style="margin:0 0 10px 0;font-size:12px;line-height:1.6;color:${brand.textMuted};">${automatedNotice}</p>
+            <p style="margin:0;font-size:12px;line-height:1.7;color:${brand.text};">
+              ${supportLabel}: <a href="mailto:${supportEmail}" style="color:${brand.primary};text-decoration:none;">${supportEmail}</a><br />
+              ${phoneLabel}: ${supportPhone}<br />
+              ${websiteLabel}: <a href="${websiteUrl}" style="color:${brand.primary};text-decoration:none;">${websiteUrl}</a>
+            </p>
+            <p style="margin:10px 0 0 0;font-size:11px;line-height:1.6;color:${brand.textMuted};">${legalLine}</p>
           </td>
         </tr>
       </table>

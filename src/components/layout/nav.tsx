@@ -8,6 +8,13 @@ import { Menu01Icon, UserIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { LocaleSwitcher } from "@/components/i18n/locale-switcher";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { signOut, useSession } from "@/lib/auth-client";
 
 function isActive(pathname: string | null, href: string) {
@@ -80,16 +87,24 @@ export function SiteNav({
 
         <div className="flex items-center gap-3">
           <LocaleSwitcher locale={locale} />
-          {isAdmin ? (
-            <Link className="ghost-border hidden h-9 items-center gap-1.5 px-3 text-[12px] text-on-surface-variant transition-colors hover:text-on-surface md:flex" href={`/${locale}/dashboard`}>
-              <HugeiconsIcon icon={UserIcon} size={14} strokeWidth={2} />
-              <span>{locale === "ar" ? "لوحة التحكم" : "Dashboard"}</span>
-            </Link>
-          ) : isLoggedIn ? (
-            <Link className="ghost-border hidden h-9 items-center gap-1.5 px-3 text-[12px] text-on-surface-variant transition-colors hover:text-on-surface md:flex" href={`/${locale}/events`}>
-              <HugeiconsIcon icon={UserIcon} size={14} strokeWidth={2} />
-              <span>{locale === "ar" ? "فعالياتي" : "My Events"}</span>
-            </Link>
+          {isLoggedIn ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                aria-label={locale === "ar" ? "قائمة المستخدم" : "User menu"}
+                className="ghost-border hidden h-9 w-9 items-center justify-center text-on-surface-variant transition-colors hover:text-on-surface md:flex"
+              >
+                <HugeiconsIcon icon={UserIcon} size={16} strokeWidth={2} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem onClick={() => router.push(isAdmin ? `/${locale}/dashboard` : `/${locale}/events`)}>
+                  {isAdmin ? (locale === "ar" ? "لوحة التحكم" : "Dashboard") : locale === "ar" ? "فعالياتي" : "My Events"}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => void handleSignOut()}>
+                  {locale === "ar" ? "تسجيل الخروج" : "Sign out"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <Link className="ghost-border hidden h-9 items-center gap-1.5 px-3 text-[12px] text-on-surface-variant transition-colors hover:text-on-surface md:flex" href={`/${locale}/auth`}>
               <HugeiconsIcon icon={UserIcon} size={14} strokeWidth={2} />
@@ -99,15 +114,6 @@ export function SiteNav({
           <Link className="hidden h-9 items-center bg-primary-container px-5 text-[12px] font-semibold uppercase tracking-widest text-on-primary-container transition-all hover:bg-secondary hover:text-surface-dim sm:flex" href={`/${locale}/events`}>
             {locale === "ar" ? "الفعاليات" : "View Events"}
           </Link>
-          {isLoggedIn ? (
-            <button
-              className="ghost-border hidden h-9 items-center px-3 text-[12px] text-on-surface-variant transition-colors hover:text-on-surface md:flex"
-              onClick={() => void handleSignOut()}
-              type="button"
-            >
-              {locale === "ar" ? "تسجيل الخروج" : "Sign out"}
-            </button>
-          ) : null}
           <button className="ghost-border flex h-9 w-9 items-center justify-center text-on-surface-variant transition-colors hover:text-on-surface lg:hidden" type="button" aria-label="Open menu" onClick={() => setMobileOpen((v) => !v)}>
             <HugeiconsIcon icon={Menu01Icon} size={18} strokeWidth={2} />
           </button>

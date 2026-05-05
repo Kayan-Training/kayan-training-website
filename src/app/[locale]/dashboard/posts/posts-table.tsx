@@ -51,8 +51,8 @@ export function PostsTable({ locale, posts }: { locale: string; posts: PostRow[]
   return (
     <div className="grid gap-4">
       <div className="rounded-xl border border-border/70 bg-card p-4">
-        <div className="grid gap-3 lg:grid-cols-[1fr_160px_auto]">
-          <div className="relative">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative min-w-[260px] flex-[1.6_1_320px]">
             <HugeiconsIcon
               className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
               icon={Search01Icon}
@@ -65,6 +65,7 @@ export function PostsTable({ locale, posts }: { locale: string; posts: PostRow[]
               value={query}
             />
           </div>
+          <div className="w-[170px] shrink-0">
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "all")}>
             <SelectTrigger className="!h-10 w-full text-xs">
               <span>
@@ -81,8 +82,9 @@ export function PostsTable({ locale, posts }: { locale: string; posts: PostRow[]
               ))}
             </SelectContent>
           </Select>
+          </div>
           <Button
-            className="h-10 gap-1.5 text-xs"
+            className="h-10 shrink-0 gap-1.5 text-xs"
             onClick={() => {
               setQuery("");
               setStatusFilter("all");

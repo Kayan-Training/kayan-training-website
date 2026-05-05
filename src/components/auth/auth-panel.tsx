@@ -127,7 +127,7 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
-  const [preferredLocale, setPreferredLocale] = useState<"ar" | "en">("ar");
+  const [preferredLocale, setPreferredLocale] = useState<"ar" | "en">(locale);
   const [agree, setAgree] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

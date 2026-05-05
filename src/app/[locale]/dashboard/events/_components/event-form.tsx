@@ -1867,7 +1867,7 @@ export function EventForm({
         {/* ════════════════════════════════════════════════════════════════
             RIGHT SETTINGS RAIL  w-72
             Wider than before so text is never squished.
-            Status · Featured · Registrations open · Certificate · SEO
+            Status · Featured · Registrations open · Certificate
         ════════════════════════════════════════════════════════════════ */}
         <aside
           aria-label="Event settings"
@@ -1880,7 +1880,7 @@ export function EventForm({
               <h2 className="text-[13px] font-bold text-zinc-800">Settings</h2>
             </div>
             <p className="mt-1 text-[11.5px] leading-relaxed text-zinc-400">
-              Visibility, registration, certificate and SEO controls
+              Visibility, registration and certificate controls
             </p>
           </div>
 

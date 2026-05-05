@@ -5,7 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Eye, FileText, Play } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { UploadProgress } from "@/components/ui/upload-progress";
 import { uploadMediaFile } from "@/lib/client/media-upload";
 import { cn } from "@/lib/utils";
@@ -349,12 +350,27 @@ export function MediaGrid({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState("");
   const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
+  const [typeFilter, setTypeFilter] = useState<"all" | "image" | "video" | "other">("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "nameAsc">("newest");
 
-  const filtered = items.filter(
-    (m) =>
-      !query.trim() ||
-      m.originalName.toLowerCase().includes(query.toLowerCase()),
-  );
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = items.filter((m) => {
+      const matchesQuery = !q || m.originalName.toLowerCase().includes(q);
+      const type = m.mimeType.startsWith("image/")
+        ? "image"
+        : m.mimeType.startsWith("video/")
+          ? "video"
+          : "other";
+      const matchesType = typeFilter === "all" || typeFilter === type;
+      return matchesQuery && matchesType;
+    });
+    const sorted = [...list];
+    if (sortBy === "oldest") sorted.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    else if (sortBy === "nameAsc") sorted.sort((a, b) => a.originalName.localeCompare(b.originalName));
+    else sorted.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return sorted;
+  }, [items, query, typeFilter, sortBy]);
 
   function handleDelete(id: string) {
     startTransition(async () => {
@@ -419,12 +435,51 @@ export function MediaGrid({
             />
             <UploadProgress isActive={isUploading} percent={uploadProgress} status={uploadStatus} />
           </div>
-          <Input
-            className="h-10 max-w-sm"
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by filename..."
-            value={query}
-          />
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              className="h-10 min-w-[260px] flex-[1.6_1_320px]"
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by filename..."
+              value={query}
+            />
+            <div className="w-[150px] shrink-0">
+              <Select value={typeFilter} onValueChange={(v) => setTypeFilter((v as "all" | "image" | "video" | "other") ?? "all")}>
+                <SelectTrigger className="!h-10 w-full text-xs">
+                  <span>{typeFilter === "all" ? "All types" : typeFilter}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All types</SelectItem>
+                  <SelectItem value="image">image</SelectItem>
+                  <SelectItem value="video">video</SelectItem>
+                  <SelectItem value="other">other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-[170px] shrink-0">
+              <Select value={sortBy} onValueChange={(v) => setSortBy((v as "newest" | "oldest" | "nameAsc") ?? "newest")}>
+                <SelectTrigger className="!h-10 w-full text-xs">
+                  <span>{sortBy === "oldest" ? "Oldest first" : sortBy === "nameAsc" ? "Name (A-Z)" : "Newest first"}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest first</SelectItem>
+                  <SelectItem value="oldest">Oldest first</SelectItem>
+                  <SelectItem value="nameAsc">Name (A-Z)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              className="h-10 shrink-0 text-xs"
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setQuery("");
+                setTypeFilter("all");
+                setSortBy("newest");
+              }}
+            >
+              Reset
+            </Button>
+          </div>
           <p className="mt-2 text-xs text-muted-foreground">
             Showing{" "}
             <span className="font-medium text-foreground">

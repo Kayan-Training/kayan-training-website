@@ -47,7 +47,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { UploadProgress } from "@/components/ui/upload-progress";
 import {
   Select,
@@ -174,6 +181,18 @@ function formatPrice(price?: number | null, currency = "OMR") {
   return price === 0 ? "Free" : `${price.toFixed(3)} ${currency}`;
 }
 
+function isLikelyImageUrl(url: string) {
+  const clean = url.split("?")[0]?.toLowerCase() ?? "";
+  return (
+    clean.endsWith(".jpg") ||
+    clean.endsWith(".jpeg") ||
+    clean.endsWith(".png") ||
+    clean.endsWith(".webp") ||
+    clean.endsWith(".avif") ||
+    clean.endsWith(".gif")
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // StyledSelect — wraps shadcn Select with proper label display
 // ─────────────────────────────────────────────────────────────────────────────
@@ -244,9 +263,6 @@ function DynamicFormField({
   value: string;
   onChange: (v: string) => void;
 }) {
-  const base =
-    "h-10 w-full rounded-lg border border-border/60 bg-background/60 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/40 transition-colors placeholder:text-muted-foreground/50";
-
   if (field.type === "select") {
     return (
       <div>
@@ -265,8 +281,38 @@ function DynamicFormField({
     return (
       <div className="sm:col-span-2">
         <FieldLabel required={field.required}>{field.label}</FieldLabel>
-        <textarea
-          className={cn(base, "h-20 resize-none py-2.5")}
+        <Textarea
+          className="h-20 resize-none py-2.5"
+          placeholder={field.placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      </div>
+    );
+  }
+
+  if (field.type === "date") {
+    return (
+      <div>
+        <FieldLabel required={field.required}>{field.label}</FieldLabel>
+        <Input
+          className="h-10"
+          type="date"
+          placeholder={field.placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      </div>
+    );
+  }
+
+  if (field.type === "number") {
+    return (
+      <div>
+        <FieldLabel required={field.required}>{field.label}</FieldLabel>
+        <Input
+          className="h-10"
+          type="number"
           placeholder={field.placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -323,8 +369,8 @@ function DynamicFormField({
   return (
     <div>
       <FieldLabel required={field.required}>{field.label}</FieldLabel>
-      <input
-        className={base}
+      <Input
+        className="h-10"
         type={field.type}
         placeholder={field.placeholder}
         value={value}
@@ -678,7 +724,7 @@ function CreateRegistrationDialog({
   };
 
   return (
-    <DialogContent className="max-w-3xl gap-0 p-0 overflow-hidden">
+    <DialogContent className="max-w-6xl gap-0 overflow-hidden p-0">
       {/* Header */}
       <div className="border-b border-border/60 bg-muted/20 px-6 py-4">
         <DialogTitle className="text-base font-semibold">
@@ -1174,7 +1220,7 @@ function PaymentDialog({
   const canAct = row.paymentStatus === "pending";
 
   return (
-    <DialogContent className="max-w-lg">
+    <DialogContent className="max-w-6xl">
       <DialogHeader>
         <DialogTitle>Payment — {row.registrantName}</DialogTitle>
       </DialogHeader>
@@ -1210,18 +1256,30 @@ function PaymentDialog({
             <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Proof
             </p>
-            <a
-              className="block overflow-hidden rounded-md border border-border/60"
-              href={row.paymentProofUrl}
-              rel="noreferrer"
-              target="_blank"
-            >
-              <img
-                alt="Payment proof"
-                className="max-h-48 w-full object-contain bg-muted"
-                src={row.paymentProofUrl}
-              />
-            </a>
+            {isLikelyImageUrl(row.paymentProofUrl) ? (
+              <a
+                className="block overflow-hidden rounded-md border border-border/60"
+                href={row.paymentProofUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <img
+                  alt="Payment proof"
+                  className="max-h-48 w-full object-contain bg-muted"
+                  src={row.paymentProofUrl}
+                />
+              </a>
+            ) : (
+              <a
+                className="inline-flex h-9 items-center rounded-md border border-border px-3 text-xs font-medium hover:bg-muted"
+                href={row.paymentProofUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <ExternalLink className="mr-1.5 size-3.5" />
+                Open payment proof
+              </a>
+            )}
           </div>
         )}
         {canAct && (
@@ -1295,12 +1353,19 @@ function ManageRegistrationDialog({
   const [cancellationReason, setCancellationReason] = useState("");
   const [isPending, startTransition] = useTransition();
   const [isUploadingProof, setIsUploadingProof] = useState(false);
+  const [proofUploadProgress, setProofUploadProgress] = useState(0);
+  const [proofUploadStatus, setProofUploadStatus] = useState("");
 
   async function onProofFileSelected(file?: File) {
     if (!file) return;
     try {
       setIsUploadingProof(true);
-      const uploaded = await uploadMediaFile(file);
+      setProofUploadProgress(0);
+      setProofUploadStatus("");
+      const uploaded = await uploadMediaFile(file, {
+        onProgress: (percent) => setProofUploadProgress(percent),
+        onStatus: (status) => setProofUploadStatus(status),
+      });
       setPaymentProofUrl(uploaded.url);
       toast.success("Proof uploaded.");
     } catch (error) {
@@ -1334,7 +1399,7 @@ function ManageRegistrationDialog({
   }
 
   return (
-    <DialogContent className="max-w-3xl">
+    <DialogContent className="max-w-6xl">
       <DialogHeader>
         <DialogTitle>Manage Registration — {row.registrantName}</DialogTitle>
       </DialogHeader>
@@ -1408,19 +1473,31 @@ function ManageRegistrationDialog({
           <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
             {paymentProofUrl ? (
               <div className="space-y-2">
-                <a
-                  className="block overflow-hidden rounded-md border border-border/60 bg-muted"
-                  href={paymentProofUrl}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    alt="Payment proof"
-                    className="max-h-56 w-full object-contain"
-                    src={paymentProofUrl}
-                  />
-                </a>
+                {isLikelyImageUrl(paymentProofUrl) ? (
+                  <a
+                    className="block overflow-hidden rounded-md border border-border/60 bg-muted"
+                    href={paymentProofUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      alt="Payment proof"
+                      className="max-h-56 w-full object-contain"
+                      src={paymentProofUrl}
+                    />
+                  </a>
+                ) : (
+                  <a
+                    className="inline-flex h-9 items-center rounded-md border border-border px-3 text-xs font-medium hover:bg-muted"
+                    href={paymentProofUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <ExternalLink className="mr-1.5 size-3.5" />
+                    Open payment proof
+                  </a>
+                )}
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     className="h-8 text-xs"
@@ -1485,11 +1562,11 @@ function ManageRegistrationDialog({
                 value={paymentProofUrl}
                 onChange={(e) => setPaymentProofUrl(e.target.value)}
               />
-              {isUploadingProof ? (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Uploading proof…
-                </p>
-              ) : null}
+              <UploadProgress
+                isActive={isUploadingProof}
+                percent={proofUploadProgress}
+                status={proofUploadStatus}
+              />
             </div>
           </div>
         </div>
@@ -1552,7 +1629,7 @@ function ExportSchemaDialog() {
   ];
 
   return (
-    <DialogContent className="max-w-3xl">
+    <DialogContent className="max-w-6xl">
       <DialogHeader>
         <DialogTitle>CSV Export Columns</DialogTitle>
       </DialogHeader>
@@ -1790,7 +1867,7 @@ export function RegistrationsTable({
         }}
       >
         {cancelRow && (
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-6xl">
             <DialogHeader>
               <DialogTitle>Cancel registration</DialogTitle>
             </DialogHeader>
@@ -1829,7 +1906,7 @@ export function RegistrationsTable({
       <div className="grid gap-4">
         {/* Filters */}
         <div className="rounded-xl border border-border/70 bg-card p-4">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-start gap-3">
             <div className="relative min-w-[280px] flex-[1.6_1_360px]">
               <HugeiconsIcon
                 className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -1853,7 +1930,7 @@ export function RegistrationsTable({
                 { value: "cancelled", label: "Cancelled" },
                 { value: "attended", label: "Attended" },
               ]}
-              className="w-[160px]"
+              className="min-w-[160px] flex-1"
             />
             <StyledSelect
               value={paymentFilter}
@@ -1864,7 +1941,7 @@ export function RegistrationsTable({
                 { value: "paid", label: "Paid" },
                 { value: "failed", label: "Failed" },
               ]}
-              className="w-[150px]"
+              className="min-w-[150px] flex-1"
             />
             <StyledSelect
               value={methodFilter}
@@ -1875,7 +1952,7 @@ export function RegistrationsTable({
                 { value: "bank", label: "Bank" },
                 { value: "free", label: "Free" },
               ]}
-              className="w-[140px]"
+              className="min-w-[140px] flex-1"
             />
             <StyledSelect
               value={sortBy}
@@ -1886,7 +1963,7 @@ export function RegistrationsTable({
                 { value: "nameAsc", label: "Name (A–Z)" },
                 { value: "eventAsc", label: "Event (A–Z)" },
               ]}
-              className="w-[170px]"
+              className="min-w-[170px] flex-1"
             />
             {!fixedEventId && (
               <StyledSelect
@@ -1901,9 +1978,10 @@ export function RegistrationsTable({
                     }),
                   ),
                 ]}
-                className="w-[210px]"
+                className="min-w-[220px] flex-[1.2_1_220px]"
               />
             )}
+            <div className="flex w-full flex-wrap items-center gap-2">
             <Button
               className="h-10 shrink-0 text-xs"
               onClick={() => setIsSchemaOpen(true)}
@@ -1937,6 +2015,7 @@ export function RegistrationsTable({
               <RotateCcw className="size-3.5" />
               Reset
             </Button>
+            </div>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
             Showing{" "}
@@ -2065,22 +2144,16 @@ export function RegistrationsTable({
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
-                        <button
-                          className="rounded px-0.5 py-0.5"
-                          type="button"
-                          onClick={() => setPaymentRow(r)}
+                        <Badge
+                          className={cn(
+                            "border capitalize",
+                            paymentStatusColors[r.paymentStatus] ??
+                              "border-border bg-muted text-muted-foreground",
+                          )}
+                          variant="outline"
                         >
-                          <Badge
-                            className={cn(
-                              "border capitalize hover:opacity-90",
-                              paymentStatusColors[r.paymentStatus] ??
-                                "border-border bg-muted text-muted-foreground",
-                            )}
-                            variant="outline"
-                          >
-                            {r.paymentStatus}
-                          </Badge>
-                        </button>
+                          {r.paymentStatus}
+                        </Badge>
                         <Badge
                           className={cn(
                             "border uppercase",
@@ -2099,35 +2172,28 @@ export function RegistrationsTable({
                       }).format(r.createdAt)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="inline-flex items-center gap-1.5">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 px-3 text-xs"
-                          onClick={() => setPaymentRow(r)}
-                        >
-                          <CircleDollarSign className="mr-1 size-3.5" />
-                          Payment
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 px-3 text-xs"
-                          onClick={() => setManageRow(r)}
-                        >
-                          Manage
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 border-red-200 px-3 text-xs text-red-600 hover:bg-red-50"
-                          disabled={r.status === "cancelled"}
-                          onClick={() => setCancelRow(r)}
-                        >
-                          <Ban className="mr-1 size-3.5" />
-                          Cancel
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="h-8 rounded-md border border-input bg-transparent px-3 text-xs font-medium hover:bg-muted">
+                          Actions
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-fit min-w-0">
+                          <DropdownMenuItem onClick={() => setPaymentRow(r)}>
+                            <CircleDollarSign className="mr-1.5 size-3.5" />
+                            Payment
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setManageRow(r)}>
+                            Manage
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={r.status === "cancelled"}
+                            onClick={() => setCancelRow(r)}
+                            variant="destructive"
+                          >
+                            <Ban className="mr-1.5 size-3.5" />
+                            Cancel registration
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))

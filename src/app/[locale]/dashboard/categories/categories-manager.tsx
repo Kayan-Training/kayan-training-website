@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,6 +24,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ImagePickerField } from "@/components/ui/image-picker-field";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { createCategory, deleteCategory, fetchCategoryMediaAction, updateCategory } from "./_actions";
 
@@ -247,6 +249,24 @@ export function CategoriesManager({
   const [isPending, startTransition] = useTransition();
   const [addOpen, setAddOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<CategoryItem | null>(null);
+  const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"nameAsc" | "slugAsc">("nameAsc");
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = categories.filter((cat) => {
+      if (!q) return true;
+      return (
+        cat.nameEn.toLowerCase().includes(q) ||
+        cat.nameAr.toLowerCase().includes(q) ||
+        cat.slug.toLowerCase().includes(q)
+      );
+    });
+    const sorted = [...list];
+    if (sortBy === "slugAsc") sorted.sort((a, b) => a.slug.localeCompare(b.slug));
+    else sorted.sort((a, b) => a.nameEn.localeCompare(b.nameEn));
+    return sorted;
+  }, [categories, query, sortBy]);
 
   function handleCreate(form: FormState) {
     startTransition(async () => {
@@ -285,24 +305,61 @@ export function CategoriesManager({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header + Add button */}
-      <div className="flex items-center justify-between rounded-xl border border-border/70 bg-card px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-card px-5 py-4">
         <div>
           <p className="text-sm font-semibold">
             {categories.length} categor{categories.length === 1 ? "y" : "ies"}
           </p>
           <p className="text-xs text-muted-foreground">Manage training domain categories</p>
         </div>
-        <Button className="gap-2" type="button" onClick={() => setAddOpen(true)}>
+        <Button className="h-10 gap-2" type="button" onClick={() => setAddOpen(true)}>
           <Plus className="size-4" />
           New Category
         </Button>
       </div>
 
+      <div className="rounded-xl border border-border/70 bg-card p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <Input
+            className="h-10 min-w-[260px] flex-[1.6_1_320px]"
+            placeholder="Search by name or slug..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <div className="w-[170px] shrink-0">
+            <Select value={sortBy} onValueChange={(v) => setSortBy((v as "nameAsc" | "slugAsc") ?? "nameAsc")}>
+              <SelectTrigger className="!h-10 w-full text-xs">
+                <span>{sortBy === "slugAsc" ? "Slug (A-Z)" : "Name (A-Z)"}</span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="nameAsc">Name (A-Z)</SelectItem>
+                <SelectItem value="slugAsc">Slug (A-Z)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            className="h-10 shrink-0 text-xs"
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setQuery("");
+              setSortBy("nameAsc");
+            }}
+          >
+            Reset
+          </Button>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Showing <span className="font-medium text-foreground">{filtered.length}</span> of{" "}
+          <span className="font-medium text-foreground">{categories.length}</span> categories
+        </p>
+      </div>
+
       {/* Category list */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {categories.map((cat) => {
+        {filtered.map((cat) => {
           const iconObj = PROFILE_ICONS.find((i) => i.slug === cat.icon);
           return (
             <div

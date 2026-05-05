@@ -29,7 +29,7 @@ async function resolveUserLocale(email: string) {
     where: { email },
     select: { preferredLocale: true },
   });
-  return found?.preferredLocale === "en" ? "en" : "ar";
+  return found?.preferredLocale === "ar" ? "ar" : "en";
 }
 
 export const auth = betterAuth({

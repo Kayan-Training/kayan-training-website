@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
+import { isSystemPage } from "@/lib/pages/block-types";
 
 export async function fetchMediaAction(): Promise<{ id: string; originalName: string; url: string; mimeType: string }[]> {
   const items = await db.media.findMany({
@@ -95,4 +96,24 @@ export async function createPageAction(locale: string, formData: FormData): Prom
   });
   revalidatePath(`/${locale}/dashboard/pages`);
   redirect(`/${locale}/dashboard/pages/${slug}`);
+}
+
+export async function deletePageAction(locale: string, id: string): Promise<{ error?: string }> {
+  try {
+    const page = await db.page.findUnique({
+      where: { id },
+      select: { id: true, slug: true },
+    });
+
+    if (!page) return { error: "Page not found" };
+    if (isSystemPage(page.slug)) return { error: "System pages cannot be deleted" };
+
+    await db.page.delete({ where: { id: page.id } });
+
+    revalidatePath(`/${locale}/dashboard/pages`);
+    revalidatePath(`/${locale}/${page.slug}`);
+    return {};
+  } catch {
+    return { error: "Failed to delete page" };
+  }
 }
