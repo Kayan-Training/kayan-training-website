@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
-import { createEventAction } from "../_actions";
+import { createEventAction, fetchMediaAction } from "../_actions";
 import { EventForm } from "../_components/event-form";
 
 export const metadata = { title: "New Event — Events" };
@@ -33,6 +33,7 @@ export default async function NewEventPage({
   return (
     <EventForm
       categoryOptions={categoryOptions}
+      fetchMedia={fetchMediaAction}
       locale={activeLocale}
       onSubmit={boundAction}
       submitLabel="Create Event"

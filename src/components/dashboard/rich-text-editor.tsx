@@ -35,6 +35,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { UploadProgress } from "@/components/ui/upload-progress";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { uploadMediaFile } from "@/lib/client/media-upload";
 
@@ -54,6 +55,8 @@ export function RichTextEditor({
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageUploadProgress, setImageUploadProgress] = useState(0);
+  const [imageUploadStatus, setImageUploadStatus] = useState("");
   const [imageAlt, setImageAlt] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -196,9 +199,14 @@ export function RichTextEditor({
     }
 
     setIsUploadingImage(true);
+    setImageUploadProgress(0);
+    setImageUploadStatus("");
 
     try {
-      const media = await uploadMediaFile(selectedImage);
+      const media = await uploadMediaFile(selectedImage, {
+        onProgress: (percent) => setImageUploadProgress(percent),
+        onStatus: (status) => setImageUploadStatus(status),
+      });
       activeEditor
         .chain()
         .focus()
@@ -357,9 +365,15 @@ export function RichTextEditor({
                 Cancel
               </Button>
               <Button disabled={isUploadingImage} type="submit">
-                {isUploadingImage ? "Uploading..." : "Upload and insert"}
+                {isUploadingImage ? `Uploading... ${imageUploadProgress}%` : "Upload and insert"}
               </Button>
             </DialogFooter>
+            <UploadProgress
+              className="border-[#e7ddd1] bg-[#faf6f0]"
+              isActive={isUploadingImage}
+              percent={imageUploadProgress}
+              status={imageUploadStatus}
+            />
           </form>
         </DialogContent>
       </Dialog>

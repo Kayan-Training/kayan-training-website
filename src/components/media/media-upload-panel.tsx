@@ -5,6 +5,9 @@
  */
 import { useState } from "react";
 
+import { UploadProgress } from "@/components/ui/upload-progress";
+import { uploadMediaFile } from "@/lib/client/media-upload";
+
 type UploadResult = {
   key: string;
   fileUrl: string;
@@ -19,6 +22,8 @@ type MediaRecord = {
 
 export function MediaUploadPanel({ initialMedia = [] }: { initialMedia?: MediaRecord[] }) {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState("");
   const [message, setMessage] = useState("");
   const [uploaded, setUploaded] = useState<UploadResult | null>(null);
   const [media, setMedia] = useState<MediaRecord[]>(initialMedia);
@@ -48,70 +53,29 @@ export function MediaUploadPanel({ initialMedia = [] }: { initialMedia?: MediaRe
     if (!file) return;
 
     setIsUploading(true);
+    setUploadProgress(0);
+    setUploadStatus("");
     setMessage("");
     setUploaded(null);
 
     try {
-      const presignResponse = await fetch("/api/media/upload/presign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: file.name, mimeType: file.type, size: file.size }),
+      const uploadedMedia = await uploadMediaFile(file, {
+        onProgress: (percent) => setUploadProgress(percent),
+        onStatus: (status) => setUploadStatus(status),
       });
-
-      if (!presignResponse.ok) {
-        const payload = (await presignResponse.json().catch(() => null)) as { error?: string } | null;
-        setMessage(payload?.error ?? "Failed to get upload URL.");
-        return;
-      }
-
-      const { uploadUrl, key, fileUrl } = (await presignResponse.json()) as {
-        uploadUrl: string;
-        key: string;
-        fileUrl: string;
-      };
-
-      const uploadResponse = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-
-      if (!uploadResponse.ok) {
-        setMessage("Upload to storage failed.");
-        return;
-      }
-
-      const finalizeResponse = await fetch("/api/media/upload/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          filename: file.name,
-          fileUrl,
-          key,
-          mimeType: file.type,
-          size: file.size,
-        }),
-      });
-
-      if (!finalizeResponse.ok) {
-        const payload = (await finalizeResponse.json().catch(() => null)) as { error?: string } | null;
-        setMessage(payload?.error ?? "Upload saved to storage but failed to persist media record.");
-        return;
-      }
-
-      setUploaded({ key, fileUrl });
+      setUploaded({ fileUrl: uploadedMedia.fileUrl, key: uploadedMedia.key });
       setMedia((prev) => [
         {
-          id: `${Date.now()}-${key}`,
-          mimeType: file.type,
-          originalName: file.name,
-          url: fileUrl,
+          id: uploadedMedia.id,
+          mimeType: uploadedMedia.mimeType,
+          originalName: uploadedMedia.originalName,
+          url: uploadedMedia.url,
         },
         ...prev,
       ]);
       setMessage("Upload completed.");
-    } catch {
-      setMessage("Unexpected upload error.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unexpected upload error.");
     } finally {
       setIsUploading(false);
     }
@@ -121,7 +85,7 @@ export function MediaUploadPanel({ initialMedia = [] }: { initialMedia?: MediaRe
     <section className="space-y-4 border border-[color:oklch(0.32_0.012_207/0.15)] bg-surface-container p-6">
       <h2 className="text-xl font-semibold">Upload Media</h2>
       <input onChange={onFileChange} type="file" />
-      {isUploading ? <p className="text-sm">Uploading...</p> : null}
+      <UploadProgress isActive={isUploading} percent={uploadProgress} status={uploadStatus} />
       {message ? <p className="text-sm text-on-surface-variant">{message}</p> : null}
       {uploaded ? (
         <div className="space-y-2 text-sm">

@@ -10,6 +10,7 @@ import {
   Search,
   Tag,
   Upload,
+  Video,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -20,6 +21,7 @@ import { z } from "zod";
 
 import { RichTextEditor } from "@/components/dashboard/rich-text-editor";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
 import {
@@ -30,6 +32,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { UploadProgress } from "@/components/ui/upload-progress";
 import { uploadMediaFile } from "@/lib/client/media-upload";
 import { cn } from "@/lib/utils";
 
@@ -134,6 +137,7 @@ const sectionNav: Array<{ id: SectionId; label: string; icon: React.ElementType 
 export function PostForm({
   categoryOptions,
   defaultValues,
+  fetchMedia,
   featuredImageUrl,
   locale,
   onSubmit,
@@ -142,6 +146,7 @@ export function PostForm({
 }: {
   categoryOptions: Array<{ label: string; value: string }>;
   defaultValues?: Partial<PostFormValues>;
+  fetchMedia: () => Promise<{ id: string; originalName: string; url: string; mimeType: string }[]>;
   featuredImageUrl?: string;
   locale: string;
   onSubmit: (values: PostFormValues) => Promise<{ error?: string }>;
@@ -154,7 +159,12 @@ export function PostForm({
   const [activeLocale, setActiveLocale] = useState<"en" | "ar">("en");
   const [activeSection, setActiveSection] = useState<SectionId>("identity");
   const [isCoverUploading, setIsCoverUploading] = useState(false);
+  const [coverUploadProgress, setCoverUploadProgress] = useState(0);
+  const [coverUploadStatus, setCoverUploadStatus] = useState("");
   const [coverPreview, setCoverPreview] = useState<string>(featuredImageUrl ?? "");
+  const [coverLibraryOpen, setCoverLibraryOpen] = useState(false);
+  const [coverLibraryLoading, setCoverLibraryLoading] = useState(false);
+  const [coverLibraryItems, setCoverLibraryItems] = useState<{ id: string; originalName: string; url: string; mimeType: string }[]>([]);
 
   const form = useForm<PostFormValues>({
     defaultValues: {
@@ -197,14 +207,30 @@ export function PostForm({
 
   async function handleCoverUpload(file: File) {
     setIsCoverUploading(true);
+    setCoverUploadProgress(0);
+    setCoverUploadStatus("");
     try {
-      const media = await uploadMediaFile(file);
+      const media = await uploadMediaFile(file, {
+        onProgress: (percent) => setCoverUploadProgress(percent),
+        onStatus: (status) => setCoverUploadStatus(status),
+      });
       setValue("featuredImageId", media.id);
       setCoverPreview(media.url);
     } catch {
       toast.error("Upload failed");
     } finally {
       setIsCoverUploading(false);
+    }
+  }
+
+  async function openCoverLibrary() {
+    setCoverLibraryLoading(true);
+    try {
+      const items = await fetchMedia();
+      setCoverLibraryItems(items);
+      setCoverLibraryOpen(true);
+    } finally {
+      setCoverLibraryLoading(false);
     }
   }
 
@@ -519,8 +545,23 @@ export function PostForm({
                     ) : (
                       <Upload className="size-3.5" />
                     )}
-                    {isCoverUploading ? "Uploading…" : coverPreview ? "Replace image" : "Upload image"}
+                    {isCoverUploading ? `Uploading… ${coverUploadProgress}%` : coverPreview ? "Replace image" : "Upload image"}
                   </button>
+                  <button
+                    className="ml-2 inline-flex h-9 items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 text-[12.5px] text-zinc-600 transition-colors hover:border-teal-400 hover:text-teal-700 disabled:opacity-50"
+                    disabled={coverLibraryLoading || isCoverUploading}
+                    type="button"
+                    onClick={() => void openCoverLibrary()}
+                  >
+                    {coverLibraryLoading ? <Loader2 className="size-3.5 animate-spin" /> : <Search className="size-3.5" />}
+                    Browse library
+                  </button>
+                  <UploadProgress
+                    className="mt-2"
+                    isActive={isCoverUploading}
+                    percent={coverUploadProgress}
+                    status={coverUploadStatus}
+                  />
                 </div>
               </div>
             )}
@@ -714,6 +755,44 @@ export function PostForm({
           </div>
         </form>
       </Form>
+
+      <Dialog onOpenChange={setCoverLibraryOpen} open={coverLibraryOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Media Library</DialogTitle>
+          </DialogHeader>
+          {coverLibraryItems.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">No images uploaded yet.</p>
+          ) : (
+            <div className="grid max-h-[70vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
+              {coverLibraryItems.map((item) => (
+                <button
+                  className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-border/50 hover:border-primary"
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setValue("featuredImageId", item.id);
+                    setCoverPreview(item.url);
+                    setCoverLibraryOpen(false);
+                  }}
+                >
+                  {item.mimeType.startsWith("image/") ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img alt={item.originalName} className="h-full w-full object-cover transition-transform group-hover:scale-105" src={item.url} />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-muted">
+                      <Video className="size-6 text-muted-foreground" />
+                    </div>
+                  )}
+                  <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                    {item.mimeType.startsWith("image/") ? "image" : "video"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

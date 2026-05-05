@@ -37,6 +37,7 @@ CLAUDE.md
 /prisma/migrations
 tmp-*
 .vscode
+TODO*
 
 # debug
 npm-debug.log*

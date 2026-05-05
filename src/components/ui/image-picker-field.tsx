@@ -1,6 +1,6 @@
 "use client";
 
-import { ImageIcon, Loader2, X } from "lucide-react";
+import { ImageIcon, Loader2, Video, X } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-type MediaItem = { id: string; originalName: string; url: string };
+type MediaItem = { id: string; originalName: string; url: string; mimeType?: string };
 
 type FetchMediaFn = () => Promise<MediaItem[]>;
 
@@ -94,26 +94,49 @@ export function ImagePickerField({
               No images uploaded yet. Upload via the Media section.
             </p>
           ) : (
-            <div className="grid max-h-[60vh] grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-4">
-              {items.map((item) => (
+            <div className="grid max-h-[70vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
+              {items.map((item) => {
+                const isVideo = item.mimeType?.startsWith("video/") ?? false;
+                const isSelectable = !isVideo;
+                return (
                 <button
-                  className="group relative aspect-video overflow-hidden rounded-lg border border-border/50 hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                  className={cn(
+                    "group relative aspect-[4/3] overflow-hidden rounded-lg border border-border/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
+                    isSelectable ? "hover:border-primary" : "cursor-not-allowed opacity-70",
+                  )}
+                  disabled={!isSelectable}
                   key={item.id}
                   type="button"
                   onClick={() => {
+                    if (!isSelectable) return;
                     onChange(item.url);
                     setOpen(false);
                   }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    alt={item.originalName}
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                    src={item.url}
-                  />
+                  {isVideo ? (
+                    <div className="flex h-full w-full items-center justify-center bg-muted">
+                      <Video className="size-6 text-muted-foreground" />
+                    </div>
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      alt={item.originalName}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      src={item.url}
+                    />
+                  )}
+                  <span
+                    className={cn(
+                      "absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white",
+                      isVideo ? "bg-blue-600/80" : "bg-black/60",
+                    )}
+                  >
+                    {isVideo ? "video" : "image"}
+                  </span>
                   <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
                 </button>
-              ))}
+                );
+              })}
             </div>
           )}
         </DialogContent>

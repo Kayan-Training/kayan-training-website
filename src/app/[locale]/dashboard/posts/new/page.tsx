@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import { PostForm } from "../_components/post-form";
-import { createPostAction } from "../_actions";
+import { createPostAction, fetchMediaAction } from "../_actions";
 
 export const metadata = { title: "New Post — Posts" };
 
@@ -35,6 +35,7 @@ export default async function NewPostPage({
   return (
     <PostForm
       categoryOptions={categoryOptions}
+      fetchMedia={fetchMediaAction}
       locale={activeLocale}
       onSubmit={onSubmit}
       submitLabel="Create Post"

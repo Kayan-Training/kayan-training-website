@@ -1,9 +1,29 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { LocaleShell } from "@/components/layout/locale-shell";
 import type { NavMenuItem } from "@/components/layout/nav";
 import { db } from "@/lib/db";
-import { LOCALE_DIRECTION, isSupportedLocale } from "@/lib/i18n/config";
+import { LOCALE_DIRECTION, isSupportedLocale, type AppLocale } from "@/lib/i18n/config";
+import { getLocalizedSiteSettings } from "@/lib/settings";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const activeLocale: AppLocale = isSupportedLocale(locale) ? locale : "ar";
+  const site = await getLocalizedSiteSettings(activeLocale);
+
+  return {
+    description: site.siteDescription,
+    title: {
+      default: site.siteName,
+      template: `%s — ${site.siteName}`,
+    },
+  };
+}
 
 export default async function LocaleLayout({
   children,
@@ -16,6 +36,7 @@ export default async function LocaleLayout({
   if (!isSupportedLocale(locale)) {
     notFound();
   }
+  const siteSettings = await getLocalizedSiteSettings(locale);
 
   const mainMenu = await db.menu
     .findUnique({
@@ -37,8 +58,7 @@ export default async function LocaleLayout({
 
   return (
     <div data-locale={locale} dir={LOCALE_DIRECTION[locale]}>
-      <LocaleShell locale={locale} menuItems={menuItems}>{children}</LocaleShell>
+      <LocaleShell locale={locale} menuItems={menuItems} siteSettings={siteSettings}>{children}</LocaleShell>
     </div>
   );
 }
-

@@ -5,6 +5,29 @@ import {
   registrationConfirmationTemplate,
 } from "@/lib/email/templates";
 
+export async function hasExistingRegistrationForEmail(eventId: string, email: string): Promise<boolean> {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    return false;
+  }
+
+  const result = await db.$queryRaw<Array<{ exists: boolean }>>`
+    SELECT EXISTS (
+      SELECT 1
+      FROM "Registration" r
+      LEFT JOIN "User" u ON u.id = r."userId"
+      WHERE r."eventId" = ${eventId}
+        AND r."cancelledAt" IS NULL
+        AND (
+          LOWER(COALESCE(u.email, '')) = ${normalizedEmail}
+          OR LOWER(COALESCE(r."formData"->>'email', '')) = ${normalizedEmail}
+        )
+    ) AS "exists"
+  `;
+
+  return Boolean(result[0]?.exists);
+}
+
 export async function createRegistration(input: {
   amount: string;
   eventId: string;
@@ -44,6 +67,9 @@ export async function createRegistration(input: {
     });
     throw new Error("Event capacity reached.");
   }
+  if (await hasExistingRegistrationForEmail(input.eventId, input.registrantEmail)) {
+    throw new Error("A registration already exists for this email.");
+  }
 
   const registration = await db.registration.create({
     data: {
@@ -51,6 +77,7 @@ export async function createRegistration(input: {
       eventId: input.eventId,
       formData: {
         email: input.registrantEmail,
+        emailNormalized: input.registrantEmail.trim().toLowerCase(),
         locale: input.locale,
         name: input.registrantName,
         ...(input.extraFormData ?? {}),

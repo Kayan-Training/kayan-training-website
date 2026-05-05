@@ -2,13 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Menu01Icon, UserIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { LocaleSwitcher } from "@/components/i18n/locale-switcher";
-import { useSession } from "@/lib/auth-client";
+import { signOut, useSession } from "@/lib/auth-client";
 
 function isActive(pathname: string | null, href: string) {
   if (!pathname) return false;
@@ -39,13 +39,22 @@ export function SiteNav({
   menuItems?: NavMenuItem[];
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const isAdmin = session?.user?.role === "admin";
+  const isLoggedIn = Boolean(session?.user);
 
   const links = (menuItems ?? fallbackLinks).map((item) => ({
     ...item,
     href: item.href.replace("/LOCALE", `/${locale}`),
   }));
+
+  async function handleSignOut() {
+    await signOut();
+    router.push(`/${locale}`);
+    router.refresh();
+  }
 
   return (
     <nav className="glass-nav fixed top-0 z-50 w-full border-b border-white/[0.06]">
@@ -71,10 +80,15 @@ export function SiteNav({
 
         <div className="flex items-center gap-3">
           <LocaleSwitcher locale={locale} />
-          {session?.user ? (
+          {isAdmin ? (
             <Link className="ghost-border hidden h-9 items-center gap-1.5 px-3 text-[12px] text-on-surface-variant transition-colors hover:text-on-surface md:flex" href={`/${locale}/dashboard`}>
               <HugeiconsIcon icon={UserIcon} size={14} strokeWidth={2} />
               <span>{locale === "ar" ? "لوحة التحكم" : "Dashboard"}</span>
+            </Link>
+          ) : isLoggedIn ? (
+            <Link className="ghost-border hidden h-9 items-center gap-1.5 px-3 text-[12px] text-on-surface-variant transition-colors hover:text-on-surface md:flex" href={`/${locale}/events`}>
+              <HugeiconsIcon icon={UserIcon} size={14} strokeWidth={2} />
+              <span>{locale === "ar" ? "فعالياتي" : "My Events"}</span>
             </Link>
           ) : (
             <Link className="ghost-border hidden h-9 items-center gap-1.5 px-3 text-[12px] text-on-surface-variant transition-colors hover:text-on-surface md:flex" href={`/${locale}/auth`}>
@@ -85,6 +99,15 @@ export function SiteNav({
           <Link className="hidden h-9 items-center bg-primary-container px-5 text-[12px] font-semibold uppercase tracking-widest text-on-primary-container transition-all hover:bg-secondary hover:text-surface-dim sm:flex" href={`/${locale}/events`}>
             {locale === "ar" ? "الفعاليات" : "View Events"}
           </Link>
+          {isLoggedIn ? (
+            <button
+              className="ghost-border hidden h-9 items-center px-3 text-[12px] text-on-surface-variant transition-colors hover:text-on-surface md:flex"
+              onClick={() => void handleSignOut()}
+              type="button"
+            >
+              {locale === "ar" ? "تسجيل الخروج" : "Sign out"}
+            </button>
+          ) : null}
           <button className="ghost-border flex h-9 w-9 items-center justify-center text-on-surface-variant transition-colors hover:text-on-surface lg:hidden" type="button" aria-label="Open menu" onClick={() => setMobileOpen((v) => !v)}>
             <HugeiconsIcon icon={Menu01Icon} size={18} strokeWidth={2} />
           </button>
@@ -102,15 +125,31 @@ export function SiteNav({
               {locale === "ar" ? link.labelAr : link.labelEn}
             </Link>
           ))}
-          {session?.user ? (
+          {isAdmin ? (
             <Link className="mt-4 block border border-outline-variant px-4 py-3 text-center text-xs font-semibold uppercase tracking-widest text-on-surface" href={`/${locale}/dashboard`} onClick={() => setMobileOpen(false)}>
               {locale === "ar" ? "لوحة التحكم" : "Dashboard"}
+            </Link>
+          ) : isLoggedIn ? (
+            <Link className="mt-4 block border border-outline-variant px-4 py-3 text-center text-xs font-semibold uppercase tracking-widest text-on-surface" href={`/${locale}/events`} onClick={() => setMobileOpen(false)}>
+              {locale === "ar" ? "فعالياتي" : "My Events"}
             </Link>
           ) : (
             <Link className="mt-4 block border border-outline-variant px-4 py-3 text-center text-xs font-semibold uppercase tracking-widest text-on-surface" href={`/${locale}/auth`} onClick={() => setMobileOpen(false)}>
               {locale === "ar" ? "دخول / تسجيل" : "Login / Register"}
             </Link>
           )}
+          {isLoggedIn ? (
+            <button
+              className="mt-3 block w-full border border-outline-variant px-4 py-3 text-center text-xs font-semibold uppercase tracking-widest text-on-surface"
+              onClick={() => {
+                setMobileOpen(false);
+                void handleSignOut();
+              }}
+              type="button"
+            >
+              {locale === "ar" ? "تسجيل الخروج" : "Sign out"}
+            </button>
+          ) : null}
         </div>
       </div>
     </nav>

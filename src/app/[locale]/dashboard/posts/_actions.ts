@@ -6,6 +6,15 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import type { PostFormValues } from "./_components/post-form";
 
+export async function fetchMediaAction(): Promise<{ id: string; originalName: string; url: string; mimeType: string }[]> {
+  const items = await db.media.findMany({
+    where: { mimeType: { startsWith: "image/" } },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, originalName: true, url: true, mimeType: true },
+  });
+  return items;
+}
+
 export async function updatePostAction(
   id: string,
   locale: string,

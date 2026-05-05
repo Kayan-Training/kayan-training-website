@@ -1,8 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { AuthPanel } from "@/components/auth/auth-panel";
+import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
+import { getServerSession } from "@/lib/session";
 
 export default async function AuthPage({
   params,
@@ -11,6 +14,40 @@ export default async function AuthPage({
 }) {
   const { locale } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
+  const session = await getServerSession();
+
+  if (session?.user) {
+    redirect(session.user.role === "admin" ? `/${activeLocale}/dashboard` : `/${activeLocale}/events`);
+  }
+
+  const authSettingKeys = [
+    "auth.side.imageUrl",
+    "auth.side.heading.ar",
+    "auth.side.heading.en",
+    "auth.side.description.ar",
+    "auth.side.description.en",
+  ];
+  const authSettings = await db.setting.findMany({
+    where: { key: { in: authSettingKeys } },
+  });
+  const authSettingMap = new Map(
+    authSettings.map((s) => [s.key, typeof s.value === "string" ? s.value : ""]),
+  );
+  const sideImage =
+    authSettingMap.get("auth.side.imageUrl")?.trim() ||
+    "https://images.unsplash.com/photo-1756840210349-7bc0ae472ef8?w=900&q=80";
+  const sideHeading =
+    (activeLocale === "ar"
+      ? authSettingMap.get("auth.side.heading.ar")
+      : authSettingMap.get("auth.side.heading.en"))?.trim() ||
+    (activeLocale === "ar" ? "بوابتك نحو التطوير المهني" : "Your Gateway to Professional Growth");
+  const sideDescription =
+    (activeLocale === "ar"
+      ? authSettingMap.get("auth.side.description.ar")
+      : authSettingMap.get("auth.side.description.en"))?.trim() ||
+    (activeLocale === "ar"
+      ? "سجّل دخولك لتتابع فعالياتك المسجلة، وتصفح البرامج الجديدة، وتدير ملفك الشخصي."
+      : "Log in to track your registered events, browse new programs, and manage your profile.");
 
   return (
     <main className="grid min-h-screen grid-cols-1 bg-background text-on-surface lg:grid-cols-2">
@@ -22,7 +59,7 @@ export default async function AuthPage({
             fill
             priority
             sizes="50vw"
-            src="https://images.unsplash.com/photo-1756840210349-7bc0ae472ef8?w=900&q=80"
+            src={sideImage}
           />
           <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(13,15,15,0.98)_0%,rgba(23,67,78,0.7)_100%)]" />
         </div>
@@ -35,13 +72,9 @@ export default async function AuthPage({
 
         <div className="relative z-10">
           <div className="vertical-track mb-8 h-16 opacity-60" />
-          <h1 className="text-glow mb-6 text-4xl font-semibold leading-tight">
-            {activeLocale === "ar" ? "بوابتك نحو التطوير المهني" : "Your Gateway to Professional Growth"}
-          </h1>
+          <h1 className="text-glow mb-6 text-4xl font-semibold leading-tight">{sideHeading}</h1>
           <p className="max-w-sm text-sm leading-relaxed text-on-surface-variant">
-            {activeLocale === "ar"
-              ? "سجّل دخولك لتتابع فعالياتك المسجلة، وتصفح البرامج الجديدة، وتدير ملفك الشخصي."
-              : "Log in to track your registered events, browse new programs, and manage your profile."}
+            {sideDescription}
           </p>
         </div>
 

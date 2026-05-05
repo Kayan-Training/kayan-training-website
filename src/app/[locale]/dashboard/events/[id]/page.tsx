@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
-import { updateEventAction } from "../_actions";
+import { fetchMediaAction, updateEventAction } from "../_actions";
 import { EventForm, type EventFormValues } from "../_components/event-form";
 
 export default async function EditEventPage({
@@ -106,6 +106,7 @@ export default async function EditEventPage({
       categoryOptions={categoryOptions}
       defaultValues={defaultValues}
       eventId={id}
+      fetchMedia={fetchMediaAction}
       locale={activeLocale}
       onSubmit={boundAction}
       submitLabel="Save Changes"

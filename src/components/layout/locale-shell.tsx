@@ -14,10 +14,22 @@ export function LocaleShell({
   children,
   locale,
   menuItems,
+  siteSettings,
 }: {
   children: React.ReactNode;
   locale: "ar" | "en";
   menuItems?: NavMenuItem[];
+  siteSettings?: {
+    contactAddress: string;
+    contactEmail: string;
+    contactPhone: string;
+    siteName: string;
+    siteTagline: string;
+    socialInstagram: string;
+    socialLinkedIn: string;
+    socialX: string;
+    socialYouTube: string;
+  };
 }) {
   const pathname = usePathname();
   const isAuthRoute = pathname?.startsWith(`/${locale}/auth`);
@@ -31,7 +43,7 @@ export function LocaleShell({
     <div className="frontend-shell bg-background text-on-surface">
       <SiteNav locale={locale} menuItems={menuItems} />
       <div className="">{children}</div>
-      <SiteFooter locale={locale} />
+      <SiteFooter locale={locale} settings={siteSettings} />
     </div>
   );
 }

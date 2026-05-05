@@ -64,6 +64,7 @@ import {
   MapPin,
   Pencil,
   Plus,
+  Search,
   Settings2,
   Star,
   Tag,
@@ -78,6 +79,7 @@ import {
 import { RichTextEditor } from "@/components/dashboard/rich-text-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -91,6 +93,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { UploadProgress } from "@/components/ui/upload-progress";
 import { uploadMediaFile } from "@/lib/client/media-upload";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -418,6 +421,7 @@ export function EventForm({
   categoryOptions,
   defaultValues,
   eventId,
+  fetchMedia,
   locale,
   onSubmit,
   submitLabel,
@@ -426,6 +430,7 @@ export function EventForm({
   categoryOptions: Array<{ label: string; value: string }>;
   defaultValues?: Partial<EventFormValues>;
   eventId?: string;
+  fetchMedia: () => Promise<{ id: string; originalName: string; url: string; mimeType: string }[]>;
   locale: string;
   onSubmit: (values: EventFormValues) => Promise<{ error?: string }>;
   submitLabel: string;
@@ -443,6 +448,11 @@ export function EventForm({
   const [openFieldId, setOpenFieldId] = useState<string | null>(null);
   const [newFieldType, setNewFieldType] = useState<"text" | "email" | "textarea" | "select">("text");
   const [isCoverUploading, setIsCoverUploading] = useState(false);
+  const [coverUploadProgress, setCoverUploadProgress] = useState(0);
+  const [coverUploadStatus, setCoverUploadStatus] = useState("");
+  const [coverLibraryOpen, setCoverLibraryOpen] = useState(false);
+  const [coverLibraryLoading, setCoverLibraryLoading] = useState(false);
+  const [coverLibraryItems, setCoverLibraryItems] = useState<{ id: string; originalName: string; url: string; mimeType: string }[]>([]);
   const [trainerCandidate, setTrainerCandidate] = useState("");
 
   // ── Form ──────────────────────────────────────────────────────────────────
@@ -588,14 +598,30 @@ export function EventForm({
     if (!file) return;
     if (!file.type.startsWith("image/")) { toast.error("Please select an image file."); return; }
     setIsCoverUploading(true);
+    setCoverUploadProgress(0);
+    setCoverUploadStatus("");
     try {
-      const media = await uploadMediaFile(file);
+      const media = await uploadMediaFile(file, {
+        onProgress: (percent) => setCoverUploadProgress(percent),
+        onStatus: (status) => setCoverUploadStatus(status),
+      });
       form.setValue("coverImage", media.url, { shouldDirty: true });
       toast.success("Cover image uploaded.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Upload failed.");
     } finally {
       setIsCoverUploading(false);
+    }
+  }
+
+  async function openCoverLibrary() {
+    setCoverLibraryLoading(true);
+    try {
+      const items = await fetchMedia();
+      setCoverLibraryItems(items);
+      setCoverLibraryOpen(true);
+    } finally {
+      setCoverLibraryLoading(false);
     }
   }
 
@@ -623,8 +649,9 @@ export function EventForm({
   // Render
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <Form {...form}>
-      <form className="flex h-screen overflow-hidden bg-zinc-50" onSubmit={form.handleSubmit(save)}>
+    <>
+      <Form {...form}>
+        <form className="flex h-screen overflow-hidden bg-zinc-50" onSubmit={form.handleSubmit(save)}>
 
         {/* ════════════════════════════════════════════════════════════════
             LEFT NAV RAIL  w-52
@@ -794,11 +821,17 @@ export function EventForm({
                                 ? <Loader2 className="size-6 animate-spin text-teal-500" />
                                 : <ImageIcon className="size-7 text-zinc-300" />}
                               <span className="text-[13px] font-medium">
-                                {isCoverUploading ? "Uploading…" : "Upload cover image"}
+                                {isCoverUploading ? `Uploading… ${coverUploadProgress}%` : "Upload cover image"}
                               </span>
                               <span className="text-[11.5px] text-zinc-300">
                                 JPG, PNG or WebP · Recommended 1600 × 900
                               </span>
+                              <UploadProgress
+                                className="w-full max-w-[260px]"
+                                isActive={isCoverUploading}
+                                percent={coverUploadProgress}
+                                status={coverUploadStatus}
+                              />
                             </div>
                           )}
                         </button>
@@ -812,8 +845,19 @@ export function EventForm({
                               onClick={() => form.setValue("coverImage", "", { shouldDirty: true })}>
                               <X className="mr-1 size-3" /> Remove
                             </Button>
+                            <Button className="h-7 text-[11.5px]" disabled={coverLibraryLoading || isCoverUploading} size="sm" type="button" variant="outline"
+                              onClick={() => void openCoverLibrary()}>
+                              {coverLibraryLoading ? <Loader2 className="mr-1 size-3 animate-spin" /> : <Search className="mr-1 size-3" />} Browse
+                            </Button>
                           </div>
-                        ) : null}
+                        ) : (
+                          <div className="mt-2 flex gap-2">
+                            <Button className="h-7 text-[11.5px]" disabled={coverLibraryLoading || isCoverUploading} size="sm" type="button" variant="outline"
+                              onClick={() => void openCoverLibrary()}>
+                              {coverLibraryLoading ? <Loader2 className="mr-1 size-3 animate-spin" /> : <Search className="mr-1 size-3" />} Browse library
+                            </Button>
+                          </div>
+                        )}
                         <input className="sr-only" type="text" {...field} />
                         <FormMessage />
                       </FormItem>
@@ -1833,7 +1877,45 @@ export function EventForm({
           </div>
         </aside>
 
-      </form>
-    </Form>
+        </form>
+      </Form>
+
+      <Dialog onOpenChange={setCoverLibraryOpen} open={coverLibraryOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Media Library</DialogTitle>
+          </DialogHeader>
+          {coverLibraryItems.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">No images uploaded yet.</p>
+          ) : (
+            <div className="grid max-h-[70vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
+              {coverLibraryItems.map((item) => (
+                <button
+                  className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-border/50 hover:border-primary"
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    form.setValue("coverImage", item.url, { shouldDirty: true });
+                    setCoverLibraryOpen(false);
+                  }}
+                >
+                  {item.mimeType.startsWith("image/") ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img alt={item.originalName} className="h-full w-full object-cover transition-transform group-hover:scale-105" src={item.url} />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-muted">
+                      <Video className="size-6 text-muted-foreground" />
+                    </div>
+                  )}
+                  <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                    {item.mimeType.startsWith("image/") ? "image" : "video"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

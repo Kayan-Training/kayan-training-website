@@ -9,7 +9,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { isSupportedLocale } from "@/lib/i18n/config";
-import { requireAdminSession } from "@/lib/session";
+import { getServerSession } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: { default: "Dashboard", template: "%s | Dashboard" },
@@ -25,10 +25,14 @@ export default async function DashboardLayout({
 }>) {
   const { locale } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
-  const session = await requireAdminSession();
+  const session = await getServerSession();
 
   if (!session) {
     redirect(`/${activeLocale}/auth`);
+  }
+
+  if (session.user.role !== "admin") {
+    redirect(`/${activeLocale}/events`);
   }
 
   return (

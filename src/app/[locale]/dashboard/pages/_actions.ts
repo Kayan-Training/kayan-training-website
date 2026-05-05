@@ -5,14 +5,13 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
 
-export async function fetchMediaAction(): Promise<{ id: string; originalName: string; url: string }[]> {
+export async function fetchMediaAction(): Promise<{ id: string; originalName: string; url: string; mimeType: string }[]> {
   const items = await db.media.findMany({
     select: { id: true, originalName: true, url: true, mimeType: true },
-    where: { mimeType: { startsWith: "image/" } },
     orderBy: { createdAt: "desc" },
     take: 60,
   });
-  return items.map((m) => ({ id: m.id, originalName: m.originalName, url: m.url }));
+  return items.map((m) => ({ id: m.id, originalName: m.originalName, url: m.url, mimeType: m.mimeType }));
 }
 
 export async function updatePageAction(

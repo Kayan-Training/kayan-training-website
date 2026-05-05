@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import { PostForm } from "../_components/post-form";
-import { updatePostAction } from "../_actions";
+import { fetchMediaAction, updatePostAction } from "../_actions";
 
 export async function generateMetadata({
   params,
@@ -85,6 +85,7 @@ export default async function EditPostPage({
     <PostForm
       categoryOptions={categoryOptions}
       defaultValues={defaultValues}
+      fetchMedia={fetchMediaAction}
       featuredImageUrl={post.featuredImage?.url}
       locale={activeLocale}
       onSubmit={onSubmit}

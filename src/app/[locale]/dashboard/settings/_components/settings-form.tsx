@@ -78,11 +78,17 @@ type SettingGroup = {
 const SETTINGS_SCHEMA: SettingGroup[] = [
   {
     group: "Site",
-    description: "General information shown in the browser and search results.",
+    description: "General information shown in the browser and search results (Arabic and English).",
     fields: [
-      { key: "site.name", label: "Site Name", inputType: "text", placeholder: "Kayan Training" },
-      { key: "site.tagline", label: "Tagline", inputType: "text", placeholder: "Elevate your potential" },
-      { key: "site.description", label: "Description", inputType: "textarea", placeholder: "A brief description of your organization for SEO…" },
+      { key: "site.name.ar", label: "Site Name (Arabic)", inputType: "text", placeholder: "كيان للتدريب والاستشارات" },
+      { key: "site.name.en", label: "Site Name (English)", inputType: "text", placeholder: "Kayan Training & Consulting" },
+      { key: "site.tagline.ar", label: "Tagline (Arabic)", inputType: "text", placeholder: "نطوّر الفرق ونُسرّع الأثر المؤسسي" },
+      { key: "site.tagline.en", label: "Tagline (English)", inputType: "text", placeholder: "Build teams and accelerate impact" },
+      { key: "site.description.ar", label: "Description (Arabic)", inputType: "textarea", placeholder: "وصف مختصر للموقع لتحسين الظهور في محركات البحث..." },
+      { key: "site.description.en", label: "Description (English)", inputType: "textarea", placeholder: "A brief description of your organization for SEO..." },
+      { key: "site.name", label: "Site Name (Legacy Fallback)", inputType: "text", placeholder: "Kayan Training" },
+      { key: "site.tagline", label: "Tagline (Legacy Fallback)", inputType: "text", placeholder: "Elevate your potential" },
+      { key: "site.description", label: "Description (Legacy Fallback)", inputType: "textarea", placeholder: "Legacy fallback if localized values are not set..." },
     ],
   },
   {
@@ -102,6 +108,17 @@ const SETTINGS_SCHEMA: SettingGroup[] = [
       { key: "social.twitter", label: "X / Twitter", inputType: "url", placeholder: "https://x.com/…" },
       { key: "social.instagram", label: "Instagram", inputType: "url", placeholder: "https://instagram.com/…" },
       { key: "social.youtube", label: "YouTube", inputType: "url", placeholder: "https://youtube.com/@…" },
+    ],
+  },
+  {
+    group: "Auth Page",
+    description: "Controls for the visual/text content shown beside login/register.",
+    fields: [
+      { key: "auth.side.imageUrl", label: "Side Image URL", inputType: "url", placeholder: "https://images.unsplash.com/..." },
+      { key: "auth.side.heading.ar", label: "Heading (Arabic)", inputType: "text", placeholder: "بوابتك نحو التطوير المهني" },
+      { key: "auth.side.heading.en", label: "Heading (English)", inputType: "text", placeholder: "Your Gateway to Professional Growth" },
+      { key: "auth.side.description.ar", label: "Description (Arabic)", inputType: "textarea", placeholder: "سجّل دخولك لتتابع فعالياتك..." },
+      { key: "auth.side.description.en", label: "Description (English)", inputType: "textarea", placeholder: "Log in to track your registered events..." },
     ],
   },
 ];

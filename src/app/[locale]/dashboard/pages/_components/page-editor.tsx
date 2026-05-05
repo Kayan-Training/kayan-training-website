@@ -54,6 +54,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ImagePickerField } from "@/components/ui/image-picker-field";
+import { UploadProgress } from "@/components/ui/upload-progress";
 import {
   type LinkPickerEntities,
   LinkPickerInput,
@@ -1071,10 +1072,12 @@ function MediaCarouselEditor({
 }) {
   const [browseOpen, setBrowseOpen] = useState(false);
   const [browseItems, setBrowseItems] = useState<
-    { id: string; originalName: string; url: string }[]
+    { id: string; originalName: string; url: string; mimeType: string }[]
   >([]);
   const [browseLoading, setBrowseLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState("");
 
   async function openBrowse() {
     setBrowseLoading(true);
@@ -1087,8 +1090,9 @@ function MediaCarouselEditor({
     setBrowseOpen(true);
   }
 
-  function addFromLibrary(url: string) {
-    onChange([...media, { id: makeId(), url, kind: "image" }]);
+  function addFromLibrary(item: { url: string; mimeType: string }) {
+    const kind: "image" | "video" = item.mimeType.startsWith("video/") ? "video" : "image";
+    onChange([...media, { id: makeId(), url: item.url, kind }]);
     setBrowseOpen(false);
   }
 
@@ -1096,8 +1100,13 @@ function MediaCarouselEditor({
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadProgress(0);
+    setUploadStatus("");
     try {
-      const uploaded = await uploadMediaFile(file);
+      const uploaded = await uploadMediaFile(file, {
+        onProgress: (percent) => setUploadProgress(percent),
+        onStatus: (status) => setUploadStatus(status),
+      });
       const kind: "image" | "video" = file.type.startsWith("video/")
         ? "video"
         : "image";
@@ -1187,7 +1196,7 @@ function MediaCarouselEditor({
           ) : (
             <Plus className="size-3" />
           )}
-          Upload
+          {uploading ? `Uploading… ${uploadProgress}%` : "Upload"}
           <input
             accept="image/*,video/*"
             className="sr-only"
@@ -1197,6 +1206,7 @@ function MediaCarouselEditor({
           />
         </label>
       </div>
+      <UploadProgress isActive={uploading} percent={uploadProgress} status={uploadStatus} />
       <Dialog onOpenChange={setBrowseOpen} open={browseOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -1207,20 +1217,39 @@ function MediaCarouselEditor({
               No images uploaded yet.
             </p>
           ) : (
-            <div className="grid max-h-[60vh] grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-4">
+            <div className="grid max-h-[70vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
               {browseItems.map((item) => (
                 <button
-                  className="group relative aspect-video overflow-hidden rounded-lg border border-border/50 hover:border-primary"
+                  className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-border/50 hover:border-primary"
                   key={item.id}
                   type="button"
-                  onClick={() => addFromLibrary(item.url)}
+                  onClick={() => addFromLibrary(item)}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    alt={item.originalName}
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                    src={item.url}
-                  />
+                  {item.mimeType.startsWith("video/") ? (
+                    <video
+                      aria-label={item.originalName}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      muted
+                      playsInline
+                      preload="metadata"
+                      src={item.url}
+                    />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      alt={item.originalName}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      src={item.url}
+                    />
+                  )}
+                  <span
+                    className={cn(
+                      "absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white",
+                      item.mimeType.startsWith("video/") ? "bg-blue-600/80" : "bg-black/60",
+                    )}
+                  >
+                    {item.mimeType.startsWith("video/") ? "video" : "image"}
+                  </span>
                   <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
                 </button>
               ))}

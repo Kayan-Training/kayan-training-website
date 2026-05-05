@@ -5,7 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Building2, CalendarDays, ChevronDown, CreditCard, Landmark, MapPin, UserRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type FormField = {
   id: string;
@@ -15,6 +15,8 @@ type FormField = {
   required: boolean;
   type: string;
 };
+
+type EmailCheckState = "idle" | "checking" | "available" | "taken" | "error";
 
 export function EventRegisterForm({
   event,
@@ -60,6 +62,8 @@ export function EventRegisterForm({
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [registerForAnother, setRegisterForAnother] = useState(false);
+  const [email, setEmail] = useState(initialRegistrant.email);
+  const [emailCheckState, setEmailCheckState] = useState<EmailCheckState>("idle");
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<"bank" | "card" | "free">(
     event.isFree ? "free" : event.paymentMethods === "bank" ? "bank" : "card",
   );
@@ -100,6 +104,37 @@ export function EventRegisterForm({
           ? "border-[rgba(40,180,115,0.5)] bg-[rgba(40,180,115,0.15)] text-secondary"
           : "border-outline-variant/30 text-on-surface-variant"
     }`;
+
+  useEffect(() => {
+    const value = email.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!value || !emailRegex.test(value)) {
+      setEmailCheckState("idle");
+      return;
+    }
+
+    setEmailCheckState("checking");
+    const timer = setTimeout(() => {
+      fetch(`/api/events/${encodeURIComponent(slug)}/registration-email-check?email=${encodeURIComponent(value)}`)
+        .then(async (response) => {
+          if (!response.ok) {
+            throw new Error("Email check failed.");
+          }
+          return (await response.json()) as { exists: boolean };
+        })
+        .then((data) => {
+          setEmailCheckState(data.exists ? "taken" : "available");
+        })
+        .catch(() => {
+          setEmailCheckState("error");
+        });
+    }, 450);
+
+    return () => clearTimeout(timer);
+  }, [email, slug]);
+
+  const isDuplicateEmail = emailCheckState === "taken";
+  const isCheckingEmail = emailCheckState === "checking";
 
   return (
     <div className="max-w-[1200px] mx-auto grid grid-cols-12 gap-10 px-6 py-12 md:px-10 md:py-20">
@@ -175,8 +210,9 @@ export function EventRegisterForm({
                 <input
                   className={registerInputClass}
                   dir="ltr"
-                  defaultValue={initialRegistrant.email}
+                  value={email}
                   name="email"
+                  onChange={(event) => setEmail(event.target.value)}
                   required
                   type="email"
                 />
@@ -185,6 +221,30 @@ export function EventRegisterForm({
                     ? "سيُرسل تأكيد التسجيل على هذا البريد"
                     : "Registration confirmation will be sent to this email"}
                 </p>
+                {emailCheckState === "checking" ? (
+                  <p className="mt-1 text-[11px] text-on-surface-variant">
+                    {locale === "ar" ? "جارٍ التحقق من البريد..." : "Checking email..."}
+                  </p>
+                ) : null}
+                {emailCheckState === "taken" ? (
+                  <p className="mt-1 text-[11px] text-rose-400">
+                    {locale === "ar"
+                      ? "هذا البريد مسجّل بالفعل في نفس الفعالية."
+                      : "This email is already registered for this event."}
+                  </p>
+                ) : null}
+                {emailCheckState === "available" ? (
+                  <p className="mt-1 text-[11px] text-emerald-400">
+                    {locale === "ar" ? "يمكنك المتابعة بهذا البريد." : "This email can register for this event."}
+                  </p>
+                ) : null}
+                {emailCheckState === "error" ? (
+                  <p className="mt-1 text-[11px] text-amber-300">
+                    {locale === "ar"
+                      ? "تعذر التحقق حالياً. سنعيد التحقق عند الإرسال."
+                      : "Could not verify right now. We will re-check on submit."}
+                  </p>
+                ) : null}
               </div>
 
               <div className="mb-6">
@@ -276,6 +336,7 @@ export function EventRegisterForm({
 
               <button
                 className="inline-flex items-center gap-2 bg-primary-container px-7 py-4 text-xs uppercase tracking-widest text-on-primary-container hover:bg-secondary hover:text-surface-dim"
+                disabled={isDuplicateEmail || isCheckingEmail}
                 onClick={() => setStep(2)}
                 type="button"
               >
@@ -425,7 +486,11 @@ export function EventRegisterForm({
                 <button className="ghost-border px-6 py-4 text-xs uppercase tracking-widest text-on-surface-variant hover:text-on-surface" onClick={() => setStep(2)} type="button">
                   {locale === "ar" ? "السابق" : "Back"}
                 </button>
-                <button className="flex-1 bg-secondary py-4 text-xs uppercase tracking-widest text-surface-dim hover:bg-primary" type="submit">
+                <button
+                  className="flex-1 bg-secondary py-4 text-xs uppercase tracking-widest text-surface-dim hover:bg-primary disabled:opacity-60"
+                  disabled={isDuplicateEmail || isCheckingEmail}
+                  type="submit"
+                >
                   {locale === "ar" ? "تأكيد التسجيل" : "Confirm Registration"}
                 </button>
               </div>
