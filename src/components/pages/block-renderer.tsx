@@ -595,7 +595,16 @@ async function AccreditationBarRenderer({
   block: AccreditationBarBlock;
   locale: "ar" | "en";
 }) {
-  const isAr = locale === "ar";
+  const clients = (block.clients ?? []).filter(
+    (client) => (client.name ?? "").trim() || (client.logo ?? "").trim(),
+  );
+  const useMarquee = clients.length >= 6;
+  const useGrid = clients.length >= 3 && clients.length <= 5;
+  const marqueeClients = useMarquee ? [...clients, ...clients] : [];
+
+  const logoClassName =
+    "h-10 w-auto max-w-[9rem] object-contain grayscale brightness-0 invert opacity-80 transition-opacity duration-300 hover:opacity-100";
+
   return (
     <section className="border-y border-outline-variant/20 bg-surface py-16 md:py-20">
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-10 px-6 md:px-10 lg:flex-row lg:items-center lg:gap-16">
@@ -652,16 +661,76 @@ async function AccreditationBarRenderer({
               {block.clientsHeading}
             </span>
           )}
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
-            {(block.clients ?? []).map((client) => (
-              <span
-                className="font-display text-sm font-black uppercase tracking-widest text-on-surface-variant/50"
-                key={client}
-              >
-                {client}
-              </span>
-            ))}
-          </div>
+          {clients.length === 0 ? null : useMarquee ? (
+            <div className="accreditation-logo-marquee" dir={locale === "ar" ? "rtl" : "ltr"}>
+              <div className="accreditation-logo-track">
+                {marqueeClients.map((client, index) => (
+                  <div
+                    aria-hidden={index >= clients.length}
+                    className="inline-flex items-center gap-3"
+                    key={`${client.id}-${index}`}
+                  >
+                    {client.logo ? (
+                      <Image
+                        alt={client.name || "Organization logo"}
+                        className={logoClassName}
+                        height={40}
+                        src={client.logo}
+                        width={160}
+                      />
+                    ) : null}
+                    {client.name ? (
+                      <span className="font-display text-xs font-black uppercase tracking-[0.16em] text-on-surface-variant/70">
+                        {client.name}
+                      </span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : useGrid ? (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+              {clients.map((client) => (
+                <div className="flex items-center gap-3 rounded-md border border-outline-variant/20 px-3 py-2" key={client.id}>
+                  {client.logo ? (
+                    <Image
+                      alt={client.name || "Organization logo"}
+                      className={logoClassName}
+                      height={40}
+                      src={client.logo}
+                      width={160}
+                    />
+                  ) : null}
+                  {client.name ? (
+                    <span className="font-display text-xs font-black uppercase tracking-[0.16em] text-on-surface-variant/70">
+                      {client.name}
+                    </span>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-5">
+              {clients.map((client) => (
+                <div className="inline-flex items-center gap-3" key={client.id}>
+                  {client.logo ? (
+                    <Image
+                      alt={client.name || "Organization logo"}
+                      className={logoClassName}
+                      height={40}
+                      src={client.logo}
+                      width={160}
+                    />
+                  ) : null}
+                  {client.name ? (
+                    <span className="font-display text-xs font-black uppercase tracking-[0.16em] text-on-surface-variant/70">
+                      {client.name}
+                    </span>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>

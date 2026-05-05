@@ -123,7 +123,7 @@ export type AccreditationBarBlock = {
   badgeTitle: string;
   badgeSub: string;
   clientsHeading: string;
-  clients: string[];
+  clients: Array<{ id: string; name: string; logo?: string }>;
 };
 
 export type HomeEventsCarouselBlock = {

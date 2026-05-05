@@ -2737,15 +2737,61 @@ function AccreditationBarFields({
           onChange={(e) => onChange({ clientsHeading: e.target.value })}
         />
       </Field>
-      <div>
-        <label className={labelCls}>Client Names (one per line)</label>
-        <textarea
-          className={cn(inputCls, "h-24 resize-none py-2", dir === "rtl" && "text-right")}
-          dir={dir}
-          placeholder={"Client A\nClient B\nClient C"}
-          value={block.clients.join("\n")}
-          onChange={(e) =>
-            onChange({ clients: e.target.value.split("\n").map((s) => s.trimEnd()) })
+      <div className="space-y-4">
+        <label className={labelCls}>Organization Logos</label>
+        {(block.clients ?? []).map((client, i) => (
+          <ArrayItemRow
+            index={i}
+            key={client.id || i}
+            onRemove={() =>
+              onChange({
+                clients: block.clients.filter((_, idx) => idx !== i),
+              })
+            }
+          >
+            <div className="space-y-3">
+              <Field label="Organization Name">
+                <input
+                  className={cn(inputCls, dir === "rtl" && "text-right")}
+                  dir={dir}
+                  placeholder="e.g. Ministry of Education"
+                  value={client.name}
+                  onChange={(e) =>
+                    onChange({
+                      clients: block.clients.map((item, idx) =>
+                        idx === i ? { ...item, name: e.target.value } : item,
+                      ),
+                    })
+                  }
+                />
+              </Field>
+              <div>
+                <label className={labelCls}>Logo</label>
+                <ImagePickerField
+                  dir={dir}
+                  fetchMedia={fetchMediaAction}
+                  value={client.logo ?? ""}
+                  onChange={(url) =>
+                    onChange({
+                      clients: block.clients.map((item, idx) =>
+                        idx === i ? { ...item, logo: url } : item,
+                      ),
+                    })
+                  }
+                />
+              </div>
+            </div>
+          </ArrayItemRow>
+        ))}
+        <AddItemButton
+          label="Add organization"
+          onClick={() =>
+            onChange({
+              clients: [
+                ...block.clients,
+                { id: makeId(), name: "", logo: "" },
+              ],
+            })
           }
         />
       </div>

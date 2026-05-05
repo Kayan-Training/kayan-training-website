@@ -75,10 +75,45 @@ function migratePageHeroBlock(raw: RawBlock): Block {
   } as Block;
 }
 
+function migrateAccreditationBarBlock(raw: RawBlock): Block {
+  const rawClients = Array.isArray(raw.clients) ? raw.clients : [];
+  const clients = rawClients.map((item, index) => {
+    if (typeof item === "string") {
+      return {
+        id: `accreditation-client-${index + 1}`,
+        name: item,
+        logo: "",
+      };
+    }
+    if (item && typeof item === "object") {
+      const candidate = item as Record<string, unknown>;
+      return {
+        id:
+          (typeof candidate.id === "string" && candidate.id.trim()) ||
+          `accreditation-client-${index + 1}`,
+        name: typeof candidate.name === "string" ? candidate.name : "",
+        logo: typeof candidate.logo === "string" ? candidate.logo : "",
+      };
+    }
+    return {
+      id: `accreditation-client-${index + 1}`,
+      name: "",
+      logo: "",
+    };
+  });
+
+  return {
+    ...(raw as unknown as Block),
+    type: "accreditation_bar",
+    clients,
+  } as Block;
+}
+
 export function migrateBlocks(raw: unknown[]): Block[] {
   return (raw as RawBlock[]).map((b) => {
     if (b.type === "hero") return migrateHeroBlock(b);
     if (b.type === "page_hero") return migratePageHeroBlock(b);
+    if (b.type === "accreditation_bar") return migrateAccreditationBarBlock(b);
     return b as Block;
   });
 }

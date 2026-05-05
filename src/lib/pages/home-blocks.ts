@@ -56,7 +56,18 @@ function makeHomeDefaultBlock(type: Block["type"], locale: Locale): Block | null
           ? "اعتراف دولي — معايير محتوى وتقييم دولية"
           : "International recognition — global content & assessment standards",
         clientsHeading: isAr ? "نفخر بثقة كبرى المؤسسات" : "Trusted by leading organizations",
-        clients: ["OQ", "OXY OMAN", isAr ? "وزارة التربية" : "Ministry of Education", "OPAL", "PDO", "Omantel"],
+        clients: [
+          { id: "home-accreditation-client-1", name: "OQ", logo: "" },
+          { id: "home-accreditation-client-2", name: "OXY OMAN", logo: "" },
+          {
+            id: "home-accreditation-client-3",
+            name: isAr ? "وزارة التربية" : "Ministry of Education",
+            logo: "",
+          },
+          { id: "home-accreditation-client-4", name: "OPAL", logo: "" },
+          { id: "home-accreditation-client-5", name: "PDO", logo: "" },
+          { id: "home-accreditation-client-6", name: "Omantel", logo: "" },
+        ],
       };
     case "training_domains":
       return {
@@ -112,4 +123,3 @@ export function ensureHomeBlocksComplete(blocks: Block[], locale: Locale): Block
   if (missing.length === 0) return blocks;
   return [...blocks, ...missing];
 }
-
