@@ -28,7 +28,7 @@ function MaintenanceModeCard({ initialOn }: { initialOn: boolean }) {
       <div className="border-b border-border/50 bg-muted/20 px-5 py-3">
         <h2 className="text-sm font-semibold text-foreground">Site Mode</h2>
         <p className="mt-0.5 text-[11px] text-muted-foreground">
-          When maintenance mode is on, all public pages show a placeholder. Dashboard remains accessible.
+          When maintenance mode is on, public users see the maintenance page. Auth routes stay accessible for login, and logged-in admins can access dashboard and frontend routes.
         </p>
       </div>
       <div className="flex items-center justify-between px-5 py-4">

@@ -30,6 +30,7 @@ export type PageHeroBlock = {
   type: "page_hero";
   eyebrow: string;
   fullViewport: boolean;
+  backgroundColor: string;
   overlayColor: string;
   overlayOpacity: number;
   media: HeroMedia[];
@@ -106,6 +107,7 @@ export type RichTextBlock = {
 export type HeroBlock = {
   type: "hero";
   fullViewport: boolean;
+  backgroundColor: string;
   overlayColor: string;
   overlayOpacity: number;
   media: HeroMedia[];

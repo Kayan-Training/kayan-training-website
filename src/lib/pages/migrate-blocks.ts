@@ -22,12 +22,17 @@ function migrateHeroBlock(raw: RawBlock): Block {
   if (Array.isArray(raw.slides)) {
     // Slides exist — migrate each slide's CTA shape
     const slides = (raw.slides as RawSlide[]).map(migrateHeroSlide);
-    return { ...raw, slides } as unknown as Block;
+    return {
+      ...raw,
+      backgroundColor: (raw.backgroundColor as string) ?? "#121414",
+      slides,
+    } as unknown as Block;
   }
   return {
     id: raw.id,
     type: "hero",
     fullViewport: true,
+    backgroundColor: "#121414",
     overlayColor: "#000000",
     overlayOpacity: 40,
     media: raw.image ? [{ id: uid(), url: raw.image as string, kind: "image" }] : [],
@@ -45,12 +50,18 @@ function migrateHeroBlock(raw: RawBlock): Block {
 }
 
 function migratePageHeroBlock(raw: RawBlock): Block {
-  if (Array.isArray(raw.slides)) return raw as unknown as Block;
+  if (Array.isArray(raw.slides)) {
+    return {
+      ...raw,
+      backgroundColor: (raw.backgroundColor as string) ?? "#121414",
+    } as unknown as Block;
+  }
   return {
     id: raw.id,
     type: "page_hero",
     eyebrow: (raw.eyebrow as string) ?? "",
     fullViewport: false,
+    backgroundColor: "#121414",
     overlayColor: "#000000",
     overlayOpacity: 40,
     media: raw.image ? [{ id: uid(), url: raw.image as string, kind: "image" }] : [],

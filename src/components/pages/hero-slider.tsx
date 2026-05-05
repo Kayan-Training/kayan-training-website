@@ -268,6 +268,7 @@ export function HeroSlider({
           ? "min-h-screen items-center"
           : "py-16 md:py-24 items-center",
       )}
+      style={{ backgroundColor: block.backgroundColor || "#121414" }}
     >
       {/* Background layers — crossfade independently */}
       {media.length > 0 ? (

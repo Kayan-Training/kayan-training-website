@@ -5,6 +5,7 @@
  * This layout only provides global CSS and a stable body wrapper shared by all routes.
  */
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import {
@@ -67,7 +68,10 @@ export default function RootLayout({
     >
       <body className="min-h-full">
         <NextTopLoader />
-        <TooltipProvider>{children}</TooltipProvider>
+        <TooltipProvider>
+          {children}
+          <Toaster richColors position="top-right" />
+        </TooltipProvider>
       </body>
     </html>
   );

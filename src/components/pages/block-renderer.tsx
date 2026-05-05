@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { getLocalizedEvents, getLocalizedPosts } from "@/lib/content/queries";
+import { cn } from "@/lib/utils";
 import type {
   AboutIntroBlock,
   AccreditationBarBlock,
@@ -21,8 +22,8 @@ import type {
   TrainingDomainsBlock,
   ValuesListBlock,
 } from "@/lib/pages/block-types";
-import { EventCard } from "../events/event-card";
 import { type FeaturedEventCard, HeroSlider } from "./hero-slider";
+import { HomeEventsCarouselRail } from "./home-events-carousel-rail";
 
 type Category = {
   slug: string;
@@ -44,6 +45,7 @@ function PageHeroRenderer({ block }: { block: PageHeroBlock }) {
   return (
     <section
       className={`relative overflow-hidden bg-surface-container-lowest${block.fullViewport ? " min-h-screen" : " py-16 md:py-24"} flex items-center`}
+      style={{ backgroundColor: block.backgroundColor || "#121414" }}
     >
       {bgUrl && (
         <>
@@ -712,43 +714,22 @@ async function HomeEventsCarouselRenderer({
             {locale === "ar" ? "لا توجد فعاليات." : "No events."}
           </p>
         ) : (
-          <div className="no-scrollbar flex gap-4 overflow-x-auto pb-2">
-            {events.map((event) => (
-              <Link
-                className="ghost-border group relative min-h-[420px] w-[280px] flex-none overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-secondary/40 sm:w-[340px]"
-                href={`/${locale}/events/${event.slug}`}
-                key={event.slug}
-              >
-                <Image
-                  alt={event.title}
-                  className="object-cover grayscale transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0"
-                  fill
-                  sizes="340px"
-                  src={event.coverImage}
-                />
-                <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(13,15,15,0.97)_0%,rgba(13,15,15,0.5)_56%,rgba(13,15,15,0.1)_100%)]" />
-                <div className="relative z-10 flex h-full flex-col justify-between p-5">
-                  <span className="badge-teal w-fit font-body">
-                    {event.isFeatured
-                      ? locale === "ar"
-                        ? "مميّز"
-                        : "Featured"
-                      : locale === "ar"
-                        ? "تدريب"
-                        : "Training"}
-                  </span>
-                  <div>
-                    <h3 className="mb-4 line-clamp-3 text-lg font-semibold leading-snug transition-colors group-hover:text-secondary">
-                      {event.title}
-                    </h3>
-                    <p className="text-xs text-on-surface-variant">
-                      {formatDate(event.startDate)}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <HomeEventsCarouselRail
+            items={events.map((event) => ({
+              coverImage: event.coverImage,
+              dateLabel: formatDate(event.startDate),
+              slug: event.slug,
+              tag: event.isFeatured
+                ? locale === "ar"
+                  ? "مميّز"
+                  : "Featured"
+                : locale === "ar"
+                  ? "تدريب"
+                  : "Training",
+              title: event.title,
+            }))}
+            locale={locale}
+          />
         )}
       </div>
     </section>

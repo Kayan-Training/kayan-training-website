@@ -26,15 +26,16 @@ export function EventCard({
     <Link
       href={`/${locale}/events/${event.slug}`}
       className={cn(
-        "event-card group relative overflow-hidden ghost-border",
+        "event-card group relative block h-full w-full overflow-hidden ghost-border",
         className,
       )}
     >
       <Image
         alt={event.title}
-        className="absolute inset-0 h-full w-full object-cover grayscale transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0"
+        className="absolute inset-0 h-full w-full object-cover grayscale transition-transform duration-300 group-hover:scale-[1.03]"
         fill
-        sizes="(max-width: 1024px) 100vw, 25vw"
+        quality={72}
+        sizes="(max-width: 640px) 82vw, 340px"
         src={event.coverImage}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/95 via-surface-container-lowest/60 to-transparent" />

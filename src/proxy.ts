@@ -65,17 +65,28 @@ export async function proxy(request: NextRequest) {
     ? localeFromPath
     : getPreferredLocale(request);
 
-  // Maintenance mode check — skip dashboard and maintenance routes
+  // Maintenance mode check — skip dashboard, auth, and maintenance routes
   const isDashboard = /^\/(ar|en)\/dashboard(\/|$)/.test(pathname);
   const isMaintenancePage = /^\/(ar|en)\/maintenance$/.test(pathname);
+  const isLocalizedAuthPage = /^\/(ar|en)\/auth(\/|$)/.test(pathname);
+  const isBareAuthPage = /^\/auth(\/|$)/.test(pathname);
+  const isAuthPage = isLocalizedAuthPage || isBareAuthPage;
 
-  if (!isDashboard && !isMaintenancePage) {
+  if (!isDashboard && !isMaintenancePage && !isAuthPage) {
     try {
       const res = await fetch(new URL("/api/maintenance-status", request.url));
       if (res.ok) {
         const data = (await res.json()) as { maintenance: boolean };
         if (data.maintenance) {
-          return NextResponse.redirect(new URL(`/${resolvedLocale}/maintenance`, request.url));
+          const accessRes = await fetch(new URL("/api/maintenance-access", request.url), {
+            headers: { cookie: request.headers.get("cookie") ?? "" },
+          });
+          const accessData = accessRes.ok
+            ? (await accessRes.json()) as { canAccessFrontend: boolean }
+            : { canAccessFrontend: false };
+          if (!accessData.canAccessFrontend) {
+            return NextResponse.redirect(new URL(`/${resolvedLocale}/maintenance`, request.url));
+          }
         }
       }
     } catch {

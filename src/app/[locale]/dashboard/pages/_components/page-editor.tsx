@@ -899,6 +899,94 @@ function BlockNavSidebar({ blocks }: { blocks: Block[] }) {
   );
 }
 
+function LivePreviewBlock({ block, locale }: { block: Block; locale: "ar" | "en" }) {
+  switch (block.type) {
+    case "page_hero":
+      return (
+        <article className="rounded-lg border border-border/50 bg-card p-3">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{BLOCK_LABELS[block.type]}</p>
+          <p className="mt-2 text-sm font-semibold">{block.slides?.[0]?.heading || "Hero heading"}</p>
+          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{block.slides?.[0]?.subheading || "Hero subheading"}</p>
+        </article>
+      );
+    case "hero":
+      return (
+        <article className="rounded-lg border border-border/50 bg-card p-3">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{BLOCK_LABELS[block.type]}</p>
+          <p className="mt-2 text-sm font-semibold">{block.slides?.[0]?.heading || "Hero heading"}</p>
+          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{block.slides?.[0]?.subheading || "Hero subheading"}</p>
+          <p className="mt-2 text-[11px] text-muted-foreground">{block.media.length} media · {block.slides.length} slides</p>
+        </article>
+      );
+    case "richtext":
+      return (
+        <article className="rounded-lg border border-border/50 bg-card p-3">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{BLOCK_LABELS[block.type]}</p>
+          <div
+            className="prose prose-invert mt-2 line-clamp-5 max-w-none text-xs [&_*]:my-0"
+            dangerouslySetInnerHTML={{ __html: block.html || "<p>Rich text content…</p>" }}
+          />
+        </article>
+      );
+    case "service_cards":
+      return (
+        <article className="rounded-lg border border-border/50 bg-card p-3">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{BLOCK_LABELS[block.type]}</p>
+          <p className="mt-2 text-xs text-muted-foreground">{block.items.length} cards</p>
+        </article>
+      );
+    case "home_events_carousel":
+    case "home_posts_grid":
+      return (
+        <article className="rounded-lg border border-border/50 bg-card p-3">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{BLOCK_LABELS[block.type]}</p>
+          <p className="mt-2 text-sm font-semibold">{(block as { heading?: string }).heading || "Section heading"}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Auto-populated dynamic block</p>
+        </article>
+      );
+    default:
+      return (
+        <article className="rounded-lg border border-border/50 bg-card p-3">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{BLOCK_LABELS[block.type]}</p>
+          <p className="mt-2 text-xs text-muted-foreground">Preview placeholder</p>
+        </article>
+      );
+  }
+}
+
+function LivePreviewPane({
+  blocks,
+  locale,
+  pageTitle,
+}: {
+  blocks: Block[];
+  locale: "ar" | "en";
+  pageTitle: string;
+}) {
+  return (
+    <aside className="sticky top-0 hidden w-[390px] shrink-0 2xl:block">
+      <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+        <div className="mb-3 rounded-lg border border-border/50 bg-card p-3">
+          <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">Live Preview</p>
+          <p className="mt-1 line-clamp-1 text-sm font-semibold">{pageTitle || "Untitled page"}</p>
+          <p className="text-[11px] text-muted-foreground">{locale === "en" ? "English" : "Arabic"} · Unsaved edits</p>
+        </div>
+        <div className="max-h-[76vh] space-y-2 overflow-y-auto pr-1">
+          {blocks.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border/60 bg-card p-4 text-xs text-muted-foreground">
+              Add blocks to see a live preview.
+            </div>
+          ) : (
+            blocks.map((block) => (
+              <LivePreviewBlock block={block} key={block.id} locale={locale} />
+            ))
+          )}
+        </div>
+      </div>
+    </aside>
+  );
+}
+
 function AddBlockMenu({ onAdd }: { onAdd: (type: BlockType) => void }) {
   const [open, setOpen] = useState(false);
 
@@ -1264,15 +1352,18 @@ function MediaCarouselEditor({
 // ─── Overlay + viewport controls ─────────────────────────────────────────────
 
 function OverlayControls({
+  backgroundColor,
   fullViewport,
   overlayColor,
   overlayOpacity,
   onChange,
 }: {
+  backgroundColor: string;
   fullViewport: boolean;
   overlayColor: string;
   overlayOpacity: number;
   onChange: (patch: {
+    backgroundColor?: string;
     fullViewport?: boolean;
     overlayColor?: string;
     overlayOpacity?: number;
@@ -1294,6 +1385,21 @@ function OverlayControls({
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>Background color (no media)</label>
+          <div className="flex items-center gap-2">
+            <input
+              className="h-9 w-12 cursor-pointer rounded-md border border-border/70 bg-card p-1"
+              title="Background color"
+              type="color"
+              value={backgroundColor}
+              onChange={(e) => onChange({ backgroundColor: e.target.value })}
+            />
+            <span className="font-mono text-xs text-muted-foreground">
+              {backgroundColor}
+            </span>
+          </div>
+        </div>
         <div>
           <label className={labelCls}>Overlay color</label>
           <div className="flex items-center gap-2">
@@ -1356,6 +1462,7 @@ function PageHeroFields({
       </Field>
 
       <OverlayControls
+        backgroundColor={block.backgroundColor}
         fullViewport={block.fullViewport}
         overlayColor={block.overlayColor}
         overlayOpacity={block.overlayOpacity}
@@ -2209,6 +2316,7 @@ function HeroBlockFields({
   return (
     <>
       <OverlayControls
+        backgroundColor={block.backgroundColor}
         fullViewport={block.fullViewport}
         overlayColor={block.overlayColor}
         overlayOpacity={block.overlayOpacity}
@@ -2937,6 +3045,7 @@ function makeBlock(type: BlockType): Block {
         type,
         eyebrow: "",
         fullViewport: false,
+        backgroundColor: "#121414",
         overlayColor: "#000000",
         overlayOpacity: 40,
         media: [],
@@ -3002,6 +3111,7 @@ function makeBlock(type: BlockType): Block {
         id,
         type,
         fullViewport: true,
+        backgroundColor: "#121414",
         overlayColor: "#000000",
         overlayOpacity: 40,
         media: [],
@@ -3289,8 +3399,8 @@ export function PageEditor({
 
           {/* Blocks */}
           {activeSection === "blocks" && (
-            <div className="flex gap-6 justify-between relative">
-              <div className="min-w-0 flex-1 space-y-4 max-w-5xl">
+            <div className="relative flex justify-between gap-6">
+              <div className="min-w-0 max-w-5xl flex-1 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <SectionHeading
@@ -3350,7 +3460,14 @@ export function PageEditor({
                   </SortableContext>
                 </DndContext>
               </div>
-              <BlockNavSidebar blocks={blocks} />
+              <div className="hidden xl:flex xl:gap-4">
+                <BlockNavSidebar blocks={blocks} />
+                <LivePreviewPane
+                  blocks={blocks}
+                  locale={activeLocale}
+                  pageTitle={activeLocale === "en" ? titleEn : titleAr}
+                />
+              </div>
             </div>
           )}
 
