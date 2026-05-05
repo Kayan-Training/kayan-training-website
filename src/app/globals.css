@@ -117,8 +117,17 @@ body {
   backdrop-filter: blur(20px);
 }
 
+.frontend-shell .glass-nav,
+.frontend-shell .glass-panel {
+  background: color-mix(in oklab, var(--background) 84%, transparent);
+}
+
 .ghost-border {
   border: 1px solid oklch(0.32 0.012 207 / 15%);
+}
+
+.frontend-shell .ghost-border {
+  border-color: color-mix(in oklab, var(--border) 78%, transparent);
 }
 
 .hero-bg {

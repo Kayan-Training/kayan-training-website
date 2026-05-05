@@ -4,7 +4,12 @@ import { SettingsForm } from "./_components/settings-form";
 
 export const metadata = { title: "Settings" };
 
-export default async function SettingsDashboardPage() {
+export default async function SettingsDashboardPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
   const settings = await db.setting.findMany({ orderBy: { key: "asc" } });
 
   const initialValues: Record<string, string> = {};
@@ -21,7 +26,7 @@ export default async function SettingsDashboardPage() {
           Configure site-wide information, contact details, and social links.
         </p>
       </div>
-      <SettingsForm initialValues={initialValues} />
+      <SettingsForm initialValues={initialValues} locale={locale === "ar" ? "ar" : "en"} />
     </section>
   );
 }

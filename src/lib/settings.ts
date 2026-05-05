@@ -26,6 +26,19 @@ const getSettingsMap = cache(async (): Promise<SettingMap> => {
           "social.twitter",
           "social.instagram",
           "social.youtube",
+          "social.links",
+          "frontend.theme.background",
+          "frontend.theme.foreground",
+          "frontend.theme.card",
+          "frontend.theme.muted",
+          "frontend.theme.mutedForeground",
+          "frontend.theme.border",
+          "frontend.theme.surface",
+          "frontend.theme.surfaceDim",
+          "frontend.theme.surfaceContainerLow",
+          "frontend.theme.surfaceContainerLowest",
+          "frontend.theme.accent",
+          "frontend.theme.border",
         ],
       },
     },
@@ -71,6 +84,40 @@ export async function getLocalizedSiteSettings(locale: AppLocale) {
   const socialX = fromMap(map, "social.twitter");
   const socialInstagram = fromMap(map, "social.instagram");
   const socialYouTube = fromMap(map, "social.youtube");
+  const socialLinksRaw = fromMap(map, "social.links");
+  const socialLinks = (() => {
+    if (!socialLinksRaw) {
+      return [
+        socialLinkedIn ? { platform: "linkedin", url: socialLinkedIn } : null,
+        socialX ? { platform: "x", url: socialX } : null,
+        socialInstagram ? { platform: "instagram", url: socialInstagram } : null,
+        socialYouTube ? { platform: "youtube", url: socialYouTube } : null,
+      ].filter(Boolean) as { platform: string; url: string }[];
+    }
+    try {
+      const parsed = JSON.parse(socialLinksRaw) as { platform?: string; url?: string }[];
+      return parsed
+        .filter((item) => item?.platform && item?.url)
+        .map((item) => ({ platform: String(item.platform), url: String(item.url) }));
+    } catch {
+      return [];
+    }
+  })();
+  const frontendTheme = {
+    background: fromMap(map, "frontend.theme.background") || "#121414",
+    foreground: fromMap(map, "frontend.theme.foreground") || "#e2e2e2",
+    card: fromMap(map, "frontend.theme.card") || "#1a1c1c",
+    muted: fromMap(map, "frontend.theme.muted") || "#1e2020",
+    mutedForeground: fromMap(map, "frontend.theme.mutedForeground") || "#8b9295",
+    border: fromMap(map, "frontend.theme.border") || "#41484a",
+    surface: fromMap(map, "frontend.theme.surface") || "#121414",
+    surfaceDim: fromMap(map, "frontend.theme.surfaceDim") || "#0d0f0f",
+    surfaceContainerLow:
+      fromMap(map, "frontend.theme.surfaceContainerLow") || "#1a1c1c",
+    surfaceContainerLowest:
+      fromMap(map, "frontend.theme.surfaceContainerLowest") || "#0d0f0f",
+    accent: fromMap(map, "frontend.theme.accent") || "#1e2020",
+  };
 
   return {
     contactAddress,
@@ -81,7 +128,9 @@ export async function getLocalizedSiteSettings(locale: AppLocale) {
     siteTagline,
     socialInstagram,
     socialLinkedIn,
+    socialLinks,
     socialX,
     socialYouTube,
+    frontendTheme,
   };
 }

@@ -23,3 +23,14 @@ export async function upsertSettings(
     return { error: "Failed to save settings." };
   }
 }
+
+export async function fetchSettingsMediaAction(): Promise<
+  { id: string; originalName: string; url: string; mimeType?: string }[]
+> {
+  const media = await db.media.findMany({
+    orderBy: { createdAt: "desc" },
+    select: { id: true, originalName: true, url: true, mimeType: true },
+    take: 300,
+  });
+  return media;
+}

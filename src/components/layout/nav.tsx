@@ -64,7 +64,7 @@ export function SiteNav({
   }
 
   return (
-    <nav className="glass-nav fixed top-0 z-50 w-full border-b border-white/[0.06]">
+    <nav className="glass-nav fixed top-0 z-50 w-full border-b border-outline-variant/40">
       <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between px-6 md:px-10">
         <Link aria-label="Kayan Home" className="flex items-center shrink-0" href={`/${locale}`}>
           <Image alt="Kayan" className="h-10 w-auto" height={40} priority src="/brand/kayan-logo.svg" width={160} />
@@ -119,7 +119,7 @@ export function SiteNav({
           </button>
         </div>
       </div>
-      <div className={`${mobileOpen ? "max-h-[520px]" : "max-h-0"} overflow-hidden border-t border-white/[0.06] bg-surface-container-lowest transition-all duration-300 lg:hidden`}>
+      <div className={`${mobileOpen ? "max-h-[520px]" : "max-h-0"} overflow-hidden border-t border-outline-variant/40 bg-surface-container-lowest transition-all duration-300 lg:hidden`}>
         <div className="space-y-1 px-6 py-6">
           {links.map((link) => (
             <Link

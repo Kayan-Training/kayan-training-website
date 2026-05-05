@@ -28,7 +28,84 @@ function readPostBody(content: unknown): string {
   if (!content || typeof content !== "object") return "";
   const record = content as { html?: unknown };
   if (typeof record.html === "string") return record.html;
+  const nodes = readRichNodes(content);
+  if (nodes.length > 0) return renderRichNodes(nodes);
   return "";
+}
+
+type RichTextNode = {
+  type?: string;
+  text?: string;
+  attrs?: Record<string, unknown>;
+  content?: RichTextNode[];
+};
+
+function readRichNodes(content: unknown): RichTextNode[] {
+  if (!content || typeof content !== "object") return [];
+  const record = content as { type?: unknown; content?: unknown };
+  if (record.type !== "doc" || !Array.isArray(record.content)) return [];
+  return record.content as RichTextNode[];
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function renderInline(nodes: RichTextNode[] | undefined): string {
+  if (!Array.isArray(nodes)) return "";
+  return nodes
+    .map((node) => {
+      if (node.type === "text") return escapeHtml(node.text ?? "");
+      if (node.type === "hardBreak") return "<br />";
+      if (node.type === "image") return "";
+      if (node.type === "paragraph") return renderInline(node.content);
+      if (node.type === "listItem") return renderInline(node.content);
+      if (node.type === "bulletList" || node.type === "orderedList") {
+        return renderRichNodes(node.content ?? []);
+      }
+      if (Array.isArray(node.content)) return renderInline(node.content);
+      return "";
+    })
+    .join("");
+}
+
+function renderRichNodes(nodes: RichTextNode[]): string {
+  return nodes
+    .map((node) => {
+      switch (node.type) {
+        case "heading": {
+          const levelRaw = node.attrs?.level;
+          const level = typeof levelRaw === "number" && levelRaw >= 1 && levelRaw <= 6 ? levelRaw : 2;
+          return `<h${level}>${renderInline(node.content)}</h${level}>`;
+        }
+        case "paragraph":
+          return `<p>${renderInline(node.content)}</p>`;
+        case "bulletList":
+          return `<ul>${(node.content ?? [])
+            .map((item) => `<li>${renderInline(item.content)}</li>`)
+            .join("")}</ul>`;
+        case "orderedList":
+          return `<ol>${(node.content ?? [])
+            .map((item) => `<li>${renderInline(item.content)}</li>`)
+            .join("")}</ol>`;
+        case "image": {
+          const src = typeof node.attrs?.src === "string" ? node.attrs.src : "";
+          if (!src) return "";
+          const alt = typeof node.attrs?.alt === "string" ? node.attrs.alt : "";
+          return `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy" />`;
+        }
+        case "blockquote":
+          return `<blockquote>${renderRichNodes(node.content ?? [])}</blockquote>`;
+        default:
+          return renderInline(node.content);
+      }
+    })
+    .join("");
 }
 
 function formatDate(date: Date | null, locale: "ar" | "en"): string {
@@ -50,12 +127,16 @@ export default async function PostDetailPage({
 }) {
   const { locale, slug } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
-  const post = await getPostDetailBySlug(activeLocale, slug);
+  const [post, localizedPosts] = await Promise.all([
+    getPostDetailBySlug(activeLocale, slug),
+    getLocalizedPosts(activeLocale, 6),
+  ]);
 
   if (!post) notFound();
 
   const body = readPostBody(post.content);
   const heroSrc = post.coverImage ?? fallbackHero;
+  const relatedPosts = localizedPosts.filter((item) => item.slug !== post.slug).slice(0, 4);
 
   return (
     <main className="pt-16">
@@ -139,26 +220,41 @@ export default async function PostDetailPage({
         <aside className="col-span-12 space-y-4 lg:col-span-4">
           <div className="ghost-border bg-surface-container-highest p-6">
             <h3 className="mb-4 text-lg font-bold">
-              {activeLocale === "ar" ? "تفاصيل المقال" : "Post Details"}
+              {activeLocale === "ar" ? "مقالات أخرى" : "Related Posts"}
             </h3>
-            <dl className="space-y-3 text-sm text-on-surface-variant">
-              {post.publishedAt ? (
-                <div>
-                  <dt className="mb-0.5 text-[10px] font-semibold uppercase tracking-widest text-outline">
-                    {activeLocale === "ar" ? "تاريخ النشر" : "Published"}
-                  </dt>
-                  <dd className="font-mono text-secondary">{formatDate(post.publishedAt, activeLocale)}</dd>
-                </div>
-              ) : null}
-              {post.authorName ? (
-                <div>
-                  <dt className="mb-0.5 text-[10px] font-semibold uppercase tracking-widest text-outline">
-                    {activeLocale === "ar" ? "الكاتب" : "Author"}
-                  </dt>
-                  <dd>{post.authorName}</dd>
-                </div>
-              ) : null}
-            </dl>
+            {relatedPosts.length > 0 ? (
+              <div className="space-y-4">
+                {relatedPosts.map((relatedPost) => (
+                  <Link
+                    className="group flex items-start gap-3 border-b border-outline-variant/20 pb-4 last:border-0 last:pb-0"
+                    href={`/${activeLocale}/posts/${relatedPost.slug}`}
+                    key={relatedPost.slug}
+                  >
+                    <div className="relative h-14 w-20 flex-none overflow-hidden rounded-sm bg-surface-container">
+                      <Image
+                        alt={relatedPost.title}
+                        className="object-cover grayscale transition-all duration-500 group-hover:grayscale-0"
+                        fill
+                        sizes="80px"
+                        src={relatedPost.image ?? fallbackHero}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-secondary">
+                        {relatedPost.title}
+                      </p>
+                      <p className="mt-1 font-mono text-[11px] text-on-surface-variant">
+                        {formatDate(relatedPost.publishedAt, activeLocale)}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-on-surface-variant">
+                {activeLocale === "ar" ? "لا توجد مقالات أخرى حالياً." : "No related posts available yet."}
+              </p>
+            )}
           </div>
 
           <div className="ghost-border p-6">
@@ -166,8 +262,8 @@ export default async function PostDetailPage({
               className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-on-surface-variant transition-colors hover:text-primary"
               href={`/${activeLocale}/posts`}
             >
-              <HugeiconsIcon className="rtl:rotate-180" icon={ArrowRight01Icon} size={16} strokeWidth={1.8} />
               {activeLocale === "ar" ? "جميع المقالات" : "All Posts"}
+              <HugeiconsIcon className="rtl:rotate-180" icon={ArrowRight01Icon} size={16} strokeWidth={1.8} />
             </Link>
           </div>
         </aside>

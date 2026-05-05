@@ -1,9 +1,9 @@
-import { InstagramIcon, Linkedin01Icon, NewTwitterIcon, YoutubeIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import Link from "next/link";
 
 import { LocaleSwitcher } from "@/components/i18n/locale-switcher";
+import { SOCIAL_PLATFORM_OPTIONS, type SocialPlatformKey } from "@/lib/social-platforms";
 
 export function SiteFooter({
   locale,
@@ -18,6 +18,7 @@ export function SiteFooter({
     siteTagline: string;
     socialInstagram: string;
     socialLinkedIn: string;
+    socialLinks?: { platform: string; url: string }[];
     socialX: string;
     socialYouTube: string;
   };
@@ -31,12 +32,30 @@ export function SiteFooter({
   const contactPhone = settings?.contactPhone || "+968 9538 3138";
   const contactAddress = settings?.contactAddress || (locale === "ar" ? "سلطنة عُمان، مسقط" : "Sultanate of Oman, Muscat");
   const siteName = settings?.siteName || (locale === "ar" ? "كيان للتدريب والاستشارات" : "Kayan Training & Consulting");
-  const socialLinks = [
-    { href: settings?.socialLinkedIn || "", icon: Linkedin01Icon, label: "LinkedIn" },
-    { href: settings?.socialX || "", icon: NewTwitterIcon, label: "X" },
-    { href: settings?.socialInstagram || "", icon: InstagramIcon, label: "Instagram" },
-    { href: settings?.socialYouTube || "", icon: YoutubeIcon, label: "YouTube" },
-  ].filter((item) => Boolean(item.href));
+  const mappedPlatforms = new Map(
+    SOCIAL_PLATFORM_OPTIONS.map((item) => [item.value, { icon: item.icon, label: item.label }]),
+  );
+  const socialLinks: { href: string; icon: (typeof SOCIAL_PLATFORM_OPTIONS)[number]["icon"]; label: string }[] = [];
+  if (settings?.socialLinks && settings.socialLinks.length > 0) {
+    for (const item of settings.socialLinks) {
+      const platform = mappedPlatforms.get(item.platform as SocialPlatformKey);
+      if (!platform || !item.url) continue;
+      socialLinks.push({ href: item.url, icon: platform.icon, label: platform.label });
+    }
+  } else {
+    if (settings?.socialLinkedIn) {
+      socialLinks.push({ href: settings.socialLinkedIn, icon: mappedPlatforms.get("linkedin")!.icon, label: "LinkedIn" });
+    }
+    if (settings?.socialX) {
+      socialLinks.push({ href: settings.socialX, icon: mappedPlatforms.get("x")!.icon, label: "X / Twitter" });
+    }
+    if (settings?.socialInstagram) {
+      socialLinks.push({ href: settings.socialInstagram, icon: mappedPlatforms.get("instagram")!.icon, label: "Instagram" });
+    }
+    if (settings?.socialYouTube) {
+      socialLinks.push({ href: settings.socialYouTube, icon: mappedPlatforms.get("youtube")!.icon, label: "YouTube" });
+    }
+  }
 
   return (
     <footer className="border-t border-white/[0.05] bg-surface-container-lowest">

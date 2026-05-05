@@ -21,6 +21,7 @@ import {
   RotateCcw,
   Ticket,
   Upload,
+  User,
   Users,
   XCircle,
 } from "lucide-react";
@@ -1652,6 +1653,102 @@ function ExportSchemaDialog() {
   );
 }
 
+function RegistrationDetailsDialog({
+  row,
+}: {
+  row: RegistrationRow;
+}) {
+  const dynamicEntries = Object.entries(row.formData ?? {}).filter(
+    ([key]) => !["name", "email", "phone"].includes(key.toLowerCase()),
+  );
+  return (
+    <DialogContent className="max-w-6xl">
+      <DialogHeader>
+        <DialogTitle>Registration Details</DialogTitle>
+      </DialogHeader>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Registrant
+          </p>
+          <p className="text-sm font-semibold">{row.registrantName}</p>
+          <p className="text-xs text-muted-foreground">{row.registrantEmail}</p>
+        </div>
+        <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Event
+          </p>
+          <p className="text-sm font-semibold">{row.eventTitle}</p>
+          <p className="text-xs text-muted-foreground">
+            {formatDate(row.eventStartDate)}{row.eventEndDate ? ` → ${formatDate(row.eventEndDate)}` : ""}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Registration
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge className={cn("border capitalize", statusColors[row.status] ?? "")} variant="outline">
+              {row.status}
+            </Badge>
+            <Badge
+              className={cn(
+                "border capitalize",
+                paymentStatusColors[row.paymentStatus] ?? "border-border bg-muted text-muted-foreground",
+              )}
+              variant="outline"
+            >
+              {row.paymentStatus}
+            </Badge>
+            <Badge
+              className={cn(
+                "border uppercase",
+                paymentMethodColors[row.paymentMethod] ?? "border-border bg-muted text-muted-foreground",
+              )}
+              variant="outline"
+            >
+              {row.paymentMethod}
+            </Badge>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Created: {new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(row.createdAt)}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Payment
+          </p>
+          <p className="text-xs text-muted-foreground">Reference: {row.paymentRef ?? "—"}</p>
+          <p className="text-xs text-muted-foreground">Amount: {row.amount ? `${row.amount} OMR` : "—"}</p>
+          {row.paymentProofUrl ? (
+            <a className="mt-2 inline-flex text-xs font-medium text-primary underline" href={row.paymentProofUrl} rel="noreferrer" target="_blank">
+              Open payment proof
+            </a>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border/60 bg-card">
+        <div className="border-b border-border/60 px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Submitted form data</p>
+        </div>
+        {dynamicEntries.length > 0 ? (
+          <div className="grid gap-2 p-3 sm:grid-cols-2">
+            {dynamicEntries.map(([key, value]) => (
+              <div className="rounded-md border border-border/50 bg-muted/20 px-3 py-2" key={key}>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{key}</p>
+                <p className="mt-1 break-words text-xs">{String(value ?? "—")}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="px-3 py-5 text-sm text-muted-foreground">No additional form fields submitted.</p>
+        )}
+      </div>
+    </DialogContent>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // RegistrationsTable
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1678,6 +1775,7 @@ export function RegistrationsTable({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [paymentRow, setPaymentRow] = useState<RegistrationRow | null>(null);
   const [manageRow, setManageRow] = useState<RegistrationRow | null>(null);
+  const [detailsRow, setDetailsRow] = useState<RegistrationRow | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(initialCreateOpen);
   const [isSchemaOpen, setIsSchemaOpen] = useState(false);
   const [cancelRow, setCancelRow] = useState<RegistrationRow | null>(null);
@@ -1844,6 +1942,14 @@ export function RegistrationsTable({
           />
         ) : null}
       </Dialog>
+      <Dialog
+        open={!!detailsRow}
+        onOpenChange={(open) => {
+          if (!open) setDetailsRow(null);
+        }}
+      >
+        {detailsRow ? <RegistrationDetailsDialog row={detailsRow} /> : null}
+      </Dialog>
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         {isCreateOpen ? (
           <CreateRegistrationDialog
@@ -1998,7 +2104,7 @@ export function RegistrationsTable({
               variant="outline"
             >
               <Download className="mr-1.5 size-3.5" />
-              Export CSV
+              {fixedEventId || exportEventId !== "all" ? "Export selected event CSV" : "Export all events CSV"}
             </Button>
             <Button
               className="h-10 shrink-0 gap-1.5 text-xs"
@@ -2177,6 +2283,10 @@ export function RegistrationsTable({
                           Actions
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-fit min-w-0">
+                          <DropdownMenuItem onClick={() => setDetailsRow(r)}>
+                            <User className="mr-1.5 size-3.5" />
+                            Details
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setPaymentRow(r)}>
                             <CircleDollarSign className="mr-1.5 size-3.5" />
                             Payment
