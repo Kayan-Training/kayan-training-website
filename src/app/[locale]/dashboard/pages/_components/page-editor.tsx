@@ -33,6 +33,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   cloneElement,
+  useEffect,
+  useRef,
   isValidElement,
   useId,
   useState,
@@ -183,7 +185,7 @@ function makeId() {
 type BlockType = Block["type"];
 
 function BlockWireframe({ type }: { type: BlockType }) {
-  const bg = "#18181b";
+  const bg = "#121414";
   const el = "#3f3f46";
   const elLight = "#52525b";
   const accent = "#2d5a3d";
@@ -194,39 +196,39 @@ function BlockWireframe({ type }: { type: BlockType }) {
       <>
         <rect width="120" height="68" fill={bg} />
         <rect x="0" y="0" width="120" height="68" fill="url(#heroGrad)" />
-        <rect x="15" y="16" width="90" height="7" rx="2" fill={el} />
+        <rect x="0" y="38" width="120" height="30" fill="#090d0d" opacity="0.75" />
+        <rect x="14" y="16" width="92" height="7" rx="2" fill="#f4f4f5" opacity="0.85" />
         <rect
-          x="28"
+          x="25"
           y="27"
-          width="64"
+          width="70"
           height="5"
           rx="1.5"
-          fill={elLight}
-          opacity="0.6"
+          fill="#d4d4d8"
+          opacity="0.7"
         />
         <rect
-          x="36"
-          y="36"
-          width="48"
+          x="41"
+          y="45"
+          width="38"
           height="4"
           rx="1.5"
-          fill={elLight}
-          opacity="0.4"
+          fill={accentLight}
+          opacity="0.9"
         />
         <rect
-          x="42"
-          y="47"
-          width="36"
-          height="10"
-          rx="3"
-          fill={accent}
-          stroke={accentLight}
-          strokeWidth="0.8"
+          x="8"
+          y="8"
+          width="24"
+          height="4"
+          rx="1.5"
+          fill={accentLight}
+          opacity="0.9"
         />
         <defs>
           <linearGradient id="heroGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#27272a" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#18181b" stopOpacity="1" />
+            <stop offset="0%" stopColor="#2f3a3c" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#121414" stopOpacity="1" />
           </linearGradient>
         </defs>
       </>
@@ -675,8 +677,10 @@ function BlockWireframe({ type }: { type: BlockType }) {
     ),
     hero: (
       <>
-        <rect width="120" height="68" fill={elLight} opacity="0.3" />
+        <rect width="120" height="68" fill="#222a2b" />
         <rect width="120" height="68" fill="url(#heroGrad2)" />
+        <rect x="0" y="0" width="120" height="68" fill="#0a0e0e" opacity="0.55" />
+        <rect x="8" y="9" width="52" height="3.5" rx="1.5" fill={accentLight} opacity="0.85" />
         <rect
           x="20"
           y="20"
@@ -695,16 +699,7 @@ function BlockWireframe({ type }: { type: BlockType }) {
           fill="white"
           opacity="0.4"
         />
-        <rect
-          x="42"
-          y="46"
-          width="36"
-          height="10"
-          rx="3"
-          fill={accent}
-          stroke={accentLight}
-          strokeWidth="0.8"
-        />
+        <rect x="42" y="46" width="36" height="10" rx="3" fill={accent} stroke={accentLight} strokeWidth="0.8" />
         <defs>
           <linearGradient id="heroGrad2" x1="0" y1="1" x2="0" y2="0">
             <stop offset="0%" stopColor="#18181b" stopOpacity="0.9" />
@@ -815,20 +810,46 @@ function BlockWireframe({ type }: { type: BlockType }) {
     home_events_carousel: (
       <>
         <rect width="120" height="68" fill={bg} />
-        <rect x="8" y="8" width="40" height="5" rx="1.5" fill={el} />
-        <rect x="8" y="16" width="60" height="4" rx="1.5" fill={elLight} opacity="0.5" />
-        {[0, 1, 2].map((i) => (
-          <rect key={i} x={8 + i * 38} y="26" width="34" height="34" rx="3" fill={el} opacity="0.5" />
-        ))}
+        <rect x="8" y="7" width="34" height="4" rx="1.5" fill={accentLight} opacity="0.9" />
+        <rect x="8" y="14" width="58" height="3" rx="1.5" fill={elLight} opacity="0.5" />
+        <rect x="12" y="22" width="30" height="40" rx="2.5" fill="#212829" />
+        <rect x="12" y="22" width="30" height="40" rx="2.5" fill="url(#cardA)" opacity="0.65" />
+        <rect x="45" y="22" width="30" height="40" rx="2.5" fill="#1d2324" />
+        <rect x="45" y="22" width="30" height="40" rx="2.5" fill="url(#cardB)" opacity="0.58" />
+        <rect x="78" y="22" width="30" height="40" rx="2.5" fill="#212829" />
+        <rect x="78" y="22" width="30" height="40" rx="2.5" fill="url(#cardC)" opacity="0.62" />
+        <rect x="16" y="51" width="13" height="2" rx="1" fill="#2bb673" opacity="0.8" />
+        <rect x="49" y="51" width="13" height="2" rx="1" fill="#2bb673" opacity="0.8" />
+        <rect x="82" y="51" width="13" height="2" rx="1" fill="#2bb673" opacity="0.8" />
+        <defs>
+          <linearGradient id="cardA" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#718096" />
+            <stop offset="100%" stopColor="#1f2937" />
+          </linearGradient>
+          <linearGradient id="cardB" x1="1" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#7c3aed" />
+            <stop offset="100%" stopColor="#111827" />
+          </linearGradient>
+          <linearGradient id="cardC" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#0ea5e9" />
+            <stop offset="100%" stopColor="#111827" />
+          </linearGradient>
+        </defs>
       </>
     ),
     home_posts_grid: (
       <>
         <rect width="120" height="68" fill={bg} />
-        <rect x="8" y="8" width="40" height="5" rx="1.5" fill={el} />
-        <rect x="8" y="16" width="60" height="4" rx="1.5" fill={elLight} opacity="0.5" />
+        <rect x="8" y="7" width="30" height="4" rx="1.5" fill={accentLight} opacity="0.9" />
+        <rect x="8" y="14" width="52" height="3" rx="1.5" fill={elLight} opacity="0.5" />
         {[0, 1, 2].map((i) => (
-          <rect key={i} x={8 + i * 38} y="26" width="34" height="34" rx="3" fill={el} opacity="0.4" />
+          <g key={i}>
+            <rect x={8 + i * 38} y="24" width="34" height="36" rx="3" fill="#1e2020" />
+            <rect x={10 + i * 38} y="27" width="30" height="12" rx="2" fill={elLight} opacity="0.35" />
+            <rect x={10 + i * 38} y="42" width="24" height="2.6" rx="1" fill={accentLight} opacity="0.75" />
+            <rect x={10 + i * 38} y="47" width="27" height="2" rx="1" fill={elLight} opacity="0.5" />
+            <rect x={10 + i * 38} y="51" width="20" height="2" rx="1" fill={elLight} opacity="0.4" />
+          </g>
         ))}
       </>
     ),
@@ -836,7 +857,7 @@ function BlockWireframe({ type }: { type: BlockType }) {
 
   return (
     <svg
-      className="h-17 w-30 shrink-0 overflow-hidden rounded-md border border-border/30"
+      className="h-20 w-36 shrink-0 overflow-hidden rounded-md border border-border/30"
       viewBox="0 0 120 68"
     >
       {frames[type] ?? <rect width="120" height="68" fill="#27272a" />}
@@ -1005,7 +1026,7 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: BlockType) => void }) {
       ></DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
-        className="max-h-[70vh] w-105 overflow-y-auto p-2"
+        className="max-h-[70vh] w-[30rem] overflow-y-auto p-2"
         sideOffset={6}
       >
         <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -3177,6 +3198,11 @@ export function PageEditor({
   const [isPending, startTransition] = useTransition();
   const [activeLocale, setActiveLocale] = useState<"ar" | "en">("en");
   const [activeSection, setActiveSection] = useState<SectionId>("identity");
+  const [viewMode, setViewMode] = useState<"editor" | "preview">("editor");
+  const [previewNonce, setPreviewNonce] = useState(() => Date.now());
+  const [isPreviewSyncing, setIsPreviewSyncing] = useState(false);
+  const [previewAutoSync, setPreviewAutoSync] = useState(true);
+  const previewSyncQueuedRef = useRef(false);
 
   const [titleEn, setTitleEn] = useState(pageData.titleEn);
   const [titleAr, setTitleAr] = useState(pageData.titleAr);
@@ -3251,7 +3277,66 @@ export function PageEditor({
     });
   }
 
+  async function syncPreviewNow() {
+    if (isPreviewSyncing) {
+      previewSyncQueuedRef.current = true;
+      return;
+    }
+    setIsPreviewSyncing(true);
+    const result = await updatePageAction(pageData.id, locale, {
+      status,
+      titleEn,
+      titleAr,
+      seoTitleEn,
+      seoTitleAr,
+      seoDescriptionEn: seoDescEn,
+      seoDescriptionAr: seoDescAr,
+      blocksEn,
+      blocksAr,
+    });
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      setPreviewNonce(Date.now());
+    }
+    setIsPreviewSyncing(false);
+
+    if (previewSyncQueuedRef.current) {
+      previewSyncQueuedRef.current = false;
+      void syncPreviewNow();
+    }
+  }
+
+  useEffect(() => {
+    if (viewMode !== "preview") return;
+    void syncPreviewNow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (viewMode !== "preview" || !previewAutoSync) return;
+    const id = setTimeout(() => {
+      void syncPreviewNow();
+    }, 500);
+    return () => clearTimeout(id);
+  }, [
+    viewMode,
+    previewAutoSync,
+    pageData.id,
+    locale,
+    status,
+    titleEn,
+    titleAr,
+    seoTitleEn,
+    seoTitleAr,
+    seoDescEn,
+    seoDescAr,
+    blocksEn,
+    blocksAr,
+  ]);
+
   const dir = activeLocale === "ar" ? "rtl" : "ltr";
+  const previewPath = pageData.slug === "home" ? `/${activeLocale}` : `/${activeLocale}/${pageData.slug}`;
 
   return (
     <div className="event-editor -m-6 relative">
@@ -3325,6 +3410,32 @@ export function PageEditor({
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <div className="flex overflow-hidden rounded-md border border-border/70">
+              <button
+                className={cn(
+                  "px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors",
+                  viewMode === "editor"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted",
+                )}
+                type="button"
+                onClick={() => setViewMode("editor")}
+              >
+                Editor
+              </button>
+              <button
+                className={cn(
+                  "px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors",
+                  viewMode === "preview"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted",
+                )}
+                type="button"
+                onClick={() => setViewMode("preview")}
+              >
+                Live Preview
+              </button>
+            </div>
             {/* Locale toggle */}
             <div className="flex overflow-hidden rounded-md border border-border/70">
               {(["en", "ar"] as const).map((loc) => (
@@ -3357,6 +3468,38 @@ export function PageEditor({
 
         {/* Sections */}
         <div className="flex-1 overflow-y-auto px-6 py-6 isolate">
+          {viewMode === "preview" && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between rounded-md border border-border/50 bg-card/70 px-3 py-2 text-xs">
+                <span className="font-medium text-muted-foreground">
+                  Frontend preview: <span className="text-foreground">{previewPath}</span>
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="rounded border border-border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                    disabled={isPreviewSyncing}
+                    type="button"
+                    onClick={() => void syncPreviewNow()}
+                  >
+                    {isPreviewSyncing ? "Updating..." : "Update Preview"}
+                  </button>
+                  <span className={cn("text-[11px]", isPreviewSyncing ? "text-secondary" : "text-muted-foreground")}>
+                    {isPreviewSyncing ? "Syncing changes..." : "Ready"}
+                  </span>
+                </div>
+              </div>
+              <div className="h-[calc(100vh-14rem)] overflow-hidden rounded-lg border border-border/50 bg-background">
+                <iframe
+                  className="h-full w-full"
+                  src={`${previewPath}?preview=1&t=${previewNonce}`}
+                  title="Live frontend preview"
+                />
+              </div>
+            </div>
+          )}
+
+          {viewMode === "editor" && (
+            <>
           {/* Identity */}
           {activeSection === "identity" && (
             <div className="mx-auto max-w-2xl space-y-5">
@@ -3528,6 +3671,8 @@ export function PageEditor({
                 /160
               </p>
             </div>
+          )}
+            </>
           )}
         </div>
       </div>
