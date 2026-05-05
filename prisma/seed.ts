@@ -1119,6 +1119,403 @@ async function main() {
     },
   });
 
+  const additionalPostSeeds = [
+    {
+      slug: "building-high-trust-learning-cultures",
+      publishedAt: "2026-05-03T10:00:00.000Z",
+      titleEn: "Building High-Trust Learning Cultures",
+      excerptEn:
+        "Practical systems for leaders who want teams to learn faster and execute with confidence.",
+      titleAr: "بناء ثقافة تعلم عالية الثقة",
+      excerptAr:
+        "أنظمة عملية للقادة الراغبين في رفع سرعة التعلم وجودة التنفيذ بثقة.",
+      imageUrl: mediaRecords[0].url,
+      bodyEn: {
+        type: "doc",
+        content: [
+          {
+            type: "heading",
+            attrs: { level: 2 },
+            content: [{ type: "text", text: "Trust is an operating system" }],
+          },
+          {
+            type: "paragraph",
+            content: [
+              {
+                type: "text",
+                text: "Teams adopt new skills faster when leaders normalize feedback loops, publish decision context, and reward learning behavior in daily standups.",
+              },
+            ],
+          },
+          {
+            type: "bulletList",
+            content: [
+              {
+                type: "listItem",
+                content: [
+                  {
+                    type: "paragraph",
+                    content: [
+                      {
+                        type: "text",
+                        text: "Codify review rituals with a weekly ‘what changed’ session.",
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                type: "listItem",
+                content: [
+                  {
+                    type: "paragraph",
+                    content: [
+                      {
+                        type: "text",
+                        text: "Tie capability goals to actual delivery milestones.",
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                type: "listItem",
+                content: [
+                  {
+                    type: "paragraph",
+                    content: [
+                      {
+                        type: "text",
+                        text: "Keep retrospectives short, specific, and accountable.",
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          { type: "image", attrs: { src: mediaRecords[0].url, alt: "Workshop discussion" } },
+          {
+            type: "paragraph",
+            content: [
+              {
+                type: "text",
+                text: "A healthy learning culture is measured by decision quality, cross-team response time, and reduction of repeated mistakes.",
+              },
+            ],
+          },
+        ],
+      },
+      bodyAr: {
+        type: "doc",
+        content: [
+          {
+            type: "heading",
+            attrs: { level: 2 },
+            content: [{ type: "text", text: "الثقة منظومة تشغيل" }],
+          },
+          {
+            type: "paragraph",
+            content: [
+              {
+                type: "text",
+                text: "تتبنى الفرق المهارات الجديدة بسرعة أكبر عندما يرسخ القادة ثقافة التغذية الراجعة ويشاركون سياق القرار ويكافئون السلوك التعلمي بشكل يومي.",
+              },
+            ],
+          },
+          {
+            type: "bulletList",
+            content: [
+              {
+                type: "listItem",
+                content: [{ type: "paragraph", content: [{ type: "text", text: "اعتمد جلسة أسبوعية بعنوان: ما الذي تغيّر؟" }] }],
+              },
+              {
+                type: "listItem",
+                content: [{ type: "paragraph", content: [{ type: "text", text: "اربط أهداف بناء القدرات بمراحل التسليم الفعلية." }] }],
+              },
+              {
+                type: "listItem",
+                content: [{ type: "paragraph", content: [{ type: "text", text: "اجعل جلسات المراجعة قصيرة ومحددة وقابلة للمحاسبة." }] }],
+              },
+            ],
+          },
+          { type: "image", attrs: { src: mediaRecords[0].url, alt: "جلسة تدريبية" } },
+          {
+            type: "paragraph",
+            content: [
+              {
+                type: "text",
+                text: "يمكن قياس الثقافة التعلمية الصحية عبر جودة القرار وسرعة التنسيق بين الفرق وانخفاض تكرار الأخطاء.",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      slug: "designing-metrics-for-capability-programs",
+      publishedAt: "2026-05-04T09:00:00.000Z",
+      titleEn: "Designing Metrics for Capability Programs",
+      excerptEn:
+        "A practical model to connect training interventions with business-level outcomes.",
+      titleAr: "تصميم مؤشرات قياس برامج بناء القدرات",
+      excerptAr:
+        "نموذج عملي يربط تدخلات التدريب بمخرجات الأعمال على مستوى المؤسسة.",
+      imageUrl: mediaRecords[1].url,
+      bodyEn: {
+        type: "doc",
+        content: [
+          { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Measure behavior, not attendance" }] },
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: "Completion rates are lagging indicators. Better metrics track behavior changes in planning, communication quality, and cycle-time reduction." }],
+          },
+          {
+            type: "orderedList",
+            content: [
+              {
+                type: "listItem",
+                content: [{ type: "paragraph", content: [{ type: "text", text: "Define one business KPI per program objective." }] }],
+              },
+              {
+                type: "listItem",
+                content: [{ type: "paragraph", content: [{ type: "text", text: "Attach one observable behavior per KPI." }] }],
+              },
+              {
+                type: "listItem",
+                content: [{ type: "paragraph", content: [{ type: "text", text: "Review progress monthly with clear owners." }] }],
+              },
+            ],
+          },
+          { type: "image", attrs: { src: mediaRecords[1].url, alt: "Leadership audience" } },
+        ],
+      },
+      bodyAr: {
+        type: "doc",
+        content: [
+          { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "قِس السلوك لا الحضور" }] },
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: "نسب الإكمال مؤشر متأخر. المؤشرات الأفضل تتبع تغيرات السلوك في التخطيط وجودة التواصل وتقليل زمن الدورة." }],
+          },
+          {
+            type: "orderedList",
+            content: [
+              { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "حدد مؤشر أعمال واحد لكل هدف تدريبي." }] }] },
+              { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "اربط كل مؤشر بسلوك يمكن ملاحظته." }] }] },
+              { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "راجع التقدم شهرياً مع ملاك واضحين للمؤشرات." }] }] },
+            ],
+          },
+          { type: "image", attrs: { src: mediaRecords[1].url, alt: "جمهور قيادي" } },
+        ],
+      },
+    },
+  ];
+
+  for (const seed of additionalPostSeeds) {
+    const postRecord = await prisma.post.upsert({
+      where: { slug: seed.slug },
+      update: {
+        status: "published",
+        type: "article",
+        featuredImageId: mediaRecords[2].id,
+        authorId: admin.id,
+        publishedAt: new Date(seed.publishedAt),
+      },
+      create: {
+        slug: seed.slug,
+        status: "published",
+        type: "article",
+        featuredImageId: mediaRecords[2].id,
+        authorId: admin.id,
+        publishedAt: new Date(seed.publishedAt),
+      },
+    });
+
+    await prisma.postTranslation.upsert({
+      where: { postId_locale: { postId: postRecord.id, locale: "en" } },
+      update: {
+        title: seed.titleEn,
+        excerpt: seed.excerptEn,
+        content: seed.bodyEn,
+      },
+      create: {
+        postId: postRecord.id,
+        locale: "en",
+        title: seed.titleEn,
+        excerpt: seed.excerptEn,
+        content: seed.bodyEn,
+      },
+    });
+
+    await prisma.postTranslation.upsert({
+      where: { postId_locale: { postId: postRecord.id, locale: "ar" } },
+      update: {
+        title: seed.titleAr,
+        excerpt: seed.excerptAr,
+        content: seed.bodyAr,
+      },
+      create: {
+        postId: postRecord.id,
+        locale: "ar",
+        title: seed.titleAr,
+        excerpt: seed.excerptAr,
+        content: seed.bodyAr,
+      },
+    });
+  }
+
+  const demoRegistrantEmails = [
+    "learner@kayan.local",
+    "registrant1@kayan.local",
+    "registrant2@kayan.local",
+    "registrant3@kayan.local",
+  ];
+
+  for (const email of demoRegistrantEmails.slice(1)) {
+    await prisma.user.upsert({
+      where: { email },
+      update: { role: "user", emailVerified: true },
+      create: {
+        email,
+        name: email.split("@")[0].replace("registrant", "Registrant "),
+        role: "user",
+        preferredLocale: "en",
+        emailVerified: true,
+      },
+    });
+  }
+
+  const demoUsers = await prisma.user.findMany({
+    where: { email: { in: demoRegistrantEmails } },
+    select: { id: true, email: true, name: true },
+  });
+  const demoUserByEmail = new Map(demoUsers.map((u) => [u.email, u]));
+
+  const demoEventSlugs = [
+    "ai-productivity-sprint-2026",
+    "leadership-bootcamp-june-2026",
+    "strategic-communication-lab-2026",
+    "creative-thinking-intensive-july-2026",
+  ];
+  const demoEvents = await prisma.event.findMany({
+    where: { slug: { in: demoEventSlugs } },
+    select: { id: true, slug: true, price: true },
+  });
+  const demoEventBySlug = new Map(demoEvents.map((e) => [e.slug, e]));
+
+  await prisma.payment.deleteMany({
+    where: {
+      registration: {
+        eventId: { in: demoEvents.map((e) => e.id) },
+        userId: { in: demoUsers.map((u) => u.id) },
+      },
+    },
+  });
+  await prisma.registration.deleteMany({
+    where: {
+      eventId: { in: demoEvents.map((e) => e.id) },
+      userId: { in: demoUsers.map((u) => u.id) },
+    },
+  });
+
+  const demoRegistrations = [
+    {
+      eventSlug: "ai-productivity-sprint-2026",
+      userEmail: "learner@kayan.local",
+      status: "confirmed",
+      paymentStatus: "paid",
+      paymentMethod: "free",
+      amount: 0,
+      createdAt: new Date("2026-05-01T09:12:00.000Z"),
+      formData: { name: "Demo Learner", email: "learner@kayan.local", company: "OQ", jobTitle: "Analyst", seniority: "Mid" },
+    },
+    {
+      eventSlug: "leadership-bootcamp-june-2026",
+      userEmail: "registrant1@kayan.local",
+      status: "pending",
+      paymentStatus: "pending",
+      paymentMethod: "bank",
+      amount: 2400,
+      createdAt: new Date("2026-05-03T11:25:00.000Z"),
+      formData: { name: "Registrant 1", email: "registrant1@kayan.local", company: "PDO", jobTitle: "Team Lead", seniority: "Senior" },
+    },
+    {
+      eventSlug: "leadership-bootcamp-june-2026",
+      userEmail: "registrant2@kayan.local",
+      status: "confirmed",
+      paymentStatus: "paid",
+      paymentMethod: "card",
+      amount: 2400,
+      createdAt: new Date("2026-05-03T13:40:00.000Z"),
+      formData: { name: "Registrant 2", email: "registrant2@kayan.local", company: "Omantel", jobTitle: "Manager", seniority: "Senior" },
+    },
+    {
+      eventSlug: "strategic-communication-lab-2026",
+      userEmail: "registrant3@kayan.local",
+      status: "cancelled",
+      paymentStatus: "failed",
+      paymentMethod: "card",
+      amount: 420,
+      createdAt: new Date("2026-05-04T08:05:00.000Z"),
+      cancellationReason: "Payment authorization failed",
+      formData: { name: "Registrant 3", email: "registrant3@kayan.local", company: "Ministry of Education", jobTitle: "Specialist", seniority: "Mid" },
+    },
+    {
+      eventSlug: "creative-thinking-intensive-july-2026",
+      userEmail: "learner@kayan.local",
+      status: "attended",
+      paymentStatus: "paid",
+      paymentMethod: "card",
+      amount: 300,
+      createdAt: new Date("2026-05-04T10:55:00.000Z"),
+      formData: { name: "Demo Learner", email: "learner@kayan.local", company: "OQ", jobTitle: "Analyst", seniority: "Mid" },
+    },
+  ];
+
+  for (const item of demoRegistrations) {
+    const event = demoEventBySlug.get(item.eventSlug);
+    const user = demoUserByEmail.get(item.userEmail);
+    if (!event || !user) continue;
+
+    const registration = await prisma.registration.create({
+      data: {
+        eventId: event.id,
+        userId: user.id,
+        formData: item.formData,
+        status: item.status,
+        paymentStatus: item.paymentStatus,
+        paymentMethod: item.paymentMethod,
+        amount: item.amount,
+        cancellationReason: item.cancellationReason ?? null,
+        cancelledAt: item.status === "cancelled" ? item.createdAt : null,
+        createdAt: item.createdAt,
+      },
+    });
+
+    await prisma.payment.create({
+      data: {
+        registrationId: registration.id,
+        method: item.paymentMethod,
+        status: item.paymentStatus,
+        reference:
+          item.paymentMethod === "free"
+            ? "FREE-WAIVER"
+            : `${item.paymentMethod.toUpperCase()}-${registration.id.slice(0, 8)}`,
+        proofUrl:
+          item.paymentMethod === "bank" && item.paymentStatus === "pending"
+            ? "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1200&q=80"
+            : null,
+        verifiedAt:
+          item.paymentStatus === "paid"
+            ? new Date(item.createdAt.getTime() + 45 * 60 * 1000)
+            : null,
+        createdAt: item.createdAt,
+      },
+    });
+  }
+
   await prisma.setting.upsert({
     where: { key: "seo.default" },
     update: {

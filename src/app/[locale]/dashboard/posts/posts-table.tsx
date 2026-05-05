@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { FilterResetIcon, MoreHorizontalIcon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Eye, Pencil } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -64,8 +66,8 @@ export function PostsTable({ locale, posts }: { locale: string; posts: PostRow[]
             />
           </div>
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "all")}>
-            <SelectTrigger className="h-10">
-              <span className="text-sm">
+            <SelectTrigger className="!h-10 w-full text-xs">
+              <span>
                 {statusFilter === "all"
                   ? "All statuses"
                   : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
@@ -79,16 +81,18 @@ export function PostsTable({ locale, posts }: { locale: string; posts: PostRow[]
               ))}
             </SelectContent>
           </Select>
-          <button
-            className="inline-flex h-10 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs text-muted-foreground hover:text-foreground"
+          <Button
+            className="h-10 gap-1.5 text-xs"
             onClick={() => {
               setQuery("");
               setStatusFilter("all");
             }}
             type="button"
+            variant="outline"
           >
-            <HugeiconsIcon className="size-3.5" icon={FilterResetIcon} strokeWidth={2} /> Reset
-          </button>
+            <HugeiconsIcon className="size-3.5" icon={FilterResetIcon} strokeWidth={2} />
+            Reset
+          </Button>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
           Showing <span className="font-medium text-foreground">{filtered.length}</span> of{" "}
@@ -138,6 +142,7 @@ export function PostsTable({ locale, posts }: { locale: string; posts: PostRow[]
                         className={cn(buttonVariants({ size: "sm", variant: "outline" }), "h-8 px-3 text-xs")}
                         href={`/${locale}/dashboard/posts/${post.id}`}
                       >
+                        <Pencil className="mr-1.5 size-3.5" />
                         Edit
                       </Link>
                       <DropdownMenu>
@@ -148,6 +153,7 @@ export function PostsTable({ locale, posts }: { locale: string; posts: PostRow[]
                           <DropdownMenuItem
                             render={<Link href={`/${locale}/posts/${post.slug}`} target="_blank" />}
                           >
+                            <Eye className="mr-1.5 size-3.5" />
                             View on site
                           </DropdownMenuItem>
                         </DropdownMenuContent>

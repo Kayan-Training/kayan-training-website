@@ -43,6 +43,7 @@ import {
 import { toast } from "sonner";
 
 import { RichTextEditor } from "@/components/dashboard/rich-text-editor";
+import { DashboardSectionHeading } from "@/components/dashboard/editor-primitives";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -56,12 +57,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ImagePickerField } from "@/components/ui/image-picker-field";
+import { Input } from "@/components/ui/input";
 import { UploadProgress } from "@/components/ui/upload-progress";
 import {
   type LinkPickerEntities,
   LinkPickerInput,
 } from "@/components/ui/link-picker-input";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { uploadMediaFile } from "@/lib/client/media-upload";
 import type { Block, HeroMedia } from "@/lib/pages/block-types";
 import { migrateBlocks } from "@/lib/pages/migrate-blocks";
@@ -916,94 +919,6 @@ function BlockNavSidebar({ blocks }: { blocks: Block[] }) {
           </button>
         ))}
       </nav>
-    </aside>
-  );
-}
-
-function LivePreviewBlock({ block, locale }: { block: Block; locale: "ar" | "en" }) {
-  switch (block.type) {
-    case "page_hero":
-      return (
-        <article className="rounded-lg border border-border/50 bg-card p-3">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{BLOCK_LABELS[block.type]}</p>
-          <p className="mt-2 text-sm font-semibold">{block.slides?.[0]?.heading || "Hero heading"}</p>
-          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{block.slides?.[0]?.subheading || "Hero subheading"}</p>
-        </article>
-      );
-    case "hero":
-      return (
-        <article className="rounded-lg border border-border/50 bg-card p-3">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{BLOCK_LABELS[block.type]}</p>
-          <p className="mt-2 text-sm font-semibold">{block.slides?.[0]?.heading || "Hero heading"}</p>
-          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{block.slides?.[0]?.subheading || "Hero subheading"}</p>
-          <p className="mt-2 text-[11px] text-muted-foreground">{block.media.length} media · {block.slides.length} slides</p>
-        </article>
-      );
-    case "richtext":
-      return (
-        <article className="rounded-lg border border-border/50 bg-card p-3">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{BLOCK_LABELS[block.type]}</p>
-          <div
-            className="prose prose-invert mt-2 line-clamp-5 max-w-none text-xs [&_*]:my-0"
-            dangerouslySetInnerHTML={{ __html: block.html || "<p>Rich text content…</p>" }}
-          />
-        </article>
-      );
-    case "service_cards":
-      return (
-        <article className="rounded-lg border border-border/50 bg-card p-3">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{BLOCK_LABELS[block.type]}</p>
-          <p className="mt-2 text-xs text-muted-foreground">{block.items.length} cards</p>
-        </article>
-      );
-    case "home_events_carousel":
-    case "home_posts_grid":
-      return (
-        <article className="rounded-lg border border-border/50 bg-card p-3">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{BLOCK_LABELS[block.type]}</p>
-          <p className="mt-2 text-sm font-semibold">{(block as { heading?: string }).heading || "Section heading"}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Auto-populated dynamic block</p>
-        </article>
-      );
-    default:
-      return (
-        <article className="rounded-lg border border-border/50 bg-card p-3">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{BLOCK_LABELS[block.type]}</p>
-          <p className="mt-2 text-xs text-muted-foreground">Preview placeholder</p>
-        </article>
-      );
-  }
-}
-
-function LivePreviewPane({
-  blocks,
-  locale,
-  pageTitle,
-}: {
-  blocks: Block[];
-  locale: "ar" | "en";
-  pageTitle: string;
-}) {
-  return (
-    <aside className="sticky top-0 hidden w-[390px] shrink-0 2xl:block">
-      <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
-        <div className="mb-3 rounded-lg border border-border/50 bg-card p-3">
-          <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">Live Preview</p>
-          <p className="mt-1 line-clamp-1 text-sm font-semibold">{pageTitle || "Untitled page"}</p>
-          <p className="text-[11px] text-muted-foreground">{locale === "en" ? "English" : "Arabic"} · Unsaved edits</p>
-        </div>
-        <div className="max-h-[76vh] space-y-2 overflow-y-auto pr-1">
-          {blocks.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border/60 bg-card p-4 text-xs text-muted-foreground">
-              Add blocks to see a live preview.
-            </div>
-          ) : (
-            blocks.map((block) => (
-              <LivePreviewBlock block={block} key={block.id} locale={locale} />
-            ))
-          )}
-        </div>
-      </div>
     </aside>
   );
 }
@@ -2474,69 +2389,89 @@ function HeroBlockFields({
                           }
                         />
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <button
-                          className={cn(
-                            "rounded px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors",
-                            cta.style === "primary"
-                              ? "bg-primary text-primary-foreground"
-                              : "border border-border text-muted-foreground hover:bg-muted",
-                          )}
-                          title="Primary style"
-                          type="button"
-                          onClick={() =>
-                            onChange({
-                              slides: block.slides.map((s, j) =>
-                                j === i
-                                  ? {
-                                      ...s,
-                                      ctas: s.ctas.map((c, k) =>
-                                        k === ci
-                                          ? { ...c, style: "primary" as const }
-                                          : c,
-                                      ),
-                                    }
-                                  : s,
-                              ),
-                            })
-                          }
-                        >
-                          Primary
-                        </button>
-                        <button
-                          className={cn(
-                            "rounded px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors",
-                            cta.style === "secondary"
-                              ? "bg-primary text-primary-foreground"
-                              : "border border-border text-muted-foreground hover:bg-muted",
-                          )}
-                          title="Secondary style"
-                          type="button"
-                          onClick={() =>
-                            onChange({
-                              slides: block.slides.map((s, j) =>
-                                j === i
-                                  ? {
-                                      ...s,
-                                      ctas: s.ctas.map((c, k) =>
-                                        k === ci
-                                          ? {
-                                              ...c,
-                                              style: "secondary" as const,
-                                            }
-                                          : c,
-                                      ),
-                                    }
-                                  : s,
-                              ),
-                            })
-                          }
-                        >
-                          Secondary
-                        </button>
+                      <div className="flex w-[178px] shrink-0 flex-col gap-2">
+                        <div className="rounded-md border border-border/60 bg-muted/30 p-1">
+                          <div className="grid grid-cols-2 gap-1">
+                            <button
+                              className={cn(
+                                "rounded px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors",
+                                cta.style === "primary"
+                                  ? "bg-primary text-primary-foreground shadow-sm"
+                                  : "text-muted-foreground hover:bg-background",
+                              )}
+                              title="Primary style"
+                              type="button"
+                              onClick={() =>
+                                onChange({
+                                  slides: block.slides.map((s, j) =>
+                                    j === i
+                                      ? {
+                                          ...s,
+                                          ctas: s.ctas.map((c, k) =>
+                                            k === ci
+                                              ? {
+                                                  ...c,
+                                                  style: "primary" as const,
+                                                }
+                                              : c,
+                                          ),
+                                        }
+                                      : s,
+                                  ),
+                                })
+                              }
+                            >
+                              Primary
+                            </button>
+                            <button
+                              className={cn(
+                                "rounded px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors",
+                                cta.style === "secondary"
+                                  ? "bg-primary text-primary-foreground shadow-sm"
+                                  : "text-muted-foreground hover:bg-background",
+                              )}
+                              title="Secondary style"
+                              type="button"
+                              onClick={() =>
+                                onChange({
+                                  slides: block.slides.map((s, j) =>
+                                    j === i
+                                      ? {
+                                          ...s,
+                                          ctas: s.ctas.map((c, k) =>
+                                            k === ci
+                                              ? {
+                                                  ...c,
+                                                  style: "secondary" as const,
+                                                }
+                                              : c,
+                                          ),
+                                        }
+                                      : s,
+                                  ),
+                                })
+                              }
+                            >
+                              Secondary
+                            </button>
+                          </div>
+                        </div>
+                        <div className="rounded-md border border-border/50 bg-background px-2 py-1.5 text-[10px] text-muted-foreground">
+                          Preview:{" "}
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded px-1.5 py-0.5 font-semibold uppercase tracking-wide",
+                              cta.style === "primary"
+                                ? "bg-primary text-primary-foreground"
+                                : "border border-border text-foreground",
+                            )}
+                          >
+                            {cta.style}
+                          </span>
+                        </div>
                         <button
                           aria-label="Remove CTA"
-                          className="text-muted-foreground hover:text-destructive"
+                          className="inline-flex h-7 items-center justify-center rounded border border-border/60 text-muted-foreground transition-colors hover:border-destructive/50 hover:bg-destructive/5 hover:text-destructive"
                           type="button"
                           onClick={() =>
                             onChange({
@@ -2551,7 +2486,7 @@ function HeroBlockFields({
                             })
                           }
                         >
-                          <Trash2 className="size-3" />
+                          <Trash2 className="size-3.5" />
                         </button>
                       </div>
                     </div>
@@ -3503,11 +3438,11 @@ export function PageEditor({
           {/* Identity */}
           {activeSection === "identity" && (
             <div className="mx-auto max-w-2xl space-y-5">
-              <SectionHeading icon={FileText} index="01" title="Identity" />
+              <DashboardSectionHeading icon={FileText} index="01" title="Identity" />
 
               {activeLocale === "en" ? (
                 <Field label="Page Title (English)">
-                  <input
+                  <Input
                     className={inputCls}
                     placeholder="Page title"
                     value={titleEn}
@@ -3516,7 +3451,7 @@ export function PageEditor({
                 </Field>
               ) : (
                 <Field label="Page Title (Arabic)">
-                  <input
+                  <Input
                     className={cn(inputCls, "text-right")}
                     dir="rtl"
                     placeholder="عنوان الصفحة"
@@ -3527,15 +3462,26 @@ export function PageEditor({
               )}
 
               <Field label="Status">
-                <select
-                  aria-label="Page status"
-                  className="h-9 w-48 rounded-md border border-input bg-input/20 px-3 text-sm text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
+                <button
+                  className={cn(
+                    "inline-flex h-9 w-56 items-center justify-between rounded-md border px-3 text-sm transition-colors",
+                    status === "published"
+                      ? "border-green-500/40 bg-green-500/10 text-green-700"
+                      : "border-input bg-input/20 text-muted-foreground",
+                  )}
+                  type="button"
+                  onClick={() =>
+                    setStatus(status === "published" ? "draft" : "published")
+                  }
                 >
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                </select>
+                  <span className="font-medium">
+                    {status === "published" ? "Published" : "Draft"}
+                  </span>
+                  <Switch
+                    checked={status === "published"}
+                    className="pointer-events-none"
+                  />
+                </button>
               </Field>
             </div>
           )}
@@ -3546,7 +3492,7 @@ export function PageEditor({
               <div className="min-w-0 max-w-5xl flex-1 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <SectionHeading
+                    <DashboardSectionHeading
                       icon={AlignLeft}
                       index="02"
                       title="Content Blocks"
@@ -3605,11 +3551,6 @@ export function PageEditor({
               </div>
               <div className="hidden xl:flex xl:gap-4">
                 <BlockNavSidebar blocks={blocks} />
-                <LivePreviewPane
-                  blocks={blocks}
-                  locale={activeLocale}
-                  pageTitle={activeLocale === "en" ? titleEn : titleAr}
-                />
               </div>
             </div>
           )}
@@ -3617,11 +3558,11 @@ export function PageEditor({
           {/* SEO */}
           {activeSection === "seo" && (
             <div className="mx-auto max-w-2xl space-y-5">
-              <SectionHeading icon={Search} index="03" title="SEO" />
+              <DashboardSectionHeading icon={Search} index="03" title="SEO" />
               {activeLocale === "en" ? (
                 <>
                   <Field label="SEO Title (English)">
-                    <input
+                    <Input
                       className={inputCls}
                       maxLength={60}
                       placeholder="Overrides page title in search results"
@@ -3630,7 +3571,7 @@ export function PageEditor({
                     />
                   </Field>
                   <Field label="Meta Description (English)">
-                    <textarea
+                    <Textarea
                       className="min-h-20 w-full resize-none rounded-md border border-input bg-input/20 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
                       maxLength={160}
                       placeholder="Shown in search engine results pages…"
@@ -3642,7 +3583,7 @@ export function PageEditor({
               ) : (
                 <>
                   <Field label="SEO Title (Arabic)">
-                    <input
+                    <Input
                       className={cn(inputCls, "text-right")}
                       dir="rtl"
                       maxLength={60}
@@ -3652,7 +3593,7 @@ export function PageEditor({
                     />
                   </Field>
                   <Field label="Meta Description (Arabic)">
-                    <textarea
+                    <Textarea
                       className="min-h-20 w-full resize-none rounded-md border border-input bg-input/20 px-3 py-2.5 text-right text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
                       dir="rtl"
                       maxLength={160}
@@ -3676,29 +3617,6 @@ export function PageEditor({
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function SectionHeading({
-  icon: Icon,
-  index,
-  title,
-}: {
-  icon: React.ElementType;
-  index: string;
-  title: string;
-}) {
-  return (
-    <div className="mb-6">
-      <div className="flex items-center gap-2.5">
-        <span className="font-mono text-[11px] font-medium text-muted-foreground/40">
-          {index}
-        </span>
-        <Icon className="size-4 text-primary" />
-        <h2 className="text-[15px] font-semibold text-foreground">{title}</h2>
-      </div>
-      <div className="mt-3 h-px bg-border/50" />
     </div>
   );
 }

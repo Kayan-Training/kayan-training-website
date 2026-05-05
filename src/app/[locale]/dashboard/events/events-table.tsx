@@ -4,7 +4,6 @@ import {
   ArrowUpDownIcon,
   FilterResetIcon,
   LinkSquare02Icon,
-  MoreHorizontalIcon,
   PencilEdit02Icon,
   Search01Icon,
 } from "@hugeicons/core-free-icons";
@@ -15,13 +14,7 @@ import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -140,7 +133,7 @@ export function EventsTable({
               setStatusFilter((value as StatusFilter) ?? "all")
             }
           >
-            <SelectTrigger className="h-10! truncate text-xs md:text-xs w-full">
+            <SelectTrigger className="!h-10 w-full truncate text-xs">
               {statusLabels[statusFilter]}
             </SelectTrigger>
             <SelectContent>
@@ -159,7 +152,7 @@ export function EventsTable({
               setTypeFilter((value as TypeFilter) ?? "all")
             }
           >
-            <SelectTrigger className="h-10! truncate text-xs md:text-xs w-full">
+            <SelectTrigger className="!h-10 w-full truncate text-xs">
               {typeLabels[typeFilter]}
             </SelectTrigger>
             <SelectContent>
@@ -178,7 +171,7 @@ export function EventsTable({
               setSortBy((value as SortValue) ?? "createdDesc")
             }
           >
-            <SelectTrigger className="h-10! truncate text-xs md:text-xs w-full">
+            <SelectTrigger className="!h-10 w-full truncate text-xs">
               <span className="inline-flex items-center gap-1.5">
                 <HugeiconsIcon
                   className="size-3.5 text-muted-foreground"
@@ -198,18 +191,19 @@ export function EventsTable({
               )}
             </SelectContent>
           </Select>
-          <button
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+          <Button
+            className="h-10 gap-1.5 text-xs"
             type="button"
+            variant="outline"
             onClick={reset}
           >
             <HugeiconsIcon
               className="size-3.5"
               icon={FilterResetIcon}
               strokeWidth={2}
-            />{" "}
+            />
             Reset
-          </button>
+          </Button>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
           Showing{" "}
@@ -323,25 +317,25 @@ export function EventsTable({
                       <Link
                         className={cn(
                           buttonVariants({ size: "sm", variant: "outline" }),
-                          "h-8 w-8 p-0",
+                          "h-8 px-3 text-xs",
                         )}
                         aria-label="Edit event"
                         href={`/${event.locale}/dashboard/events/${event.id}`}
                       >
                         <HugeiconsIcon icon={PencilEdit02Icon} />
-                        <span className="sr-only">Edit</span>
+                        <span className="ml-1">Edit</span>
                       </Link>
                       <Link
                         aria-label="View event"
                         className={cn(
                           buttonVariants({ size: "sm", variant: "outline" }),
-                          "h-8 w-8 p-0",
+                          "h-8 px-3 text-xs",
                         )}
                         href={`/${activeLocale}/${event.slug}`}
                         target="_blank"
                       >
                         <HugeiconsIcon icon={LinkSquare02Icon} />
-                        <span className="sr-only">View Event</span>
+                        <span className="ml-1">View</span>
                       </Link>
                       {/* <DropdownMenu>
                         <DropdownMenuTrigger className={cn(buttonVariants({ size: "icon-sm", variant: "outline" }))}>

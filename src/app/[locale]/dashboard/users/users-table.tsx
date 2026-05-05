@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { FilterResetIcon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Ban, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -17,7 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -37,6 +38,9 @@ export type UserRow = {
 export function UsersTable({ locale, users }: { locale: string; users: UserRow[] }) {
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "banned">(
+    "all",
+  );
   const [isPending, startTransition] = useTransition();
 
   const filtered = useMemo(() => {
@@ -45,9 +49,13 @@ export function UsersTable({ locale, users }: { locale: string; users: UserRow[]
       const matchesQuery =
         !q || (u.name ?? "").toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
       const matchesRole = roleFilter === "all" || u.role === roleFilter;
-      return matchesQuery && matchesRole;
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && !u.banned) ||
+        (statusFilter === "banned" && u.banned);
+      return matchesQuery && matchesRole && matchesStatus;
     });
-  }, [users, query, roleFilter]);
+  }, [users, query, roleFilter, statusFilter]);
 
   function handleRoleChange(id: string, role: string) {
     startTransition(async () => {
@@ -68,7 +76,7 @@ export function UsersTable({ locale, users }: { locale: string; users: UserRow[]
   return (
     <div className="grid gap-4">
       <div className="rounded-xl border border-border/70 bg-card p-4">
-        <div className="grid gap-3 lg:grid-cols-[1fr_160px_auto]">
+        <div className="grid gap-3 lg:grid-cols-[1fr_160px_160px_auto]">
           <div className="relative">
             <HugeiconsIcon
               className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -83,8 +91,8 @@ export function UsersTable({ locale, users }: { locale: string; users: UserRow[]
             />
           </div>
           <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v ?? "all")}>
-            <SelectTrigger className="h-10">
-              <span className="text-sm">{roleFilter === "all" ? "All roles" : roleFilter}</span>
+            <SelectTrigger className="!h-10 w-full text-xs">
+              <span>{roleFilter === "all" ? "All roles" : roleFilter}</span>
             </SelectTrigger>
             <SelectContent>
               {["all", "user", "admin"].map((r) => (
@@ -94,16 +102,36 @@ export function UsersTable({ locale, users }: { locale: string; users: UserRow[]
               ))}
             </SelectContent>
           </Select>
-          <button
-            className="inline-flex h-10 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs text-muted-foreground hover:text-foreground"
+          <Select
+            value={statusFilter}
+            onValueChange={(v) =>
+              setStatusFilter((v as "all" | "active" | "banned") ?? "all")
+            }
+          >
+            <SelectTrigger className="!h-10 w-full text-xs">
+              <span className="capitalize">
+                {statusFilter === "all" ? "All statuses" : statusFilter}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="banned">Banned</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            className="h-10 gap-1.5 text-xs"
             onClick={() => {
               setQuery("");
               setRoleFilter("all");
+              setStatusFilter("all");
             }}
             type="button"
+            variant="outline"
           >
-            <HugeiconsIcon className="size-3.5" icon={FilterResetIcon} strokeWidth={2} /> Reset
-          </button>
+            <HugeiconsIcon className="size-3.5" icon={FilterResetIcon} strokeWidth={2} />
+            Reset
+          </Button>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
           Showing <span className="font-medium text-foreground">{filtered.length}</span> of{" "}
@@ -122,6 +150,13 @@ export function UsersTable({ locale, users }: { locale: string; users: UserRow[]
             </TableRow>
           </TableHeader>
           <TableBody>
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell className="py-12 text-center text-sm text-muted-foreground" colSpan={5}>
+                  No users match your current filters.
+                </TableCell>
+              </TableRow>
+            ) : null}
             {filtered.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>
@@ -163,6 +198,11 @@ export function UsersTable({ locale, users }: { locale: string; users: UserRow[]
                       )}
                       disabled={isPending}
                     >
+                      {user.banned ? (
+                        <ShieldCheck className="mr-1.5 size-3.5" />
+                      ) : (
+                        <Ban className="mr-1.5 size-3.5" />
+                      )}
                       {user.banned ? "Unban" : "Ban"}
                     </AlertDialogTrigger>
                     <AlertDialogContent>

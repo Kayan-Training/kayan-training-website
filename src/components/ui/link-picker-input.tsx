@@ -2,7 +2,8 @@
 
 import { Link01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useState } from "react";
+import { X } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -46,9 +47,11 @@ export function LinkPickerInput({
   dir?: "ltr" | "rtl";
 }) {
   const [open, setOpen] = useState(false);
+  const [isEditingInternal, setIsEditingInternal] = useState(false);
 
   function handleSelect(url: string) {
     onChange(url);
+    setIsEditingInternal(false);
     setOpen(false);
   }
 
@@ -56,17 +59,56 @@ export function LinkPickerInput({
     entities.pages.length > 0 ||
     entities.posts.length > 0 ||
     entities.events.length > 0;
+  const isInternalLink = useMemo(() => value.trim().startsWith("/"), [value]);
+  const showInternalChip = isInternalLink && !isEditingInternal;
 
   return (
     <div className="flex">
-      <input
-        className={cn(inputCls, dir === "rtl" && "text-right")}
-        dir={dir}
-        placeholder={placeholder}
-        title="URL"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
+      {showInternalChip ? (
+        <div
+          className={cn(
+            "flex h-10 min-w-0 flex-1 items-center justify-between rounded-l-md border border-r-0 border-border/70 bg-card px-2",
+            dir === "rtl" && "flex-row-reverse",
+          )}
+        >
+          <span className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs text-primary">
+            <HugeiconsIcon icon={Link01Icon} className="size-3.5 shrink-0" />
+            <span className="truncate font-mono">{value}</span>
+          </span>
+          <div className="ml-2 flex items-center gap-1">
+            <Button
+              className="h-7 px-2 text-[10px]"
+              size="sm"
+              type="button"
+              variant="ghost"
+              onClick={() => setIsEditingInternal(true)}
+            >
+              Edit
+            </Button>
+            <Button
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+              size="sm"
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                onChange("");
+                setIsEditingInternal(false);
+              }}
+            >
+              <X className="size-3.5" />
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <input
+          className={cn(inputCls, dir === "rtl" && "text-right")}
+          dir={dir}
+          placeholder={placeholder}
+          title="URL"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )}
       <Popover onOpenChange={setOpen} open={open}>
         <PopoverTrigger
           render={

@@ -53,6 +53,7 @@ import {
   ChevronRight,
   CircleDollarSign,
   ClipboardList,
+  Download,
   FileText,
   GripVertical,
   ImageIcon,
@@ -77,6 +78,10 @@ import {
 
 // ── shadcn/ui ─────────────────────────────────────────────────────────────────
 import { RichTextEditor } from "@/components/dashboard/rich-text-editor";
+import {
+  DashboardFieldLabel,
+  DashboardSectionHeading,
+} from "@/components/dashboard/editor-primitives";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -137,6 +142,12 @@ const eventSchema = z.object({
   meetingLink: z.string(),
   meetingPlatform: z.enum(["zoom", "teams", "meet", "other"]),
   paymentMethods: z.enum(["both", "card", "bank"]),
+  bankAccountName: z.string(),
+  bankName: z.string(),
+  bankIban: z.string(),
+  bankSwift: z.string(),
+  bankInstructionsEn: z.string(),
+  bankInstructionsAr: z.string(),
   price: z.string().min(1),
   registrationDeadline: z.string(),
   registrationFields: z.array(registrationFieldSchema),
@@ -272,15 +283,12 @@ function SectionHeader({
   title: string;
 }) {
   return (
-    <div className="mb-6">
-      <div className="flex items-center gap-2.5">
-        <span className="font-mono text-[11px] font-medium text-zinc-300">{number}</span>
-        <Icon className="size-4 text-teal-600" />
-        <h2 className="text-[15px] font-semibold text-zinc-900">{title}</h2>
-        <span className="ml-auto text-[11px] text-zinc-400">{description}</span>
-      </div>
-      <div className="mt-3 h-px bg-zinc-100" />
-    </div>
+    <DashboardSectionHeading
+      description={description}
+      icon={Icon}
+      index={number}
+      title={title}
+    />
   );
 }
 
@@ -292,12 +300,7 @@ function FL({
   children: React.ReactNode;
   hint?: React.ReactNode;
 }) {
-  return (
-    <div className="mb-1.5 flex items-center justify-between">
-      <Label className={labelCls}>{children}</Label>
-      {hint ? <span className="text-[11px] text-zinc-400">{hint}</span> : null}
-    </div>
-  );
+  return <DashboardFieldLabel hint={hint}>{children}</DashboardFieldLabel>;
 }
 
 /**
@@ -424,6 +427,7 @@ export function EventForm({
   fetchMedia,
   locale,
   onSubmit,
+  registrations = [],
   submitLabel,
   trainerOptions,
 }: {
@@ -433,6 +437,13 @@ export function EventForm({
   fetchMedia: () => Promise<{ id: string; originalName: string; url: string; mimeType: string }[]>;
   locale: string;
   onSubmit: (values: EventFormValues) => Promise<{ error?: string }>;
+  registrations?: Array<{
+    id: string;
+    registrantName: string;
+    registrantEmail: string;
+    status: string;
+    createdAt: string;
+  }>;
   submitLabel: string;
   trainerOptions: Array<{ label: string; value: string }>;
 }) {
@@ -474,6 +485,12 @@ export function EventForm({
       meetingLink: "",
       meetingPlatform: "zoom",
       paymentMethods: "both",
+      bankAccountName: "",
+      bankName: "",
+      bankIban: "",
+      bankSwift: "",
+      bankInstructionsEn: "",
+      bankInstructionsAr: "",
       price: "0",
       registrationDeadline: "",
       registrationFields: [],
@@ -504,12 +521,16 @@ export function EventForm({
   const eventType = form.watch("type");
   const status = form.watch("status");
   const startDate = form.watch("startDate");
+  const capacity = form.watch("capacity");
   const isFree = form.watch("isFree");
+  const paymentMethods = form.watch("paymentMethods");
   const selectedTrainerIds = form.watch("trainerIds");
   const selectedCategoryIds = form.watch("categories");
   const coverImage = form.watch("coverImage");
   const shortEnLen = form.watch("shortEn").length;
   const shortArLen = form.watch("shortAr").length;
+  const registrationsCount = registrations.length;
+  const occupancy = Number(capacity || 0) > 0 ? Math.min(100, Math.round((registrationsCount / Number(capacity || 1)) * 100)) : 0;
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const locationLabel =
@@ -701,47 +722,10 @@ export function EventForm({
             ))}
           </div>
 
-          {/* Locale switcher */}
           <div className="border-t border-zinc-100 px-4 py-3">
-            <p className={cn(labelCls, "mb-2")}>Content language</p>
-            <div className="flex rounded-md border border-zinc-200 bg-zinc-50 p-0.5">
-              {(["en", "ar"] as const).map((loc) => (
-                <button
-                  className={cn(
-                    "flex-1 rounded py-1 text-[11px] font-bold tracking-widest transition-all",
-                    activeLocale === loc
-                      ? "bg-white text-teal-600 shadow-sm"
-                      : "text-zinc-400 hover:text-zinc-600",
-                  )}
-                  key={loc}
-                  type="button"
-                  onClick={() => setActiveLocale(loc)}
-                >
-                  {loc.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Save / Discard */}
-          <div className="border-t border-zinc-100 p-3 space-y-2">
-            <Button
-              className="w-full bg-teal-600 text-[13px] font-semibold hover:bg-teal-700"
-              disabled={isPending}
-              type="submit"
-            >
-              {isPending && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
-              {isPending ? "Saving…" : submitLabel}
-            </Button>
-            <Link
-              className={cn(
-                "flex w-full items-center justify-center rounded-md border border-zinc-200 py-2",
-                "text-[12.5px] font-medium text-zinc-500 transition-colors hover:border-zinc-300 hover:text-zinc-800",
-              )}
-              href={`/${locale}/dashboard/events`}
-            >
-              Discard
-            </Link>
+            <p className={cn(labelCls, "text-center")}>
+              Use the sticky top bar for language and save actions
+            </p>
           </div>
 
         </nav>
@@ -753,7 +737,7 @@ export function EventForm({
         <main className="flex h-full flex-1 min-w-0 flex-col overflow-hidden">
 
           {/* Breadcrumb bar */}
-          <div className="flex shrink-0 items-center gap-2 border-b border-zinc-100 bg-white px-7 py-3 text-[12px]">
+          <div className="sticky top-0 z-10 flex shrink-0 items-center gap-2 border-b border-zinc-100 bg-white px-7 py-3 text-[12px]">
             <span className="text-zinc-400">Events</span>
             <ChevronRight className="size-3.5 text-zinc-300" />
             <span className="text-zinc-400">{pageHeading}</span>
@@ -761,6 +745,66 @@ export function EventForm({
             <span className="font-semibold text-zinc-700">
               {sections.find((s) => s.id === activeSection)?.label}
             </span>
+          </div>
+
+          {/* Sticky actions */}
+          <div className="sticky top-[45px] z-10 flex items-center justify-between gap-3 border-b border-zinc-100 bg-white/95 px-7 py-2.5 backdrop-blur-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                Content
+              </span>
+              <div className="flex rounded-md border border-zinc-200 bg-zinc-50 p-0.5">
+                {(["en", "ar"] as const).map((loc) => (
+                  <button
+                    className={cn(
+                      "rounded px-2.5 py-1 text-[11px] font-bold tracking-widest transition-all",
+                      activeLocale === loc
+                        ? "bg-white text-teal-600 shadow-sm"
+                        : "text-zinc-400 hover:text-zinc-600",
+                    )}
+                    key={loc}
+                    type="button"
+                    onClick={() => setActiveLocale(loc)}
+                  >
+                    {loc.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide",
+                  status === "published"
+                    ? "bg-teal-50 text-teal-700"
+                    : "bg-zinc-100 text-zinc-500",
+                )}
+              >
+                <span
+                  className={cn(
+                    "size-1.5 rounded-full",
+                    status === "published" ? "bg-teal-500" : "bg-zinc-400",
+                  )}
+                />
+                {statusLabels[status]}
+              </span>
+              <Link
+                className={cn(
+                  "inline-flex h-8 items-center justify-center rounded-md border border-zinc-200 px-3 text-[12px] font-medium text-zinc-500 transition-colors hover:border-zinc-300 hover:text-zinc-800",
+                )}
+                href={`/${locale}/dashboard/events`}
+              >
+                Discard
+              </Link>
+              <Button
+                className="h-8 bg-teal-600 px-3 text-[12px] font-semibold hover:bg-teal-700"
+                disabled={isPending}
+                type="submit"
+              >
+                {isPending && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
+                {isPending ? "Saving…" : submitLabel}
+              </Button>
+            </div>
           </div>
 
           {/* Section content — scrollable */}
@@ -1140,6 +1184,7 @@ export function EventForm({
                   {isFree ? (
                     <Note>This event is free — price and payment fields are hidden from learners.</Note>
                   ) : (
+                    <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <FormField control={form.control} name="price" render={({ field }) => (
                         <FormItem>
@@ -1157,6 +1202,56 @@ export function EventForm({
                           <FormMessage />
                         </FormItem>
                       )} />
+                    </div>
+                    {(paymentMethods === "both" || paymentMethods === "bank") && (
+                      <div className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4">
+                        <p className="text-[12px] font-semibold text-zinc-700">Bank Transfer Details</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <FormField control={form.control} name="bankName" render={({ field }) => (
+                            <FormItem>
+                              <FL>Bank Name</FL>
+                              <FormControl><Input className={inputCls} {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="bankAccountName" render={({ field }) => (
+                            <FormItem>
+                              <FL>Account Name</FL>
+                              <FormControl><Input className={inputCls} {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="bankIban" render={({ field }) => (
+                            <FormItem>
+                              <FL>IBAN</FL>
+                              <FormControl><Input className={inputCls} {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="bankSwift" render={({ field }) => (
+                            <FormItem>
+                              <FL>SWIFT</FL>
+                              <FormControl><Input className={inputCls} {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="bankInstructionsEn" render={({ field }) => (
+                            <FormItem className="col-span-2">
+                              <FL>Instructions (EN)</FL>
+                              <FormControl><Textarea className={cn(inputCls, "h-auto py-2")} rows={2} {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="bankInstructionsAr" render={({ field }) => (
+                            <FormItem className="col-span-2">
+                              <FL>Instructions (AR)</FL>
+                              <FormControl><Textarea className={cn(inputCls, "h-auto py-2")} dir="rtl" rows={2} {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                        </div>
+                      </div>
+                    )}
                     </div>
                   )}
                 </div>
@@ -1629,29 +1724,37 @@ export function EventForm({
                       {/* Summary strip */}
                       <div className="flex items-center gap-5 rounded-xl border border-zinc-200 bg-white px-5 py-4 shadow-xs">
                         <div>
-                          <p className="text-2xl font-bold tabular-nums text-zinc-900">—</p>
+                          <p className="text-2xl font-bold tabular-nums text-zinc-900">{registrationsCount}</p>
                           <p className="mt-0.5 text-[11px] text-zinc-400">Registered</p>
                         </div>
                         <div className="h-8 w-px bg-zinc-100" />
                         <div>
-                          <p className="text-2xl font-bold tabular-nums text-zinc-900">—</p>
+                          <p className="text-2xl font-bold tabular-nums text-zinc-900">{capacity || "—"}</p>
                           <p className="mt-0.5 text-[11px] text-zinc-400">Capacity</p>
                         </div>
                         <div className="h-8 w-px bg-zinc-100" />
                         <div className="flex-1">
                           <div className="mb-1.5 flex justify-between text-[11px] text-zinc-400">
-                            <span>Occupancy</span><span>— %</span>
+                            <span>Occupancy</span><span>{occupancy}%</span>
                           </div>
                           <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
-                            <div className="h-full w-0 rounded-full bg-teal-500 transition-all" />
+                            <div className="h-full rounded-full bg-teal-500 transition-all" style={{ width: `${occupancy}%` }} />
                           </div>
                         </div>
-                        <Link
-                          className="ml-auto inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 px-3 text-[12px] font-semibold text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-900"
-                          href={`/${locale}/dashboard/registrations/${eventId}`}
-                        >
-                          <FileText className="size-3.5" /> Full page
-                        </Link>
+                        <div className="ml-auto flex items-center gap-2">
+                          <a
+                            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 px-3 text-[12px] font-semibold text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-900"
+                            href={`/api/admin/exports/registrations?eventId=${eventId}`}
+                          >
+                            <Download className="size-3.5" /> Export CSV
+                          </a>
+                          <Link
+                            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 px-3 text-[12px] font-semibold text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-900"
+                            href={`/${locale}/dashboard/registrations/${eventId}`}
+                          >
+                            <FileText className="size-3.5" /> Full page
+                          </Link>
+                        </div>
                       </div>
 
                       {/* Registrations table */}
@@ -1661,39 +1764,31 @@ export function EventForm({
                             <div className="border-r border-zinc-100 px-3 py-2 text-[9.5px] font-bold uppercase tracking-widest text-zinc-400 last:border-none" key={h}>{h}</div>
                           ))}
                         </div>
-                        {/*
-                          To show real data, add `registrations` to EventForm props:
-                            registrations?: Array<{
-                              id: string;
-                              learnerName: string;
-                              learnerEmail: string;
-                              createdAt: string;
-                              status: "pending" | "confirmed" | "cancelled";
-                            }>
-                          Then map here:
-                            registrations.map(r => (
-                              <div className="grid grid-cols-[1fr_140px_100px_44px] border-b border-zinc-100 last:border-none" key={r.id}>
-                                <div className="border-r border-zinc-100 px-3 py-2.5">
-                                  <p className="text-[13px] font-medium text-zinc-800">{r.learnerName}</p>
-                                  <p className="text-[11px] text-zinc-400">{r.learnerEmail}</p>
-                                </div>
-                                <div className="border-r border-zinc-100 px-3 py-2.5 text-[12px] text-zinc-500">{r.createdAt}</div>
-                                <div className="border-r border-zinc-100 px-3 py-2.5">
-                                  <Badge variant="outline">{r.status}</Badge>
-                                </div>
-                                <div className="flex items-center justify-center">
-                                  <Link href={...} className="...">→</Link>
-                                </div>
+                        {registrations.length === 0 ? (
+                          <div className="flex flex-col items-center gap-1.5 py-12 text-center">
+                            <ListChecks className="size-5 text-zinc-200" />
+                            <p className="text-[13px] font-medium text-zinc-400">No registrations yet</p>
+                            <p className="text-[11.5px] text-zinc-300">
+                              Registrations will appear here once learners sign up
+                            </p>
+                          </div>
+                        ) : (
+                          registrations.map((r) => (
+                            <div className="grid grid-cols-[1fr_140px_100px_44px] border-b border-zinc-100 last:border-none" key={r.id}>
+                              <div className="border-r border-zinc-100 px-3 py-2.5">
+                                <p className="text-[13px] font-medium text-zinc-800">{r.registrantName}</p>
+                                <p className="text-[11px] text-zinc-400">{r.registrantEmail}</p>
                               </div>
-                            ))
-                        */}
-                        <div className="flex flex-col items-center gap-1.5 py-12 text-center">
-                          <ListChecks className="size-5 text-zinc-200" />
-                          <p className="text-[13px] font-medium text-zinc-400">No registrations yet</p>
-                          <p className="text-[11.5px] text-zinc-300">
-                            Registrations will appear here once learners sign up
-                          </p>
-                        </div>
+                              <div className="border-r border-zinc-100 px-3 py-2.5 text-[12px] text-zinc-500">{r.createdAt}</div>
+                              <div className="border-r border-zinc-100 px-3 py-2.5">
+                                <Badge variant="outline" className="capitalize">{r.status}</Badge>
+                              </div>
+                              <div className="flex items-center justify-center">
+                                <Link className="text-zinc-500 hover:text-zinc-800" href={`/${locale}/dashboard/registrations/${eventId}`}>→</Link>
+                              </div>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </>
                   )}
@@ -1756,34 +1851,49 @@ export function EventForm({
                 control={form.control}
                 name="status"
                 render={({ field }) => (
-                  <div className="grid grid-cols-2 gap-2">
-                    {(["published", "draft"] as const).map((s) => (
-                      <button
+                  <button
+                    className={cn(
+                      "flex w-full items-start gap-3 rounded-lg border px-3.5 py-3 text-left transition-colors",
+                      field.value === "published"
+                        ? "border-teal-200 bg-teal-50/60"
+                        : "border-zinc-200 bg-white hover:bg-zinc-50/80",
+                    )}
+                    type="button"
+                    onClick={() =>
+                      field.onChange(
+                        field.value === "published" ? "draft" : "published",
+                      )
+                    }
+                  >
+                    <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-zinc-100">
+                      <FileText
                         className={cn(
-                          "flex flex-col rounded-xl border p-3 text-left transition-all",
-                          field.value === s
-                            ? s === "published" ? "border-teal-400 bg-teal-50" : "border-zinc-400 bg-zinc-50"
-                            : "border-zinc-200 bg-white hover:border-zinc-300",
+                          "size-4",
+                          field.value === "published"
+                            ? "text-teal-600"
+                            : "text-zinc-400",
                         )}
-                        key={s}
-                        type="button"
-                        onClick={() => field.onChange(s)}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span className={cn(
-                            "size-1.5 rounded-full",
-                            field.value === s && s === "published" ? "animate-pulse bg-teal-500"
-                            : field.value === s ? "bg-zinc-500"
-                            : "bg-zinc-200",
-                          )} />
-                          <span className="text-[12px] font-bold text-zinc-800">{statusLabels[s]}</span>
-                        </div>
-                        <span className="mt-1 text-[10.5px] leading-snug text-zinc-400">
-                          {s === "published" ? "Visible to learners" : "Hidden from public"}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-semibold text-zinc-800">
+                        {field.value === "published"
+                          ? statusLabels.published
+                          : statusLabels.draft}
+                      </p>
+                      <p className="mt-0.5 text-[11.5px] leading-relaxed text-zinc-400">
+                        {field.value === "published"
+                          ? "Visible to learners"
+                          : "Hidden from public"}
+                      </p>
+                    </div>
+                    <div className="mt-0.5 shrink-0">
+                      <Switch
+                        checked={field.value === "published"}
+                        className="pointer-events-none data-[state=checked]:bg-teal-600"
+                      />
+                    </div>
+                  </button>
                 )}
               />
             </div>

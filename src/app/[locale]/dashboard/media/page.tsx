@@ -33,9 +33,12 @@ export default async function MediaDashboardPage({
   }));
 
   return (
-    <section className="space-y-5">
-      <div className="rounded-xl border border-border/70 bg-card p-5">
+    <section className="mx-auto max-w-6xl space-y-5">
+      <div>
         <h1 className="text-2xl font-semibold">Media Library</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Upload, organize, and edit media assets used across pages, posts, and events.
+        </p>
       </div>
       <MediaGrid locale={activeLocale} media={items} />
     </section>

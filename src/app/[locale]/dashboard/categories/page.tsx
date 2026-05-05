@@ -30,9 +30,12 @@ export default async function CategoriesDashboardPage({
   }));
 
   return (
-    <section className="space-y-5">
-      <div className="rounded-xl border border-border/70 bg-card p-5">
+    <section className="mx-auto max-w-6xl space-y-5">
+      <div>
         <h1 className="text-2xl font-semibold">Categories</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Manage taxonomy groups used for event and content organization.
+        </p>
       </div>
       <CategoriesManager categories={categories} locale={activeLocale} />
     </section>

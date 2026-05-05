@@ -57,8 +57,8 @@ export default async function MenusDashboardPage({
   const entities = { pages: entityPages, posts: entityPosts, events: entityEvents };
 
   return (
-    <section className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-card p-5">
+    <section className="mx-auto max-w-6xl space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Menus</h1>
           <p className="mt-1 text-sm text-muted-foreground">

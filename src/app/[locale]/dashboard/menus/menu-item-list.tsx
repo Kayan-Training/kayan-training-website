@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, GripVertical, Pencil, Trash2, X } from "lucide-react";
+import { Check, GripVertical, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -36,6 +36,7 @@ import {
   type LinkPickerEntities,
   LinkPickerInput,
 } from "@/components/ui/link-picker-input";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   createMenuItem,
@@ -229,27 +230,33 @@ function SortableItemRow({
           >
             {item.type}
           </Badge>
-          <button
+          <Button
             aria-label="Edit item"
-            className="text-muted-foreground hover:text-foreground"
+            className="gap-1.5"
+            size="sm"
             title="Edit"
             type="button"
+            variant="outline"
             onClick={() => setEditing(true)}
           >
             <Pencil className="size-3.5" />
-          </button>
+            Edit
+          </Button>
           <AlertDialog>
             <AlertDialogTrigger
               render={
-                <button
+                <Button
                   aria-label="Remove item"
-                  className="text-muted-foreground hover:text-destructive"
+                  className="gap-1.5"
                   disabled={isPending}
+                  size="sm"
                   title="Remove"
                   type="button"
+                  variant="destructive"
                 >
                   <Trash2 className="size-3.5" />
-                </button>
+                  Remove
+                </Button>
               }
             ></AlertDialogTrigger>
             <AlertDialogContent>
@@ -578,14 +585,16 @@ export function MenuItemList({
             />
           </div>
         </div>
-        <button
-          className="mt-3 inline-flex h-9 items-center rounded-md bg-primary px-4 text-xs font-medium uppercase tracking-widest text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        <Button
+          className="mt-3 gap-1.5 text-xs uppercase tracking-widest"
           disabled={isPending || !isValid}
+          size="sm"
           type="button"
           onClick={handleCreate}
         >
+          <Plus className="size-3.5" />
           {isPending ? "Adding…" : "Add Item"}
-        </button>
+        </Button>
       </div>
     </div>
   );

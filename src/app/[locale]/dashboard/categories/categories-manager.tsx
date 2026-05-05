@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState, useTransition } from "react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -293,8 +294,9 @@ export function CategoriesManager({
           </p>
           <p className="text-xs text-muted-foreground">Manage training domain categories</p>
         </div>
-        <Button type="button" onClick={() => setAddOpen(true)}>
-          Add Category
+        <Button className="gap-2" type="button" onClick={() => setAddOpen(true)}>
+          <Plus className="size-4" />
+          New Category
         </Button>
       </div>
 
@@ -340,19 +342,24 @@ export function CategoriesManager({
 
                 <div className="flex shrink-0 items-center gap-1">
                   <button
-                    className="rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                    className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
                     disabled={isPending}
                     type="button"
                     onClick={() => setEditingCat(cat)}
                   >
+                    <Pencil className="size-3.5" />
                     Edit
                   </button>
                   <AlertDialog>
                     <AlertDialogTrigger
-                      className={buttonVariants({ size: "sm", variant: "destructive" })}
+                      className={cn(
+                        buttonVariants({ size: "sm", variant: "destructive" }),
+                        "gap-1.5",
+                      )}
                       disabled={isPending}
                     >
-                      Del
+                      <Trash2 className="size-3.5" />
+                      Delete
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { db } from "@/lib/db";
@@ -30,10 +31,19 @@ export default async function PostsDashboardPage({
   }));
 
   return (
-    <section className="space-y-5">
-      <div className="flex items-center justify-between rounded-xl border border-border/70 bg-card p-5">
-        <h1 className="text-2xl font-semibold">Posts</h1>
-        <Link className={buttonVariants({ size: "sm" })} href={`/${activeLocale}/dashboard/posts/new`}>
+    <section className="mx-auto max-w-6xl space-y-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Posts</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Create and manage knowledge content and article publishing states.
+          </p>
+        </div>
+        <Link
+          className={buttonVariants({ size: "sm" })}
+          href={`/${activeLocale}/dashboard/posts/new`}
+        >
+          <Plus className="mr-1.5 size-3.5" />
           New Post
         </Link>
       </div>

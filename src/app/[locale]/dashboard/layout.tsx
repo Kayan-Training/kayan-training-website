@@ -41,7 +41,7 @@ export default async function DashboardLayout({
         <AdminSidebar locale={activeLocale} user={session.user} />
         <SidebarInset>
           <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b border-border/70 bg-background/80 backdrop-blur-sm px-4">
-            <SidebarTrigger className="-ml-1 text-primary-foreground cursor-pointer" />
+            <SidebarTrigger className="-ml-1 cursor-pointer text-foreground" />
             <Separator
               className="mr-2 data-[orientation=vertical]:h-4"
               orientation="vertical"
@@ -50,8 +50,8 @@ export default async function DashboardLayout({
               Dashboard
             </span>
           </header>
-          <main className="min-h-screen p-6">
-            <div className="mx-auto w-full  text-primary-foreground">
+          <main className="min-h-screen p-4 md:p-6">
+            <div className="mx-auto w-full max-w-6xl text-foreground">
               {children}
             </div>
           </main>

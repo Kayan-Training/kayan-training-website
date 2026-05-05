@@ -42,6 +42,18 @@ export async function updateEventAction(
         meetingLink: values.meetingLink || null,
         meetingPlatform: values.meetingLink ? values.meetingPlatform : null,
         paymentMethods: values.paymentMethods,
+        bankTransferDetails: {
+          payment: {
+            bankName: values.bankName || null,
+            accountName: values.bankAccountName || null,
+            iban: values.bankIban || null,
+            swift: values.bankSwift || null,
+            instructions: {
+              en: values.bankInstructionsEn || null,
+              ar: values.bankInstructionsAr || null,
+            },
+          },
+        },
         showMapEmbed: values.showMapEmbed,
         googleMapsLink: values.googleMapsLink || null,
       },
@@ -169,6 +181,18 @@ export async function createEventAction(
         meetingLink: values.meetingLink || null,
         meetingPlatform: values.meetingLink ? values.meetingPlatform : null,
         paymentMethods: values.paymentMethods,
+        bankTransferDetails: {
+          payment: {
+            bankName: values.bankName || null,
+            accountName: values.bankAccountName || null,
+            iban: values.bankIban || null,
+            swift: values.bankSwift || null,
+            instructions: {
+              en: values.bankInstructionsEn || null,
+              ar: values.bankInstructionsAr || null,
+            },
+          },
+        },
         showMapEmbed: values.showMapEmbed,
         googleMapsLink: values.googleMapsLink || null,
         translations: {

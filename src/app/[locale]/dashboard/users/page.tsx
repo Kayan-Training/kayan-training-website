@@ -13,6 +13,10 @@ export default async function UsersDashboardPage({
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
 
   const users = await db.user.findMany({ orderBy: { createdAt: "desc" } });
+  const totalUsers = users.length;
+  const admins = users.filter((u) => u.role === "admin").length;
+  const learners = users.filter((u) => u.role === "user").length;
+  const banned = users.filter((u) => Boolean(u.banned)).length;
 
   const rows: UserRow[] = users.map((u) => ({
     id: u.id,
@@ -25,9 +29,38 @@ export default async function UsersDashboardPage({
   }));
 
   return (
-    <section className="space-y-5">
-      <div className="rounded-xl border border-border/70 bg-card p-5">
+    <section className="mx-auto max-w-6xl space-y-5">
+      <div>
         <h1 className="text-2xl font-semibold">Users</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Manage access, roles, and account status from one place.
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="rounded-lg border border-border/60 bg-background px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Total
+          </p>
+          <p className="text-lg font-semibold">{totalUsers}</p>
+        </div>
+        <div className="rounded-lg border border-border/60 bg-background px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Admins
+          </p>
+          <p className="text-lg font-semibold">{admins}</p>
+        </div>
+        <div className="rounded-lg border border-border/60 bg-background px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Learners
+          </p>
+          <p className="text-lg font-semibold">{learners}</p>
+        </div>
+        <div className="rounded-lg border border-border/60 bg-background px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Banned
+          </p>
+          <p className="text-lg font-semibold">{banned}</p>
+        </div>
       </div>
       <UsersTable locale={activeLocale} users={rows} />
     </section>

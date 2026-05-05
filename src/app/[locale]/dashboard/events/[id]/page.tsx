@@ -25,6 +25,13 @@ export default async function EditEventPage({
         agendaSessions: { orderBy: { order: "asc" } },
         categories: true,
         formFields: { include: { translations: true }, orderBy: { order: "asc" } },
+        registrations: {
+          include: {
+            user: { select: { name: true, email: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        },
       },
     }),
     db.trainer.findMany({ include: { translations: true }, orderBy: { sortOrder: "asc" } }),
@@ -35,6 +42,18 @@ export default async function EditEventPage({
 
   const trEn = event.translations.find((t) => t.locale === "en");
   const trAr = event.translations.find((t) => t.locale === "ar");
+  const bankDetails =
+    event.bankTransferDetails && typeof event.bankTransferDetails === "object"
+      ? (event.bankTransferDetails as {
+          payment?: {
+            accountName?: string | null;
+            bankName?: string | null;
+            iban?: string | null;
+            swift?: string | null;
+            instructions?: { ar?: string | null; en?: string | null };
+          };
+        })
+      : {};
 
   const defaultValues: Partial<EventFormValues> = {
     slug: event.slug,
@@ -55,6 +74,12 @@ export default async function EditEventPage({
     meetingLink: event.meetingLink ?? "",
     meetingPlatform: (event.meetingPlatform ?? "zoom") as EventFormValues["meetingPlatform"],
     paymentMethods: (event.paymentMethods ?? "both") as EventFormValues["paymentMethods"],
+    bankAccountName: bankDetails.payment?.accountName ?? "",
+    bankName: bankDetails.payment?.bankName ?? "",
+    bankIban: bankDetails.payment?.iban ?? "",
+    bankSwift: bankDetails.payment?.swift ?? "",
+    bankInstructionsEn: bankDetails.payment?.instructions?.en ?? "",
+    bankInstructionsAr: bankDetails.payment?.instructions?.ar ?? "",
     showMapEmbed: event.showMapEmbed,
     googleMapsLink: event.googleMapsLink ?? "",
     titleEn: trEn?.title ?? "",
@@ -100,6 +125,13 @@ export default async function EditEventPage({
   }));
 
   const boundAction = updateEventAction.bind(null, id, activeLocale);
+  const eventRegistrations = event.registrations.map((registration) => ({
+    id: registration.id,
+    registrantName: registration.user?.name ?? registration.user?.email ?? "Guest",
+    registrantEmail: registration.user?.email ?? "",
+    status: registration.status,
+    createdAt: new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(registration.createdAt),
+  }));
 
   return (
     <EventForm
@@ -109,6 +141,7 @@ export default async function EditEventPage({
       fetchMedia={fetchMediaAction}
       locale={activeLocale}
       onSubmit={boundAction}
+      registrations={eventRegistrations}
       submitLabel="Save Changes"
       trainerOptions={trainerOptions}
     />
