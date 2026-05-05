@@ -1,4 +1,5 @@
 import {
+  HeadObjectCommand,
   DeleteObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -101,4 +102,23 @@ export async function deleteFromS3ByKey(key: string): Promise<void> {
       Key: key,
     }),
   );
+}
+
+export async function s3ObjectExists(key: string): Promise<boolean> {
+  const cfg = getS3Config();
+  if (!cfg) {
+    return false;
+  }
+
+  try {
+    await cfg.s3.send(
+      new HeadObjectCommand({
+        Bucket: cfg.bucket,
+        Key: key,
+      }),
+    );
+    return true;
+  } catch {
+    return false;
+  }
 }

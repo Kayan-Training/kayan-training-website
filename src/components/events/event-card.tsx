@@ -32,7 +32,7 @@ export function EventCard({
     >
       <Image
         alt={event.title}
-        className="absolute inset-0 h-full w-full object-cover grayscale transition-transform duration-300 group-hover:scale-[1.03]"
+        className="absolute inset-0 h-full w-full object-cover grayscale transition-[filter] duration-500 group-hover:grayscale-0"
         fill
         quality={72}
         sizes="(max-width: 640px) 82vw, 340px"

@@ -8,6 +8,7 @@ import { FeaturedEventCyclerCard } from "@/components/pages/hero-slider";
 import { getLocalizedEvents, getLocalizedPosts, getStaticPageBySlug } from "@/lib/content/queries";
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
+import { ensureHomeBlocksComplete } from "@/lib/pages/home-blocks";
 import { migrateBlocks } from "@/lib/pages/migrate-blocks";
 
 const domains = [
@@ -43,7 +44,7 @@ export default async function LocaleHomePage({
     const rawBlocks = (cmsData.blocks as unknown[]).filter(
       (b) => b && typeof b === "object" && "type" in (b as object),
     );
-    const blocks = migrateBlocks(rawBlocks);
+    const blocks = ensureHomeBlocksComplete(migrateBlocks(rawBlocks), activeLocale);
 
     const needsCategories = blocks.some((b) => b.type === "training_domains");
     let categories: { slug: string; color: string; nameEn: string; nameAr: string }[] = [];

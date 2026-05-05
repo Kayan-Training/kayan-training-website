@@ -27,7 +27,11 @@ export async function POST(request: Request) {
   }
 
   if (size > S3_MAX_UPLOAD_BYTES) {
-    return NextResponse.json({ error: "File exceeds 50MB limit." }, { status: 400 });
+    const maxMb = Math.floor(S3_MAX_UPLOAD_BYTES / (1024 * 1024));
+    return NextResponse.json(
+      { error: `File exceeds ${maxMb}MB limit.` },
+      { status: 400 },
+    );
   }
 
   try {

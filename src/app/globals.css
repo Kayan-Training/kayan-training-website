@@ -226,7 +226,7 @@ body {
   width: 0;
 }
 
-@keyframes maintenance_tape {
+@keyframes maintenancetape {
   0% {
     transform: translateX(0);
   }
@@ -235,13 +235,231 @@ body {
   }
 }
 
-@keyframes maintenance_icon {
+@keyframes icon-loop-up {
   0%,
+  32% {
+    transform: translateY(0);
+  }
+  48%,
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes icon-loop-down {
+  0%,
+  32% {
+    transform: translateY(-50%);
+  }
+  48%,
   100% {
     transform: translateY(0);
   }
-  50% {
-    transform: translateY(-4px);
+}
+
+@keyframes icon-loop-left {
+  0%,
+  32% {
+    transform: translateX(0);
+  }
+  48%,
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes icon-loop-right {
+  0%,
+  32% {
+    transform: translateX(-50%);
+  }
+  48%,
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.animate-icon-loop-up {
+  animation-name: icon-loop-up;
+}
+
+.animate-icon-loop-down {
+  animation-name: icon-loop-down;
+}
+
+.animate-icon-loop-left {
+  animation-name: icon-loop-left;
+}
+
+.animate-icon-loop-right {
+  animation-name: icon-loop-right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-icon-loop-up,
+  .animate-icon-loop-down,
+  .animate-icon-loop-left,
+  .animate-icon-loop-right {
+    animation: none !important;
+  }
+}
+
+@layer components {
+  .tape-strip {
+    height: 42px;
+    overflow: hidden;
+    transform-origin: center;
+    filter: drop-shadow(0 18px 16px rgb(0 0 0 / 0.55));
+  }
+
+  .tape-strip::before {
+    content: "";
+    position: absolute;
+    inset: -10px 0 auto;
+    height: 10px;
+    background: rgb(0 0 0 / 0.35);
+    filter: blur(10px);
+  }
+
+  .tape-runner {
+    display: flex;
+    width: max-content;
+    height: 100%;
+    will-change: transform;
+  }
+
+  .tape-pattern {
+    display: flex;
+    height: 100%;
+    flex: 0 0 auto;
+    overflow: hidden;
+    background: oklch(0.7 0.17 154);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.22),
+      inset 0 -1px 0 rgb(0 0 0 / 0.22);
+  }
+
+  /* Chevron tape */
+  .tape-pattern-chevron {
+    align-items: center;
+    gap: 0;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.08), transparent 45%),
+      oklch(0.7 0.17 154);
+  }
+
+  .tape-chevron-mark {
+    position: relative;
+    width: 48px;
+    height: 42px;
+    flex: 0 0 auto;
+  }
+
+  .tape-chevron-mark::before {
+    content: "";
+    position: absolute;
+    inset: 5px 4px;
+    background: #121212;
+    clip-path: polygon(0 0, 48% 0, 100% 50%, 48% 100%, 0 100%, 48% 50%);
+  }
+
+  /* Plain slash tape */
+  .tape-pattern-slash {
+    align-items: center;
+    gap: 16px;
+    padding-inline: 12px;
+    background: #121212;
+  }
+
+  .tape-slash-mark {
+    width: 24px;
+    height: 54px;
+    flex: 0 0 auto;
+    background: oklch(0.7 0.17 154);
+    transform: skewX(-14deg);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.18),
+      inset 0 -1px 0 rgb(0 0 0 / 0.18);
+  }
+
+  /* Under construction tape */
+  .tape-pattern-warning {
+    align-items: stretch;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.09), transparent 48%),
+      oklch(0.7 0.17 154);
+  }
+
+  .tape-warning-unit {
+    display: flex;
+    height: 42px;
+    flex: 0 0 auto;
+    align-items: stretch;
+  }
+
+  .tape-warning-stripes {
+    width: 96px;
+    flex: 0 0 auto;
+    background:
+      repeating-linear-gradient(
+        105deg,
+        #121212 0 12px,
+        #121212 12px 21px,
+        transparent 21px 37px
+      ),
+      oklch(0.7 0.17 154);
+  }
+
+  .tape-warning-text {
+    display: inline-flex;
+    min-width: 270px;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 22px;
+    color: #141414;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.17em;
+    white-space: nowrap;
+  }
+
+  @keyframes tape-slide-left {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @keyframes tape-slide-right {
+    from {
+      transform: translateX(-50%);
+    }
+
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  .tape-runner-left {
+    animation-name: tape-slide-left;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  .tape-runner-right {
+    animation-name: tape-slide-right;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tape-runner-left,
+    .tape-runner-right {
+      animation: none !important;
+    }
   }
 }
 
@@ -739,7 +957,7 @@ body {
 @keyframes eventCardGlow {
   from {
     opacity: 0.5;
-    transform: scale(1.0);
+    transform: scale(1);
   }
   to {
     opacity: 1;
