@@ -5,7 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Eye, FileText, Play } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { UploadProgress } from "@/components/ui/upload-progress";
 import { uploadMediaFile } from "@/lib/client/media-upload";
 import { cn } from "@/lib/utils";
 import { deleteMedia, upsertMediaTranslations } from "./_actions";
@@ -57,6 +56,26 @@ type MetaForm = {
   altAr: string;
   descAr: string;
 };
+
+type UploadTask = {
+  id: string;
+  filename: string;
+  percent: number;
+  status: string;
+  state: "queued" | "uploading" | "success" | "error";
+};
+
+const ACCEPTED_MEDIA_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+  "image/svg+xml",
+  "video/mp4",
+  "video/webm",
+  "application/pdf",
+]);
+const MEDIA_INPUT_ACCEPT = Array.from(ACCEPTED_MEDIA_MIME_TYPES).join(",");
 
 function VideoFrameThumbnail({
   alt,
@@ -347,11 +366,30 @@ export function MediaGrid({
   const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
   const [items, setItems] = useState<MediaItem[]>(media);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState("");
+  const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
+  const [enteringIds, setEnteringIds] = useState<string[]>([]);
+  const prevMediaIdsRef = useRef<string[]>(media.map((item) => item.id));
   const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
   const [typeFilter, setTypeFilter] = useState<"all" | "image" | "video" | "other">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "nameAsc">("newest");
+
+  useEffect(() => {
+    const nextIds = media.map((item) => item.id);
+    const prevIds = prevMediaIdsRef.current;
+    const newIds = nextIds.filter((id) => !prevIds.includes(id));
+    if (newIds.length > 0) {
+      setEnteringIds((prev) => [...newIds, ...prev]);
+      const timeout = window.setTimeout(() => {
+        setEnteringIds((prev) => prev.filter((id) => !newIds.includes(id)));
+      }, 900);
+      prevMediaIdsRef.current = nextIds;
+      setItems(media);
+      return () => window.clearTimeout(timeout);
+    }
+    prevMediaIdsRef.current = nextIds;
+    setItems(media);
+    return undefined;
+  }, [media]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -385,34 +423,70 @@ export function MediaGrid({
     });
   }
 
-  async function handleUploadChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  function updateUploadTask(id: string, patch: Partial<UploadTask>) {
+    setUploadTasks((prev) => prev.map((task) => (task.id === id ? { ...task, ...patch } : task)));
+  }
 
+  function scheduleUploadTaskDismiss(id: string) {
+    const timeoutMs = 1000 + Math.floor(Math.random() * 2001);
+    window.setTimeout(() => {
+      setUploadTasks((prev) => prev.filter((task) => task.id !== id));
+    }, timeoutMs);
+  }
+
+  async function uploadSingleFile(taskId: string, file: File) {
+    updateUploadTask(taskId, { state: "uploading", status: "Preparing upload..." });
+    try {
+      await uploadMediaFile(file, {
+        onProgress: (percent) => updateUploadTask(taskId, { percent }),
+        onStatus: (status) => updateUploadTask(taskId, { status }),
+      });
+      updateUploadTask(taskId, { state: "success", percent: 100, status: "Upload complete." });
+      router.refresh();
+      scheduleUploadTaskDismiss(taskId);
+    } catch (error) {
+      updateUploadTask(taskId, {
+        state: "error",
+        status: error instanceof Error ? error.message : "Upload failed.",
+      });
+      scheduleUploadTaskDismiss(taskId);
+    }
+  }
+
+  async function handleUploadChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    const files = selectedFiles.filter((file) => ACCEPTED_MEDIA_MIME_TYPES.has(file.type));
+    const rejected = selectedFiles.filter((file) => !ACCEPTED_MEDIA_MIME_TYPES.has(file.type));
+    if (rejected.length > 0) {
+      toast.error(`Unsupported type: ${rejected.map((file) => file.name).join(", ")}`);
+    }
+    if (files.length === 0) return;
+
+    const queuedTasks: UploadTask[] = files.map((file) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      filename: file.name,
+      percent: 0,
+      state: "queued",
+      status: "Queued",
+    }));
+    setUploadTasks((prev) => [...queuedTasks, ...prev]);
     setIsUploading(true);
-    setUploadProgress(0);
-    setUploadStatus("");
+
+    const maxConcurrency = 5;
+    let nextIndex = 0;
+    async function runWorker() {
+      while (true) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        if (currentIndex >= files.length) return;
+        await uploadSingleFile(queuedTasks[currentIndex].id, files[currentIndex]);
+      }
+    }
 
     try {
-      const uploaded = await uploadMediaFile(file, {
-        onProgress: (percent) => setUploadProgress(percent),
-        onStatus: (status) => setUploadStatus(status),
-      });
-
-      const newItem: MediaItem = {
-        id: uploaded.id,
-        url: uploaded.url,
-        originalName: uploaded.originalName,
-        mimeType: uploaded.mimeType,
-        size: uploaded.size,
-        createdAt: new Date(),
-        translations: [],
-      };
-      setItems((prev) => [newItem, ...prev]);
-      toast.success("Media uploaded");
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Upload failed.");
+      const workers = Array.from({ length: Math.min(maxConcurrency, files.length) }, () => runWorker());
+      await Promise.all(workers);
+      toast.success(`Uploaded ${files.length} file${files.length === 1 ? "" : "s"}.`);
     } finally {
       setIsUploading(false);
       event.target.value = "";
@@ -430,10 +504,50 @@ export function MediaGrid({
             <Input
               id="media-upload-input"
               type="file"
+              multiple
+              accept={MEDIA_INPUT_ACCEPT}
               disabled={isUploading}
               onChange={handleUploadChange}
             />
-            <UploadProgress isActive={isUploading} percent={uploadProgress} status={uploadStatus} />
+            {uploadTasks.length > 0 ? (
+              <div className="mt-2 space-y-2 rounded-md border border-border/60 bg-muted/20 p-2.5">
+                {uploadTasks.map((task) => (
+                  <div className="rounded-md border border-border/50 bg-background/80 p-2" key={task.id}>
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <p className="line-clamp-1 text-[11px] font-medium text-foreground" title={task.filename}>
+                        {task.filename}
+                      </p>
+                      <span className="font-mono text-[11px] text-muted-foreground">{task.percent}%</span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-border/70">
+                      <div
+                        className={cn(
+                          "h-full rounded-full transition-[width] duration-300 ease-out",
+                          task.state === "error"
+                            ? "bg-destructive"
+                            : task.state === "success"
+                              ? "bg-emerald-500"
+                              : "bg-primary",
+                        )}
+                        style={{ width: `${Math.max(0, Math.min(100, task.percent))}%` }}
+                      />
+                    </div>
+                    <p
+                      className={cn(
+                        "mt-1.5 text-[11px]",
+                        task.state === "error"
+                          ? "text-destructive"
+                          : task.state === "success"
+                            ? "text-emerald-600"
+                            : "text-muted-foreground",
+                      )}
+                    >
+                      {task.status}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Input
@@ -496,7 +610,10 @@ export function MediaGrid({
             const hasMetadata = !!(trEn?.title || trEn?.altText);
             return (
               <article
-                className="overflow-hidden rounded-xl border border-border/70 bg-card"
+                className={cn(
+                  "overflow-hidden rounded-xl border border-border/70 bg-card",
+                  enteringIds.includes(item.id) && "animate-in fade-in-0 zoom-in-95 duration-500",
+                )}
                 key={item.id}
               >
                 <div className="relative aspect-4/3 bg-black/80">

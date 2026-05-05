@@ -71,20 +71,21 @@ html {
   --color-on-surface-variant: #c1c8ca;
   --color-primary-container: oklch(0.28 0.1 154);
   --color-on-primary-container: oklch(0.86 0.06 154);
-  --color-secondary-container: oklch(0.47 0.088 183);
-  --color-on-secondary-container: oklch(0.95 0.06 183);
+  --color-secondary-container: #00343a;
+  --color-on-secondary-container: #e2f1f3;
   --color-outline: #8b9295;
   --color-outline-variant: #41484a;
 
-  /* Category accents from official profile SVG set */
-  --color-accent-arts: oklch(0.79 0.03 82);
-  --color-accent-economy: oklch(0.7 0.17 154);
-  --color-accent-education-psychology: oklch(0.83 0.16 91);
-  --color-accent-entertainment: oklch(0.68 0.11 300);
-  --color-accent-lifestyle: oklch(0.76 0.12 208);
-  --color-accent-management-leadership: oklch(0.72 0.18 52);
-  --color-accent-media-communication: oklch(0.67 0.2 20);
-  --color-accent-tech: oklch(0.64 0.11 247);
+  /* Brand/category accents from current Kayan assets */
+  --color-brand-deep-teal: #00343a;
+  --color-accent-arts: #c2b59b;
+  --color-accent-lifestyle: #03c3cd;
+  --color-accent-management-leadership: #fe732d;
+  --color-accent-economy: #2bb673;
+  --color-accent-tech: #3b91ce;
+  --color-accent-media-communication: #f95061;
+  --color-accent-education-psychology: #f4b91d;
+  --color-accent-entertainment: #8787de;
 
   --font-heading: var(--font-ibm-plex-arabic), sans-serif;
   --font-body: var(--font-alexandria), sans-serif;
@@ -556,11 +557,13 @@ body {
   --accent-foreground: oklch(0.205 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --sidebar: oklch(0.82 0.088 183);
-  --sidebar-foreground: oklch(0.07 0.003 195);
+  --secondary: #00343a;
+  --secondary-foreground: #e2f1f3;
+  --sidebar: #00343a;
+  --sidebar-foreground: #e2f1f3;
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.95 0.05 183);
-  --sidebar-accent-foreground: oklch(0.145 0 0);
+  --sidebar-accent: #0b464d;
+  --sidebar-accent-foreground: #eef7f8;
   --sidebar-border: oklch(0.922 0 0);
 
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;

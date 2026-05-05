@@ -21,6 +21,9 @@ export type UploadMediaOptions = {
   onStatus?: (status: string) => void;
 };
 
+const REQUEST_TIMEOUT_MS = 30_000;
+const UPLOAD_TIMEOUT_MS = 120_000;
+
 async function readJsonError(response: Response, fallback: string) {
   const payload = (await response.json().catch(() => null)) as { error?: string } | null;
   return payload?.error ?? fallback;
@@ -31,6 +34,7 @@ function putFileWithProgress(url: string, file: File, onProgress?: (percent: num
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url);
     xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.timeout = UPLOAD_TIMEOUT_MS;
 
     xhr.upload.onprogress = (event) => {
       if (!event.lengthComputable || !onProgress) {
@@ -47,9 +51,25 @@ function putFileWithProgress(url: string, file: File, onProgress?: (percent: num
         reject(new Error("Upload to storage failed."));
       }
     };
+    xhr.ontimeout = () => reject(new Error("Upload timed out."));
     xhr.onerror = () => reject(new Error("Upload to storage failed."));
     xhr.send(file);
   });
+}
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Request timed out.");
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob | null> {
@@ -205,8 +225,18 @@ async function optimizeImageBeforeUpload(file: File, onStatus?: (status: string)
 }
 
 export async function uploadMediaFile(file: File, options?: UploadMediaOptions): Promise<UploadedMedia> {
-  const imageOptimized = await optimizeImageBeforeUpload(file, options?.onStatus);
-  const uploadFile = await optimizeVideoBeforeUpload(imageOptimized, options?.onStatus);
+  const imageOptimized = await Promise.race([
+    optimizeImageBeforeUpload(file, options?.onStatus),
+    new Promise<File>((_, reject) => {
+      window.setTimeout(() => reject(new Error("Image optimization timed out.")), REQUEST_TIMEOUT_MS);
+    }),
+  ]).catch(() => file);
+  const uploadFile = await Promise.race([
+    optimizeVideoBeforeUpload(imageOptimized, options?.onStatus),
+    new Promise<File>((_, reject) => {
+      window.setTimeout(() => reject(new Error("Video optimization timed out.")), REQUEST_TIMEOUT_MS);
+    }),
+  ]).catch(() => imageOptimized);
   if (uploadFile !== file) {
     const kind = file.type.startsWith("video/") ? "Video" : "Image";
     options?.onStatus?.(
@@ -214,11 +244,11 @@ export async function uploadMediaFile(file: File, options?: UploadMediaOptions):
     );
   }
   options?.onProgress?.(0);
-  const presignResponse = await fetch("/api/media/upload/presign", {
+  const presignResponse = await fetchWithTimeout("/api/media/upload/presign", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filename: uploadFile.name, mimeType: uploadFile.type, size: uploadFile.size }),
-  });
+  }, REQUEST_TIMEOUT_MS);
 
   if (!presignResponse.ok) {
     throw new Error(await readJsonError(presignResponse, "Failed to get upload URL."));
@@ -234,7 +264,7 @@ export async function uploadMediaFile(file: File, options?: UploadMediaOptions):
   await putFileWithProgress(uploadUrl, uploadFile, options?.onProgress);
 
   options?.onStatus?.("Finalizing media record...");
-  const finalizeResponse = await fetch("/api/media/upload/complete", {
+  const finalizeResponse = await fetchWithTimeout("/api/media/upload/complete", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -244,7 +274,7 @@ export async function uploadMediaFile(file: File, options?: UploadMediaOptions):
       mimeType: uploadFile.type,
       size: uploadFile.size,
     }),
-  });
+  }, REQUEST_TIMEOUT_MS);
 
   if (!finalizeResponse.ok) {
     throw new Error(

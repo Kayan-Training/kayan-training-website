@@ -48,16 +48,66 @@ import {
 import { cn } from "@/lib/utils";
 
 const items = [
-  { href: "/dashboard", icon: DashboardSquare01Icon, key: "overview", label: { ar: "لوحة التحكم", en: "Overview" } },
-  { href: "/dashboard/events", icon: Calendar03Icon, key: "events", label: { ar: "الفعاليات", en: "Events" } },
-  { href: "/dashboard/posts", icon: File01Icon, key: "posts", label: { ar: "المحتوى", en: "Posts" } },
-  { href: "/dashboard/registrations", icon: ChartRingIcon, key: "registrations", label: { ar: "التسجيلات", en: "Registrations" } },
-  { href: "/dashboard/categories", icon: Layers01Icon, key: "categories", label: { ar: "التصنيفات", en: "Categories" } },
-  { href: "/dashboard/menus", icon: Menu11Icon, key: "menus", label: { ar: "القوائم", en: "Menus" } },
-  { href: "/dashboard/media", icon: Image02Icon, key: "media", label: { ar: "الوسائط", en: "Media" } },
-  { href: "/dashboard/pages/home", icon: Bookmark01Icon, key: "pages", label: { ar: "الصفحات", en: "Pages" } },
-  { href: "/dashboard/users", icon: UserGroup03Icon, key: "users", label: { ar: "المستخدمون", en: "Users" } },
-  { href: "/dashboard/settings", icon: Settings01Icon, key: "settings", label: { ar: "الإعدادات", en: "Settings" } },
+  {
+    href: "/dashboard",
+    icon: DashboardSquare01Icon,
+    key: "overview",
+    label: { ar: "لوحة التحكم", en: "Overview" },
+  },
+  {
+    href: "/dashboard/events",
+    icon: Calendar03Icon,
+    key: "events",
+    label: { ar: "الفعاليات", en: "Events" },
+  },
+  {
+    href: "/dashboard/posts",
+    icon: File01Icon,
+    key: "posts",
+    label: { ar: "المحتوى", en: "Posts" },
+  },
+  {
+    href: "/dashboard/registrations",
+    icon: ChartRingIcon,
+    key: "registrations",
+    label: { ar: "التسجيلات", en: "Registrations" },
+  },
+  {
+    href: "/dashboard/categories",
+    icon: Layers01Icon,
+    key: "categories",
+    label: { ar: "التصنيفات", en: "Categories" },
+  },
+  {
+    href: "/dashboard/menus",
+    icon: Menu11Icon,
+    key: "menus",
+    label: { ar: "القوائم", en: "Menus" },
+  },
+  {
+    href: "/dashboard/media",
+    icon: Image02Icon,
+    key: "media",
+    label: { ar: "الوسائط", en: "Media" },
+  },
+  {
+    href: "/dashboard/pages/home",
+    icon: Bookmark01Icon,
+    key: "pages",
+    label: { ar: "الصفحات", en: "Pages" },
+  },
+  {
+    href: "/dashboard/users",
+    icon: UserGroup03Icon,
+    key: "users",
+    label: { ar: "المستخدمون", en: "Users" },
+  },
+  {
+    href: "/dashboard/settings",
+    icon: Settings01Icon,
+    key: "settings",
+    label: { ar: "الإعدادات", en: "Settings" },
+  },
 ] as const;
 
 function resolveTitle(pathname: string, locale: "ar" | "en") {
@@ -65,7 +115,9 @@ function resolveTitle(pathname: string, locale: "ar" | "en") {
     .filter((item) => pathname.includes(item.href))
     .sort((a, b) => b.href.length - a.href.length)[0];
 
-  return candidate?.label[locale] ?? (locale === "ar" ? "لوحة التحكم" : "Dashboard");
+  return (
+    candidate?.label[locale] ?? (locale === "ar" ? "لوحة التحكم" : "Dashboard")
+  );
 }
 
 export function DashboardShell({
@@ -84,13 +136,27 @@ export function DashboardShell({
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon" side={locale === "ar" ? "right" : "left"} variant="inset">
+      <Sidebar
+        collapsible="icon"
+        side={locale === "ar" ? "right" : "left"}
+        variant="inset"
+      >
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton render={<Link href={`/${locale}`} />} size="lg" tooltip="Kayan">
+              <SidebarMenuButton
+                render={<Link href={`/${locale}`} />}
+                size="lg"
+                tooltip="Kayan"
+              >
                 <span>
-                  <Image alt="Kayan" className="h-8 w-auto" height={32} src="/brand/kayan-logo.svg" width={96} />
+                  <Image
+                    alt="Kayan"
+                    className="h-8 w-auto"
+                    height={32}
+                    src="/brand/kayan-logo.svg"
+                    width={96}
+                  />
                 </span>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -100,12 +166,17 @@ export function DashboardShell({
         <SidebarContent className="p-2">
           <SidebarMenu className="gap-1">
             {items.map((item) => {
-              const active = pathname === `/${locale}${item.href}` || pathname.startsWith(`/${locale}${item.href}/`);
+              const active =
+                pathname === `/${locale}${item.href}` ||
+                pathname.startsWith(`/${locale}${item.href}/`);
 
               return (
                 <SidebarMenuItem key={item.key}>
                   <SidebarMenuButton
-                    className={cn(active && "bg-sidebar-accent text-sidebar-accent-foreground")}
+                    className={cn(
+                      active &&
+                        "bg-sidebar-accent text-sidebar-accent-foreground",
+                    )}
                     isActive={active}
                     render={<Link href={`/${locale}${item.href}`} />}
                     tooltip={item.label[locale]}
@@ -122,7 +193,9 @@ export function DashboardShell({
         <SidebarSeparator />
         <SidebarFooter>
           <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-xs text-muted-foreground">
-            <div className="font-medium text-foreground">{userName ?? (locale === "ar" ? "مدير النظام" : "Admin User")}</div>
+            <div className="font-medium text-foreground">
+              {userName ?? (locale === "ar" ? "مدير النظام" : "Admin User")}
+            </div>
             <div>{userRole ?? "admin"}</div>
           </div>
         </SidebarFooter>
@@ -140,7 +213,9 @@ export function DashboardShell({
             </BreadcrumbList>
           </Breadcrumb>
         </header>
-        <main className="flex-1 bg-background p-4 text-foreground md:p-none">{children}</main>
+        <main className="flex-1 bg-background p-4 text-foreground md:p-none">
+          {children}
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );
