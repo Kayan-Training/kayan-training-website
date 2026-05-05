@@ -6,6 +6,7 @@ import {
   ArrowUpDown,
   Ban,
   CalendarDays,
+  CircleDollarSign,
   CheckCircle2,
   ChevronRight,
   CircleHelp,
@@ -2099,6 +2100,15 @@ export function RegistrationsTable({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="inline-flex items-center gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 px-3 text-xs"
+                          onClick={() => setPaymentRow(r)}
+                        >
+                          <CircleDollarSign className="mr-1 size-3.5" />
+                          Payment
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
