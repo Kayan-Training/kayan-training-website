@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { EventRegisterForm } from "@/components/events/event-register-form";
 import { getEventDetailBySlug } from "@/lib/content/queries";
@@ -18,23 +18,23 @@ export default async function EventRegisterPage({
     notFound();
   }
   const eventData = event;
+  if (eventData.registrationType === "external" && eventData.externalRegistrationUrl) {
+    redirect(eventData.externalRegistrationUrl);
+  }
 
   const session = await getServerSession();
-  const nameParts = (session?.user?.name ?? "").trim().split(/\s+/).filter(Boolean);
-  const defaultFirstName = nameParts[0] ?? "";
-  const defaultLastName = nameParts.slice(1).join(" ");
+  const defaultFullName = (session?.user?.name ?? "").trim();
 
   async function submitAction(formData: FormData) {
     "use server";
 
-    const firstName = String(formData.get("firstName") ?? "").trim();
-    const lastName = String(formData.get("lastName") ?? "").trim();
+    const fullName = String(formData.get("fullName") ?? "").trim();
     const email = String(formData.get("email") ?? "").trim();
     const phone = String(formData.get("phone") ?? "").trim();
     const phoneCountry = String(formData.get("phoneCountry") ?? "+968").trim();
     const paymentMethod = (String(formData.get("paymentMethod") ?? "card") as "bank" | "card" | "free");
 
-    if (!firstName || !lastName || !email) {
+    if (!fullName || !email) {
       return;
     }
 
@@ -44,7 +44,7 @@ export default async function EventRegisterPage({
       locale: activeLocale,
       paymentMethod,
       registrantEmail: email,
-      registrantName: `${firstName} ${lastName}`.trim(),
+      registrantName: fullName,
       userId: session?.user?.id,
       extraFormData: { phone, phoneCountry },
     });
@@ -67,8 +67,7 @@ export default async function EventRegisterPage({
       eventFormFields={eventData.formFields}
       initialRegistrant={{
         email: session?.user?.email ?? "",
-        firstName: defaultFirstName,
-        lastName: defaultLastName,
+        fullName: defaultFullName,
         phone: "",
         phoneCountry: "+968",
       }}

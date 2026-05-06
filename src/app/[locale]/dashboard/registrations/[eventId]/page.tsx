@@ -43,18 +43,21 @@ export default async function EventRegistrationsPage({
 
   const eventTitle = event.translations[0]?.title ?? event.slug;
 
-  const rows: RegistrationRow[] = event.registrations.map((r) => ({
+  const rows: RegistrationRow[] = event.registrations.map((r) => {
+    const formDataObject =
+      r.formData && typeof r.formData === "object" && !Array.isArray(r.formData)
+        ? (r.formData as Record<string, unknown>)
+        : {};
+    return {
     id: r.id,
     eventId: event.id,
     eventTitle,
     eventStartDate: event.startDate,
     eventEndDate: event.endDate,
-    registrantName: r.user?.name ?? r.user?.email ?? "Guest",
-    registrantEmail: r.user?.email ?? "",
+    registrantName: r.user?.name ?? (typeof formDataObject.name === "string" ? formDataObject.name : r.user?.email ?? "Guest"),
+    registrantEmail: r.user?.email ?? (typeof formDataObject.email === "string" ? formDataObject.email : ""),
     formData:
-      r.formData && typeof r.formData === "object" && !Array.isArray(r.formData)
-        ? (r.formData as Record<string, unknown>)
-        : null,
+      Object.keys(formDataObject).length > 0 ? formDataObject : null,
     status: r.status,
     paymentStatus: r.paymentStatus,
     paymentMethod: r.paymentMethod,
@@ -63,7 +66,8 @@ export default async function EventRegistrationsPage({
     amount: r.amount?.toString() ?? null,
     createdAt: r.createdAt,
     locale: activeLocale,
-  }));
+  };
+  });
   const eventOptions = [
     {
       id: event.id,

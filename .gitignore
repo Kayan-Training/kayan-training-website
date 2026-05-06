@@ -38,6 +38,7 @@ CLAUDE.md
 tmp-*
 .vscode
 TODO*
+ISSUES*
 
 # debug
 npm-debug.log*

@@ -51,18 +51,21 @@ export default async function RegistrationsDashboardPage({
   const confirmed = registrations.filter((r) => r.status === "confirmed").length;
   const cancelled = registrations.filter((r) => r.status === "cancelled").length;
 
-  const rows: RegistrationRow[] = registrations.map((r) => ({
+  const rows: RegistrationRow[] = registrations.map((r) => {
+    const formDataObject =
+      r.formData && typeof r.formData === "object" && !Array.isArray(r.formData)
+        ? (r.formData as Record<string, unknown>)
+        : {};
+    return {
     id: r.id,
     eventId: r.eventId,
     eventTitle: r.event.translations[0]?.title ?? r.event.slug,
     eventStartDate: r.event.startDate,
     eventEndDate: r.event.endDate,
-    registrantName: r.user?.name ?? r.user?.email ?? "Guest",
-    registrantEmail: r.user?.email ?? "",
+    registrantName: r.user?.name ?? (typeof formDataObject.name === "string" ? formDataObject.name : r.user?.email ?? "Guest"),
+    registrantEmail: r.user?.email ?? (typeof formDataObject.email === "string" ? formDataObject.email : ""),
     formData:
-      r.formData && typeof r.formData === "object" && !Array.isArray(r.formData)
-        ? (r.formData as Record<string, unknown>)
-        : null,
+      Object.keys(formDataObject).length > 0 ? formDataObject : null,
     status: r.status,
     paymentStatus: r.paymentStatus,
     paymentMethod: r.paymentMethod,
@@ -71,7 +74,8 @@ export default async function RegistrationsDashboardPage({
     amount: r.amount?.toString() ?? null,
     createdAt: r.createdAt,
     locale: activeLocale,
-  }));
+  };
+  });
   const eventOptions = events.map((event) => ({
     id: event.id,
     title: event.translations[0]?.title ?? event.slug,

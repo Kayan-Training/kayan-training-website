@@ -39,6 +39,11 @@ export async function updateEventAction(
         isFeatured: values.isFeatured,
         isCertified: values.isCertified,
         registrationsOpen: values.registrationsOpen,
+        registrationType: values.registrationType,
+        externalRegistrationUrl:
+          values.registrationType === "external"
+            ? (values.externalRegistrationUrl || null)
+            : null,
         meetingLink: values.meetingLink || null,
         meetingPlatform: values.meetingLink ? values.meetingPlatform : null,
         paymentMethods: values.paymentMethods,
@@ -178,6 +183,11 @@ export async function createEventAction(
         isFeatured: values.isFeatured,
         isCertified: values.isCertified,
         registrationsOpen: values.registrationsOpen,
+        registrationType: values.registrationType,
+        externalRegistrationUrl:
+          values.registrationType === "external"
+            ? (values.externalRegistrationUrl || null)
+            : null,
         meetingLink: values.meetingLink || null,
         meetingPlatform: values.meetingLink ? values.meetingPlatform : null,
         paymentMethods: values.paymentMethods,

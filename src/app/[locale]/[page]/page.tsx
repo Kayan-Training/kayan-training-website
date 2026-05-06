@@ -43,7 +43,7 @@ export default async function DynamicCmsPage({
   const blocks = parseBlocks(data.blocks);
 
   const needsCategories = blocks.some((b) => b.type === "training_domains");
-  let categories: { slug: string; color: string; nameEn: string; nameAr: string }[] = [];
+  let categories: { slug: string; color: string; icon: string; image: string | null; nameEn: string; nameAr: string }[] = [];
 
   if (needsCategories) {
     const cats = await db.category.findMany({
@@ -53,6 +53,8 @@ export default async function DynamicCmsPage({
     categories = cats.map((cat) => ({
       slug: cat.slug,
       color: cat.color,
+      icon: cat.icon,
+      image: cat.image,
       nameEn: cat.translations.find((t) => t.locale === "en")?.name ?? cat.slug,
       nameAr: cat.translations.find((t) => t.locale === "ar")?.name ?? cat.slug,
     }));

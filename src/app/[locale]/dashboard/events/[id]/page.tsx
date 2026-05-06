@@ -42,6 +42,8 @@ export default async function EditEventPage({
 
   const trEn = event.translations.find((t) => t.locale === "en");
   const trAr = event.translations.find((t) => t.locale === "ar");
+  const eventRegistrationType = ((event as { registrationType?: string }).registrationType ?? "internal") as "internal" | "external";
+  const eventExternalRegistrationUrl = (event as { externalRegistrationUrl?: string | null }).externalRegistrationUrl ?? "";
   const bankDetails =
     event.bankTransferDetails && typeof event.bankTransferDetails === "object"
       ? (event.bankTransferDetails as {
@@ -71,6 +73,8 @@ export default async function EditEventPage({
     isFeatured: event.isFeatured,
     isCertified: event.isCertified,
     registrationsOpen: event.registrationsOpen,
+    registrationType: eventRegistrationType as EventFormValues["registrationType"],
+    externalRegistrationUrl: eventExternalRegistrationUrl,
     meetingLink: event.meetingLink ?? "",
     meetingPlatform: (event.meetingPlatform ?? "zoom") as EventFormValues["meetingPlatform"],
     paymentMethods: (event.paymentMethods ?? "both") as EventFormValues["paymentMethods"],
@@ -125,13 +129,23 @@ export default async function EditEventPage({
   }));
 
   const boundAction = updateEventAction.bind(null, id, activeLocale);
-  const eventRegistrations = event.registrations.map((registration) => ({
-    id: registration.id,
-    registrantName: registration.user?.name ?? registration.user?.email ?? "Guest",
-    registrantEmail: registration.user?.email ?? "",
-    status: registration.status,
-    createdAt: new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(registration.createdAt),
-  }));
+  const eventRegistrations = event.registrations.map((registration) => {
+    const formData =
+      registration.formData && typeof registration.formData === "object" && !Array.isArray(registration.formData)
+        ? (registration.formData as Record<string, unknown>)
+        : {};
+    return {
+      id: registration.id,
+      registrantName:
+        registration.user?.name ??
+        (typeof formData.name === "string" ? formData.name : registration.user?.email ?? "Guest"),
+      registrantEmail:
+        registration.user?.email ??
+        (typeof formData.email === "string" ? formData.email : ""),
+      status: registration.status,
+      createdAt: new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(registration.createdAt),
+    };
+  });
 
   return (
     <EventForm

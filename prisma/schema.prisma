@@ -157,6 +157,8 @@ model Event {
   meetingLink          String?
   meetingPlatform      String?
   registrationsOpen    Boolean   @default(true)
+  registrationType     String    @default("internal")
+  externalRegistrationUrl String?
   isCertified          Boolean   @default(false)
   showMapEmbed         Boolean   @default(false)
   googleMapsLink       String?

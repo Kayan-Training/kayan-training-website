@@ -47,7 +47,7 @@ export default async function LocaleHomePage({
     const blocks = ensureHomeBlocksComplete(migrateBlocks(rawBlocks), activeLocale);
 
     const needsCategories = blocks.some((b) => b.type === "training_domains");
-    let categories: { slug: string; color: string; nameEn: string; nameAr: string }[] = [];
+    let categories: { slug: string; color: string; icon: string; image: string | null; nameEn: string; nameAr: string }[] = [];
     if (needsCategories) {
       const cats = await db.category.findMany({
         include: { translations: true },
@@ -56,6 +56,8 @@ export default async function LocaleHomePage({
       categories = cats.map((cat) => ({
         slug: cat.slug,
         color: cat.color,
+        icon: cat.icon,
+        image: cat.image,
         nameEn: cat.translations.find((t) => t.locale === "en")?.name ?? cat.slug,
         nameAr: cat.translations.find((t) => t.locale === "ar")?.name ?? cat.slug,
       }));
@@ -119,7 +121,7 @@ export default async function LocaleHomePage({
                 : "Applied training and execution consulting that turn knowledge into daily performance and measurable results."}
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link className="group flex items-center gap-3 bg-primary-container px-7 py-4 text-[12px] uppercase tracking-widest text-on-primary-container transition-all duration-300 hover:bg-secondary hover:text-surface-dim" href={`/${activeLocale}/events`}>
+              <Link className="group flex items-center gap-3 bg-primary px-7 py-4 text-[12px] uppercase tracking-widest text-primary-foreground transition-all duration-300 hover:bg-primary-container hover:text-on-primary-container" href={`/${activeLocale}/events`}>
                 <span>{activeLocale === "ar" ? "استعراض الفعاليات" : "Browse Events"}</span>
                 <HugeiconsIcon className="rtl:rotate-180" icon={ArrowRight01Icon} size={18} strokeWidth={1.8} />
               </Link>

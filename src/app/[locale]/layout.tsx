@@ -38,23 +38,60 @@ export default async function LocaleLayout({
   }
   const siteSettings = await getLocalizedSiteSettings(locale);
 
-  const mainMenu = await db.menu
-    .findUnique({
-      where: { location: "main" },
-      include: {
-        items: {
-          include: { translations: true },
-          orderBy: { order: "asc" },
-        },
+  const menus = await db.menu.findMany({
+    where: { location: { in: ["main", "header"] } },
+    include: {
+      items: {
+        include: { translations: true },
+        orderBy: { order: "asc" },
       },
-    })
-    .catch(() => null);
+    },
+  });
+  const mainMenu = menus.find((m) => m.location === "main") ?? menus.find((m) => m.location === "header") ?? null;
 
-  const menuItems: NavMenuItem[] | undefined = mainMenu?.items.map((item) => ({
-    href: item.url ?? `/${locale}`,
-    labelEn: item.translations.find((t) => t.locale === "en")?.label ?? "",
-    labelAr: item.translations.find((t) => t.locale === "ar")?.label ?? "",
-  }));
+  const targetIds = (mainMenu?.items ?? [])
+    .filter((item) => item.type !== "link" && item.targetId)
+    .map((item) => item.targetId as string);
+
+  const [pages, posts, events] = await Promise.all([
+    targetIds.length
+      ? db.page.findMany({ where: { id: { in: targetIds } }, select: { id: true, slug: true } })
+      : Promise.resolve([]),
+    targetIds.length
+      ? db.post.findMany({ where: { id: { in: targetIds } }, select: { id: true, slug: true } })
+      : Promise.resolve([]),
+    targetIds.length
+      ? db.event.findMany({ where: { id: { in: targetIds } }, select: { id: true, slug: true } })
+      : Promise.resolve([]),
+  ]);
+
+  const pageById = new Map(pages.map((p) => [p.id, p]));
+  const postById = new Map(posts.map((p) => [p.id, p]));
+  const eventById = new Map(events.map((e) => [e.id, e]));
+
+  const menuItems: NavMenuItem[] | undefined = (mainMenu?.items ?? [])
+    .map((item) => {
+      let href = item.url ?? "";
+      if (!href && item.targetId) {
+        if (item.type === "page") {
+          const page = pageById.get(item.targetId);
+          href = page ? `/${locale}/${page.slug}` : "";
+        } else if (item.type === "post") {
+          const post = postById.get(item.targetId);
+          href = post ? `/${locale}/posts/${post.slug}` : "";
+        } else if (item.type === "event") {
+          const event = eventById.get(item.targetId);
+          href = event ? `/${locale}/events/${event.slug}` : "";
+        }
+      }
+      if (!href) return null;
+      return {
+        href,
+        labelEn: item.translations.find((t) => t.locale === "en")?.label ?? "",
+        labelAr: item.translations.find((t) => t.locale === "ar")?.label ?? "",
+      };
+    })
+    .filter((item): item is NavMenuItem => Boolean(item));
 
   return (
     <div data-locale={locale} dir={LOCALE_DIRECTION[locale]}>

@@ -38,7 +38,7 @@ import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -142,6 +142,8 @@ const eventSchema = z.object({
   meetingLink: z.string(),
   meetingPlatform: z.enum(["zoom", "teams", "meet", "other"]),
   paymentMethods: z.enum(["both", "card", "bank"]),
+  registrationType: z.enum(["internal", "external"]),
+  externalRegistrationUrl: z.string(),
   bankAccountName: z.string(),
   bankName: z.string(),
   bankIban: z.string(),
@@ -181,6 +183,10 @@ const paymentLabels = {
   both: "Card & Bank Transfer",
   card: "Card only",
   bank: "Bank Transfer only",
+} as const;
+const registrationTypeLabels = {
+  internal: "Internal (site form)",
+  external: "External (redirect link)",
 } as const;
 const platformLabels = {
   zoom: "Zoom",
@@ -485,6 +491,8 @@ export function EventForm({
       meetingLink: "",
       meetingPlatform: "zoom",
       paymentMethods: "both",
+      registrationType: "internal",
+      externalRegistrationUrl: "",
       bankAccountName: "",
       bankName: "",
       bankIban: "",
@@ -524,6 +532,7 @@ export function EventForm({
   const capacity = form.watch("capacity");
   const isFree = form.watch("isFree");
   const paymentMethods = form.watch("paymentMethods");
+  const registrationType = form.watch("registrationType");
   const selectedTrainerIds = form.watch("trainerIds");
   const selectedCategoryIds = form.watch("categories");
   const coverImage = form.watch("coverImage");
@@ -566,13 +575,19 @@ export function EventForm({
     { icon: LayoutList,       id: "agenda",           label: "Agenda" },
     { icon: Users,            id: "trainers",         label: "Trainers" },
     { icon: Tag,              id: "categories",       label: "Categories" },
-    { icon: ClipboardList,    id: "registrationForm", label: "Reg. Form" },
+    ...(registrationType === "internal" ? [{ icon: ClipboardList, id: "registrationForm" as const, label: "Reg. Form" }] : []),
     { icon: ListChecks,       id: "registrations",    label: "Registrations" },
   ];
 
   const sectionIdx = sections.findIndex((s) => s.id === activeSection);
   const prevSection = sections[sectionIdx - 1];
   const nextSection = sections[sectionIdx + 1];
+
+  useEffect(() => {
+    if (registrationType === "external" && activeSection === "registrationForm") {
+      setActiveSection("pricing");
+    }
+  }, [activeSection, registrationType]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -1211,6 +1226,25 @@ export function EventForm({
               {activeSection === "pricing" && (
                 <div className="space-y-4">
                   <SectionHeader description="Fees and accepted payment methods" icon={CircleDollarSign} number="04" title="Pricing" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="registrationType" render={({ field }) => (
+                      <FormItem>
+                        <EnumSelect label="Registration Type" onChange={field.onChange} options={registrationTypeLabels} value={field.value} />
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    {registrationType === "external" ? (
+                      <FormField control={form.control} name="externalRegistrationUrl" render={({ field }) => (
+                        <FormItem>
+                          <FL>External Registration URL</FL>
+                          <FormControl><Input className={inputCls} placeholder="https://..." type="url" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    ) : (
+                      <div />
+                    )}
+                  </div>
                   <FormField control={form.control} name="isFree" render={({ field }) => (
                     <FormItem>
                       <ToggleControl
@@ -1648,7 +1682,7 @@ export function EventForm({
                   §09  REGISTRATION FORM
                   Add custom fields · accordion per field
               ───────────────────────────────────────────────────────── */}
-              {activeSection === "registrationForm" && (
+              {activeSection === "registrationForm" && registrationType === "internal" && (
                 <div className="space-y-4">
                   <SectionHeader description="Custom inputs shown to learners during sign-up" icon={ClipboardList} number="09" title="Registration Form" />
 

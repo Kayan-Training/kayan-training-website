@@ -28,6 +28,8 @@ import { HomeEventsCarouselRail } from "./home-events-carousel-rail";
 type Category = {
   slug: string;
   color: string;
+  icon: string;
+  image: string | null;
   nameEn: string;
   nameAr: string;
 };
@@ -81,7 +83,7 @@ function PageHeroRenderer({ block }: { block: PageHeroBlock }) {
         )}
         {slide?.ctaText && slide?.ctaUrl && (
           <Link
-            className="inline-flex items-center gap-3 bg-primary-container px-7 py-4 text-[12px] uppercase tracking-widest text-on-primary-container transition-all duration-300 hover:bg-secondary hover:text-surface-dim"
+            className="inline-flex items-center gap-3 bg-primary px-7 py-4 text-[12px] uppercase tracking-widest text-primary-foreground transition-all duration-300 hover:bg-primary-container hover:text-on-primary-container"
             href={slide.ctaUrl}
           >
             {slide.ctaText}
@@ -375,6 +377,16 @@ type TrainingDomainItem = {
   icon: string;
 };
 
+const CATEGORY_ICON_PATHS: Record<string, string> = {
+  "continuous-improvement": "/icons/kayan_profile_NEW.svg",
+  economy: "/icons/kayan_profile_Economy.svg",
+  "education-psychology": "/icons/kayan_profile_Education & Psychology.svg",
+  lifestyle: "/icons/kayan_profile_Lifestyle.svg",
+  "management-leadership": "/icons/kayan_profile_Management & Leadership.svg",
+  "media-communication": "/icons/kayan_profile_Media & Communication.svg",
+  tech: "/icons/kayan_profile_Tech.svg",
+};
+
 const DOMAIN_IMAGES: Record<string, { accent: string; img: string }> = {
   lifestyle: {
     accent: "#03c3cd",
@@ -420,21 +432,15 @@ function TrainingDomainsRenderer({
     color: cat.color,
     nameEn: cat.nameEn,
     nameAr: cat.nameAr,
-    accent: DOMAIN_IMAGES[cat.slug]?.accent ?? "#a3cddb",
+    accent: cat.color || (DOMAIN_IMAGES[cat.slug]?.accent ?? "#a3cddb"),
     img:
-      DOMAIN_IMAGES[cat.slug]?.img ??
-      "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&q=70",
-    icon: `/icons/${
-      cat.slug === "management-leadership"
-        ? "kayan_profile_Management & Leadership.svg"
-        : cat.slug === "media-communication"
-          ? "kayan_profile_Media & Communication.svg"
-          : cat.slug === "education-psychology"
-            ? "kayan_profile_Education & Psychology.svg"
-            : cat.slug === "continuous-improvement"
-              ? "kayan_profile_NEW.svg"
-              : `kayan_profile_${cat.slug.charAt(0).toUpperCase()}${cat.slug.slice(1)}.svg`
-    }`,
+      cat.image ||
+      (DOMAIN_IMAGES[cat.slug]?.img ??
+        "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&q=70"),
+    icon:
+      CATEGORY_ICON_PATHS[cat.icon] ??
+      CATEGORY_ICON_PATHS[cat.slug] ??
+      "/icons/kayan_profile_NEW.svg",
   }));
 
   const descriptionSizeClass =
@@ -446,7 +452,8 @@ function TrainingDomainsRenderer({
           ? "text-xl"
           : "text-base";
   const customDescriptionSize =
-    Number.isFinite(block.customDescriptionSize) && block.customDescriptionSize > 0
+    Number.isFinite(block.customDescriptionSize) &&
+    block.customDescriptionSize > 0
       ? Math.max(12, Math.min(40, block.customDescriptionSize))
       : 16;
 
@@ -467,7 +474,9 @@ function TrainingDomainsRenderer({
             <p
               className={cn(
                 "mt-3 max-w-3xl leading-relaxed text-on-surface-variant",
-                block.descriptionSize === "custom" ? undefined : descriptionSizeClass,
+                block.descriptionSize === "custom"
+                  ? undefined
+                  : descriptionSizeClass,
               )}
               style={
                 block.descriptionSize === "custom"

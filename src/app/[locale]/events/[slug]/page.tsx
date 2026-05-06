@@ -112,6 +112,11 @@ function RegisterCard({
       : "Free"
     : `${event.price} OMR`;
 
+  const registrationHref =
+    event.registrationType === "external" && event.externalRegistrationUrl
+      ? event.externalRegistrationUrl
+      : `/${locale}/events/${slug}/register`;
+
   return (
     <div className="bg-surface-container-highest ghost-border p-7">
       <div className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-primary">
@@ -142,9 +147,13 @@ function RegisterCard({
       ) : null}
       <Link
         className="mb-3 flex w-full items-center justify-center gap-2 bg-primary py-4 text-xs uppercase tracking-widest text-primary-foreground transition-colors hover:bg-secondary"
-        href={`/${locale}/events/${slug}/register`}
+        href={registrationHref}
+        rel={event.registrationType === "external" ? "noreferrer" : undefined}
+        target={event.registrationType === "external" ? "_blank" : undefined}
       >
-        {locale === "ar" ? "التسجيل في الفعالية" : "Register for Event"}
+        {event.registrationType === "external"
+          ? (locale === "ar" ? "التسجيل عبر الرابط الخارجي" : "Register Externally")
+          : (locale === "ar" ? "التسجيل في الفعالية" : "Register for Event")}
       </Link>
       <p className="text-center text-[10px] text-on-surface-variant">
         {locale === "ar"
@@ -228,11 +237,17 @@ export default async function EventDetailPage({
               <div className="flex flex-wrap gap-4">
                 <Link
                   className="flex items-center gap-2 bg-secondary px-8 py-4 text-xs uppercase tracking-widest text-surface-dim transition-colors hover:bg-primary"
-                  href={`/${activeLocale}/events/${slug}/register`}
+                  href={
+                    event.registrationType === "external" && event.externalRegistrationUrl
+                      ? event.externalRegistrationUrl
+                      : `/${activeLocale}/events/${slug}/register`
+                  }
+                  rel={event.registrationType === "external" ? "noreferrer" : undefined}
+                  target={event.registrationType === "external" ? "_blank" : undefined}
                 >
-                  {activeLocale === "ar"
-                    ? "سجّل مكانك الآن"
-                    : "Reserve Your Seat Now"}
+                  {event.registrationType === "external"
+                    ? (activeLocale === "ar" ? "سجّل عبر الرابط الخارجي" : "Register via External Link")
+                    : (activeLocale === "ar" ? "سجّل مكانك الآن" : "Reserve Your Seat Now")}
                   <HugeiconsIcon
                     className="rtl:rotate-180"
                     icon={ArrowRight01Icon}
@@ -564,8 +579,8 @@ function AgendaAndTrainers({
           </h2>
           <div className="flex flex-wrap gap-2">
             {event.categories.map((category) => (
-              <span className="badge-teal font-body" key={category}>
-                {category}
+              <span className="badge-teal font-body" key={category.label} style={{ background: `${category.color}2a`, borderColor: `${category.color}66`, color: category.color }}>
+                {category.label}
               </span>
             ))}
           </div>

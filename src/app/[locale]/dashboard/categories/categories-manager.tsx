@@ -30,10 +30,9 @@ import { cn } from "@/lib/utils";
 import { createCategory, deleteCategory, fetchCategoryMediaAction, updateCategory } from "./_actions";
 
 const PROFILE_ICONS: Array<{ slug: string; label: string; path: string }> = [
-  { slug: "arts", label: "Arts", path: "/icons/kayan_profile_Arts.svg" },
+  { slug: "continuous-improvement", label: "Continuous Improvement", path: "/icons/kayan_profile_NEW.svg" },
   { slug: "economy", label: "Economy", path: "/icons/kayan_profile_Economy.svg" },
   { slug: "education-psychology", label: "Education & Psychology", path: "/icons/kayan_profile_Education & Psychology.svg" },
-  { slug: "entertainment", label: "Entertainment", path: "/icons/kayan_profile_Entertainment.svg" },
   { slug: "lifestyle", label: "Lifestyle", path: "/icons/kayan_profile_Lifestyle.svg" },
   { slug: "management-leadership", label: "Management & Leadership", path: "/icons/kayan_profile_Management & Leadership.svg" },
   { slug: "media-communication", label: "Media & Communication", path: "/icons/kayan_profile_Media & Communication.svg" },

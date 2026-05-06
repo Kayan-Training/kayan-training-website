@@ -952,6 +952,28 @@ body {
   --font-body: var(--font-alexandria), sans-serif;
   --font-heading: var(--font-ibm-plex-arabic), sans-serif;
   --font-mono: var(--font-dm-mono), monospace;
+  font-size: 17px;
+}
+
+/* Arabic-only micro typography compensation for very small labels */
+[data-locale="ar"] .footer-micro-title {
+  font-size: 12px !important;
+}
+
+[data-locale="ar"] .footer-micro-copy {
+  font-size: 13px !important;
+}
+
+[data-locale="ar"] .footer-micro-link {
+  font-size: 11px !important;
+}
+
+[data-locale="ar"] .hero-micro-text {
+  font-size: 11px !important;
+}
+
+[data-locale="ar"] .hero-badge-text {
+  font-size: 10px !important;
 }
 
 [data-locale="en"] {

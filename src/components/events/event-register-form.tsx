@@ -48,8 +48,7 @@ export function EventRegisterForm({
   eventFormFields: FormField[];
   initialRegistrant: {
     email: string;
-    firstName: string;
-    lastName: string;
+    fullName: string;
     phone: string;
     phoneCountry: string;
   };
@@ -188,18 +187,12 @@ export function EventRegisterForm({
                 </div>
               ) : null}
 
-              <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div className="mb-6 grid grid-cols-1 gap-6">
                 <div>
                   <label className="mb-2 block text-[11px] uppercase tracking-widest text-on-surface-variant">
-                    {locale === "ar" ? "الاسم الأول *" : "First Name *"}
+                    {locale === "ar" ? "الاسم الكامل *" : "Full Name *"}
                   </label>
-                  <input className={registerInputClass} defaultValue={initialRegistrant.firstName} name="firstName" required />
-                </div>
-                <div>
-                  <label className="mb-2 block text-[11px] uppercase tracking-widest text-on-surface-variant">
-                    {locale === "ar" ? "اسم العائلة *" : "Last Name *"}
-                  </label>
-                  <input className={registerInputClass} defaultValue={initialRegistrant.lastName} name="lastName" required />
+                  <input className={registerInputClass} defaultValue={initialRegistrant.fullName} name="fullName" required />
                 </div>
               </div>
 
@@ -335,7 +328,7 @@ export function EventRegisterForm({
               )}
 
               <button
-                className="inline-flex items-center gap-2 bg-primary-container px-7 py-4 text-xs uppercase tracking-widest text-on-primary-container hover:bg-secondary hover:text-surface-dim"
+                className="inline-flex items-center gap-2 bg-primary px-7 py-4 text-xs uppercase tracking-widest text-primary-foreground hover:bg-primary-container hover:text-on-primary-container"
                 disabled={isDuplicateEmail || isCheckingEmail}
                 onClick={() => setStep(2)}
                 type="button"
@@ -440,7 +433,7 @@ export function EventRegisterForm({
                   {locale === "ar" ? "السابق" : "Back"}
                 </button>
                 <button
-                  className="inline-flex items-center gap-2 bg-primary-container px-7 py-4 text-xs uppercase tracking-widest text-on-primary-container hover:bg-secondary hover:text-surface-dim"
+                  className="inline-flex items-center gap-2 bg-primary px-7 py-4 text-xs uppercase tracking-widest text-primary-foreground hover:bg-primary-container hover:text-on-primary-container"
                   onClick={() => setStep(3)}
                   type="button"
                 >

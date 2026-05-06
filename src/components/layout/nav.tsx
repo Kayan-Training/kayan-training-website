@@ -111,7 +111,7 @@ export function SiteNav({
               <span>{locale === "ar" ? "دخول" : "Login"}</span>
             </Link>
           )}
-          <Link className="hidden h-9 items-center bg-primary-container px-5 text-[12px] font-semibold uppercase tracking-widest text-on-primary-container transition-all hover:bg-secondary hover:text-surface-dim sm:flex" href={`/${locale}/events`}>
+          <Link className="hidden h-9 items-center bg-primary px-5 text-[12px] font-semibold uppercase tracking-widest text-primary-foreground transition-all hover:bg-primary-container hover:text-on-primary-container sm:flex" href={`/${locale}/events`}>
             {locale === "ar" ? "الفعاليات" : "View Events"}
           </Link>
           <button className="ghost-border flex h-9 w-9 items-center justify-center text-on-surface-variant transition-colors hover:text-on-surface lg:hidden" type="button" aria-label="Open menu" onClick={() => setMobileOpen((v) => !v)}>

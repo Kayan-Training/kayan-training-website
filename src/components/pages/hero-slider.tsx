@@ -29,7 +29,7 @@ function CtaLink({ cta, locale }: { cta: HeroCta; locale: string }) {
   if (cta.style === "secondary") {
     return (
       <Link
-        className="ghost-border flex items-center gap-3 px-7 py-4 text-[12px] uppercase tracking-widest text-on-surface-variant transition-colors hover:text-on-surface"
+        className="ghost-border flex items-center gap-3 px-7 py-4 text-[12px] uppercase tracking-widest text-on-surface-variant transition-colors hover:text-on-surface backdrop-blur-sm"
         href={href}
       >
         {cta.text}
@@ -38,7 +38,7 @@ function CtaLink({ cta, locale }: { cta: HeroCta; locale: string }) {
   }
   return (
     <Link
-      className="group flex items-center gap-3 bg-primary-container px-7 py-4 text-[12px] uppercase tracking-widest text-on-primary-container transition-all duration-300 hover:bg-secondary hover:text-surface-dim"
+      className="group flex items-center gap-3 bg-primary px-7 py-4 text-[12px] uppercase tracking-widest text-primary-foreground transition-all duration-300 hover:bg-primary-container hover:text-on-primary-container"
       href={href}
     >
       {cta.text}
@@ -55,7 +55,9 @@ export function FeaturedEventCyclerCard({
 }) {
   const [idx, setIdx] = useState(0);
   const [exiting, setExiting] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
     if (events.length <= 1) return;
@@ -82,8 +84,12 @@ export function FeaturedEventCyclerCard({
   const dayStr = new Intl.NumberFormat(numLocale, {
     minimumIntegerDigits: 2,
   }).format(date.getDate());
-  const monthStr = new Intl.DateTimeFormat(numLocale, { month: "short" }).format(date);
-  const yearStr = new Intl.DateTimeFormat(numLocale, { year: "numeric" }).format(date);
+  const monthStr = new Intl.DateTimeFormat(numLocale, {
+    month: "short",
+  }).format(date);
+  const yearStr = new Intl.DateTimeFormat(numLocale, {
+    year: "numeric",
+  }).format(date);
 
   return (
     <div className="relative">
@@ -133,11 +139,11 @@ export function FeaturedEventCyclerCard({
         <div className="absolute inset-x-4 top-4 flex items-start justify-between">
           <div className="flex items-center gap-1.5 bg-black/50 px-2.5 py-1.5 backdrop-blur-sm">
             <span className="text-[10px] leading-none text-secondary">★</span>
-            <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-on-surface-variant">
+            <span className="hero-micro-text text-[9px] font-bold uppercase tracking-[0.22em] text-on-surface-variant">
               {isAr ? "الفعالية المميّزة" : "Featured Event"}
             </span>
           </div>
-          <span className="badge-teal font-body !text-[9px] !py-[5px] !px-[8px]">
+          <span className="badge-teal hero-badge-text font-body !text-[9px] !py-[5px] !px-[8px]">
             {ev.location || (isAr ? "مسقط" : "Muscat")}
           </span>
         </div>
@@ -150,10 +156,10 @@ export function FeaturedEventCyclerCard({
               {dayStr}
             </span>
             <div className="mb-1 flex flex-col gap-0.5">
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-secondary/90">
+              <span className="hero-micro-text text-[10px] font-semibold uppercase tracking-widest text-secondary/90">
                 {monthStr}
               </span>
-              <span className="text-[10px] uppercase tracking-widest text-on-surface-variant/60">
+              <span className="hero-micro-text text-[10px] uppercase tracking-widest text-on-surface-variant/60">
                 {yearStr}
               </span>
             </div>
@@ -169,7 +175,7 @@ export function FeaturedEventCyclerCard({
             <div className="flex items-center gap-1.5">
               {/* Pulsing live dot */}
               <span className="featured-event-pulse-dot inline-block h-1.5 w-1.5 rounded-full bg-secondary" />
-              <span className="text-[9px] uppercase tracking-[0.18em] text-secondary">
+              <span className="hero-micro-text text-[9px] uppercase tracking-[0.18em] text-secondary">
                 {isAr ? "الحجز متاح" : "Registration Open"}
               </span>
             </div>
@@ -227,9 +233,12 @@ export function HeroSlider({
   const [slideIdx, setSlideIdx] = useState(0);
   const [mediaIdx, setMediaIdx] = useState(0);
   const [exiting, setExiting] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
 
   const overlayAlpha = (block.overlayOpacity ?? 40) / 100;
+  // const overlayAlpha = block.overlayOpacity;
   const slide = slides[slideIdx];
 
   // Independent media cycling — fade between background images
@@ -279,17 +288,27 @@ export function HeroSlider({
               key={m.id}
               style={{ opacity: i === mediaIdx ? 1 : 0 }}
             >
-              <Image
-                alt=""
-                className={cn(
-                  "object-cover object-[center_30%]",
-                  block.grayscaleMedia !== false && "grayscale",
-                )}
-                fill
-                priority={i === 0}
-                sizes="100vw"
-                src={m.url}
-              />
+              {m.kind === "video" ? (
+                <video
+                  aria-hidden
+                  autoPlay
+                  className="h-full w-full object-cover object-[center_30%]"
+                  loop
+                  muted
+                  playsInline
+                  preload={i === 0 ? "auto" : "metadata"}
+                  src={m.url}
+                />
+              ) : (
+                <Image
+                  alt=""
+                  className="object-cover object-[center_30%]"
+                  fill
+                  priority={i === 0}
+                  sizes="100vw"
+                  src={m.url}
+                />
+              )}
             </div>
           ))}
           <div
@@ -299,7 +318,6 @@ export function HeroSlider({
               opacity: overlayAlpha,
             }}
           />
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(12,14,14,0.97)_0%,rgba(12,14,14,0.82)_40%,rgba(12,14,14,0.45)_100%)]" />
         </>
       ) : null}
 
@@ -365,7 +383,12 @@ export function HeroSlider({
 
         {/* Slide indicators */}
         {slides.length > 1 && (
-          <div className={cn("col-span-12 flex gap-2", hasEvents ? "lg:col-span-7" : "lg:col-span-10")}>
+          <div
+            className={cn(
+              "col-span-12 flex gap-2",
+              hasEvents ? "lg:col-span-7" : "lg:col-span-10",
+            )}
+          >
             {slides.map((_, i) => (
               <button
                 className={cn(

@@ -121,6 +121,8 @@ export async function getEventDetailBySlug(locale: "ar" | "en", slug: string) {
   if (!event) {
     return null;
   }
+  const registrationType = ((event as { registrationType?: string }).registrationType ?? "internal") as "internal" | "external";
+  const externalRegistrationUrl = (event as { externalRegistrationUrl?: string | null }).externalRegistrationUrl ?? "";
 
   return {
     id: event.id,
@@ -135,6 +137,8 @@ export async function getEventDetailBySlug(locale: "ar" | "en", slug: string) {
     meetingLink: event.meetingLink ?? "",
     meetingPlatform: event.meetingPlatform ?? "",
     registrationsOpen: event.registrationsOpen,
+    registrationType,
+    externalRegistrationUrl,
     capacity: event.capacity ?? null,
     registrationsCount: event.registrations.length,
       isFree: event.isFree,
@@ -236,7 +240,10 @@ export async function getEventDetailBySlug(locale: "ar" | "en", slug: string) {
     categories: event.categories.map((entry) => {
       const translation = entry.category.translations.find((t) => t.locale === locale);
       const fallback = entry.category.translations.find((t) => t.locale !== locale);
-      return translation?.name ?? fallback?.name ?? entry.category.slug;
+      return {
+        color: entry.category.color,
+        label: translation?.name ?? fallback?.name ?? entry.category.slug,
+      };
     }),
     slug: event.slug,
     title: event.translations[0]?.title ?? event.slug,

@@ -94,7 +94,7 @@ export function SiteFooter({
           </div>
         </div>
         <div>
-          <h5 className="mb-5 text-[10px] font-bold uppercase tracking-widest text-on-surface">
+          <h5 className="footer-micro-title mb-5 text-[10px] font-bold uppercase tracking-widest text-on-surface">
             {locale === "ar" ? "روابط" : "Links"}
           </h5>
           <div className="space-y-3">
@@ -105,7 +105,7 @@ export function SiteFooter({
           </div>
         </div>
         <div>
-          <h5 className="mb-5 text-[10px] font-bold uppercase tracking-widest text-on-surface">
+          <h5 className="footer-micro-title mb-5 text-[10px] font-bold uppercase tracking-widest text-on-surface">
             {locale === "ar" ? "العنوان" : "Address"}
           </h5>
           <p className="text-sm leading-relaxed text-on-surface-variant">
@@ -117,17 +117,17 @@ export function SiteFooter({
         </div>
       </div>
       <div className="mx-auto flex w-full max-w-[1440px] flex-col items-center justify-between gap-3 border-t border-white/[0.05] px-6 py-6 sm:flex-row md:px-10">
-        <p className="text-[11px] text-on-surface-variant">
+        <p className="footer-micro-copy text-[11px] text-on-surface-variant">
           {locale === "ar"
             ? `© 2026 ${siteName}. جميع الحقوق محفوظة.`
             : `© 2026 ${siteName}. All rights reserved.`}
         </p>
         <div className="flex items-center gap-4">
-          <Link className="text-[10px] uppercase tracking-widest text-outline hover:text-on-surface-variant" href={`/${locale}/privacy`}>
+          <Link className="footer-micro-link text-[10px] uppercase tracking-widest text-outline hover:text-on-surface-variant" href={`/${locale}/privacy`}>
             {locale === "ar" ? "الخصوصية" : "Privacy"}
           </Link>
           <span className="text-outline/40">·</span>
-          <Link className="text-[10px] uppercase tracking-widest text-outline hover:text-on-surface-variant" href={`/${locale}/terms`}>
+          <Link className="footer-micro-link text-[10px] uppercase tracking-widest text-outline hover:text-on-surface-variant" href={`/${locale}/terms`}>
             {locale === "ar" ? "الشروط" : "Terms"}
           </Link>
         </div>
