@@ -18,6 +18,7 @@ import { signIn, signOut, signUp, useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 type Mode = "login" | "register";
+const AUTH_REQUEST_TIMEOUT_MS = 15000;
 
 type PasswordRule = {
   key: string;
@@ -133,18 +134,45 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error("AUTH_REQUEST_TIMEOUT"));
+      }, timeoutMs);
+
+      promise
+        .then((value) => {
+          clearTimeout(timeout);
+          resolve(value);
+        })
+        .catch((error) => {
+          clearTimeout(timeout);
+          reject(error);
+        });
+    });
+  }
+
   async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsLoading(true);
     setMessage("");
     try {
-      const result = await signIn.email({
-        email,
-        password,
-        rememberMe,
-      });
+      const result = await withTimeout(
+        signIn.email({
+          email,
+          password,
+          rememberMe,
+        }),
+        AUTH_REQUEST_TIMEOUT_MS,
+      );
 
       if (result.error) {
+        console.error("[AuthPanel] Sign-in failed with API error", {
+          message: result.error.message,
+          code: (result.error as { code?: string })?.code,
+          email,
+          locale,
+        });
         setMessage(result.error.message ?? t.signInError);
         return;
       }
@@ -152,8 +180,21 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
       router.push(
         role === "admin" ? `/${locale}/dashboard` : `/${locale}/events`,
       );
-    } catch {
-      setMessage(t.signInError);
+    } catch (error) {
+      const timedOut = error instanceof Error && error.message === "AUTH_REQUEST_TIMEOUT";
+      console.error("[AuthPanel] Sign-in request threw", {
+        timedOut,
+        error,
+        email,
+        locale,
+      });
+      setMessage(
+        timedOut
+          ? locale === "ar"
+            ? "انتهت مهلة تسجيل الدخول. يرجى المحاولة مرة أخرى."
+            : "Login timed out. Please try again."
+          : t.signInError,
+      );
     } finally {
       setIsLoading(false);
     }
@@ -177,20 +218,42 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
     setIsLoading(true);
     setMessage("");
     try {
-      const result = await signUp.email({
-        name: `${firstName} ${lastName}`.trim(),
-        email,
-        password,
-      });
+      const result = await withTimeout(
+        signUp.email({
+          name: `${firstName} ${lastName}`.trim(),
+          email,
+          password,
+        }),
+        AUTH_REQUEST_TIMEOUT_MS,
+      );
 
       if (result.error) {
+        console.error("[AuthPanel] Sign-up failed with API error", {
+          message: result.error.message,
+          code: (result.error as { code?: string })?.code,
+          email,
+          locale,
+        });
         setMessage(result.error.message ?? t.signUpError);
         return;
       }
 
       router.push(`/${locale}/events`);
-    } catch {
-      setMessage(t.signUpError);
+    } catch (error) {
+      const timedOut = error instanceof Error && error.message === "AUTH_REQUEST_TIMEOUT";
+      console.error("[AuthPanel] Sign-up request threw", {
+        timedOut,
+        error,
+        email,
+        locale,
+      });
+      setMessage(
+        timedOut
+          ? locale === "ar"
+            ? "انتهت مهلة إنشاء الحساب. يرجى المحاولة مرة أخرى."
+            : "Sign-up timed out. Please try again."
+          : t.signUpError,
+      );
     } finally {
       setIsLoading(false);
     }
