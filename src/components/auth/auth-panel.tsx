@@ -137,22 +137,26 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
     event.preventDefault();
     setIsLoading(true);
     setMessage("");
+    try {
+      const result = await signIn.email({
+        email,
+        password,
+        rememberMe,
+      });
 
-    const result = await signIn.email({
-      email,
-      password,
-      rememberMe,
-    });
-
-    setIsLoading(false);
-    if (result.error) {
-      setMessage(result.error.message ?? t.signInError);
-      return;
+      if (result.error) {
+        setMessage(result.error.message ?? t.signInError);
+        return;
+      }
+      const role = (result.data?.user as { role?: string } | undefined)?.role;
+      router.push(
+        role === "admin" ? `/${locale}/dashboard` : `/${locale}/events`,
+      );
+    } catch {
+      setMessage(t.signInError);
+    } finally {
+      setIsLoading(false);
     }
-    const role = (result.data?.user as { role?: string } | undefined)?.role;
-    router.push(
-      role === "admin" ? `/${locale}/dashboard` : `/${locale}/events`,
-    );
   }
 
   async function handleRegister(event: React.FormEvent<HTMLFormElement>) {
@@ -172,20 +176,24 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
 
     setIsLoading(true);
     setMessage("");
+    try {
+      const result = await signUp.email({
+        name: `${firstName} ${lastName}`.trim(),
+        email,
+        password,
+      });
 
-    const result = await signUp.email({
-      name: `${firstName} ${lastName}`.trim(),
-      email,
-      password,
-    });
+      if (result.error) {
+        setMessage(result.error.message ?? t.signUpError);
+        return;
+      }
 
-    setIsLoading(false);
-    if (result.error) {
-      setMessage(result.error.message ?? t.signUpError);
-      return;
+      router.push(`/${locale}/events`);
+    } catch {
+      setMessage(t.signUpError);
+    } finally {
+      setIsLoading(false);
     }
-
-    router.push(`/${locale}/events`);
   }
 
   if (session?.user) {
