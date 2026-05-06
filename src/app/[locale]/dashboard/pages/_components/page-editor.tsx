@@ -2127,6 +2127,56 @@ function TrainingDomainsFields({
             onChange={(e) => onChange({ heading: e.target.value })}
           />
         </Field>
+        <div className="sm:col-span-2">
+          <Field label="Description">
+            <input
+              className={cn(inputCls, dir === "rtl" && "text-right")}
+              dir={dir}
+              title="Description"
+              value={block.description}
+              onChange={(e) => onChange({ description: e.target.value })}
+            />
+          </Field>
+        </div>
+        <Field label="Description Size">
+          <select
+            className={inputCls}
+            value={block.descriptionSize}
+            onChange={(e) =>
+              onChange({
+                descriptionSize: e.target.value as
+                  | "sm"
+                  | "md"
+                  | "lg"
+                  | "xl"
+                  | "custom",
+              })
+            }
+          >
+            <option value="sm">Small</option>
+            <option value="md">Medium</option>
+            <option value="lg">Large</option>
+            <option value="xl">Extra Large</option>
+            <option value="custom">Custom (px)</option>
+          </select>
+        </Field>
+        {block.descriptionSize === "custom" ? (
+          <Field label="Custom Size (px)">
+            <input
+              className={inputCls}
+              min={12}
+              max={40}
+              step={1}
+              type="number"
+              value={block.customDescriptionSize}
+              onChange={(e) =>
+                onChange({
+                  customDescriptionSize: Number(e.target.value) || 16,
+                })
+              }
+            />
+          </Field>
+        ) : null}
       </FieldRow>
       <p className="rounded-lg border border-border/30 bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">
         Domain cards are automatically populated from the Categories database.
@@ -3093,7 +3143,15 @@ function makeBlock(type: BlockType): Block {
     case "service_cards":
       return { id, type, items: [] };
     case "training_domains":
-      return { id, type, eyebrow: "", heading: "" };
+      return {
+        id,
+        type,
+        eyebrow: "",
+        heading: "",
+        description: "",
+        descriptionSize: "md",
+        customDescriptionSize: 16,
+      };
     case "cta_banner":
       return {
         id,

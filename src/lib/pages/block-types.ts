@@ -86,6 +86,9 @@ export type TrainingDomainsBlock = {
   type: "training_domains";
   eyebrow: string;
   heading: string;
+  description: string;
+  descriptionSize: "sm" | "md" | "lg" | "xl" | "custom";
+  customDescriptionSize: number;
 };
 
 export type CtaBannerBlock = {

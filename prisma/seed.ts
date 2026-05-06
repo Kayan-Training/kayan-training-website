@@ -34,15 +34,6 @@ type CategorySeed = {
 
 const categorySeeds: CategorySeed[] = [
   {
-    slug: "arts",
-    iconFile: "kayan_profile_Arts.svg",
-    color: "oklch(0.8 0.09 183)",
-    arName: "الفنون",
-    enName: "Arts",
-    arDescription: "برامج ومبادرات الفنون الإبداعية.",
-    enDescription: "Programs and initiatives for creative arts.",
-  },
-  {
     slug: "education-psychology",
     iconFile: "kayan_profile_Education & Psychology.svg",
     color: "oklch(0.78 0.08 212)",
@@ -70,13 +61,13 @@ const categorySeeds: CategorySeed[] = [
     enDescription: "Media capabilities and high-impact communication.",
   },
   {
-    slug: "entertainment",
-    iconFile: "kayan_profile_Entertainment.svg",
-    color: "oklch(0.82 0.12 45)",
-    arName: "الترفيه",
-    enName: "Entertainment",
-    arDescription: "مبادرات وتجارب قطاع الترفيه.",
-    enDescription: "Initiatives and experiences for the entertainment sector.",
+    slug: "continuous-improvement",
+    iconFile: "kayan_profile_NEW.svg",
+    color: "oklch(0.72 0.12 180)",
+    arName: "التحسين المستمر",
+    enName: "Continuous Improvement",
+    arDescription: "مبادرات التحسين المستمر لرفع كفاءة الأداء المؤسسي.",
+    enDescription: "Continuous improvement initiatives to raise institutional performance efficiency.",
   },
   {
     slug: "management-leadership",
@@ -175,6 +166,13 @@ async function main() {
   for (const seed of categorySeeds) {
     await upsertCategory(seed);
   }
+
+  // Remove deprecated categories no longer in the profile taxonomy.
+  await prisma.category.deleteMany({
+    where: {
+      slug: { in: ["arts", "entertainment"] },
+    },
+  });
 
   const admin = await prisma.user.upsert({
     where: { email: "admin@kayan.local" },
@@ -522,7 +520,7 @@ async function main() {
       mapUrl: "https://maps.google.com/?q=Nizwa+Cultural+Center",
       showMapEmbed: true,
       trainers: ["layan.qasimi@kayan.local", "sara.harthi@kayan.local"],
-      categories: ["arts", "lifestyle"],
+      categories: ["continuous-improvement", "lifestyle"],
       titleEn: "Creative Thinking Intensive - July 2026",
       titleAr: "برنامج التفكير الإبداعي المكثف - يوليو 2026",
       shortEn: "Use proven ideation techniques to move from vague ideas to testable concepts in one day.",
@@ -711,7 +709,7 @@ async function main() {
       mapUrl: "https://maps.google.com/?q=Muscat+Creative+District",
       showMapEmbed: true,
       trainers: ["layan.qasimi@kayan.local", "omar.riyami@kayan.local"],
-      categories: ["entertainment", "arts"],
+      categories: ["continuous-improvement", "lifestyle"],
       titleEn: "Entertainment Experience Design Studio",
       titleAr: "استوديو تصميم تجارب الترفيه",
       shortEn: "Design audience journeys for events that blend storytelling, flow, and measurable engagement.",
@@ -1639,7 +1637,7 @@ async function seedSystemPages() {
       { id: id(), type: "mission_vision", items: [{ title: "Our Mission", body: "Enable institutions to convert learning into stable operational practice that improves outcomes and supports sustainability." }, { title: "Our Vision", body: "To become the regional reference for connecting capability development with measurable institutional outcomes." }, { title: "Delivery Method", body: "Need diagnosis, solution design, guided execution, and impact measurement with continuous iteration." }] },
       { id: id(), type: "process_steps", heading: "How We Create Impact", body: "We start from real institutional KPIs, then design training and consulting interventions directly tied to day-to-day operations.", steps: [{ title: "Diagnosis", desc: "Identify performance and capability gaps." }, { title: "Design", desc: "Build a clear learning + execution path." }, { title: "Application", desc: "Activate tools inside the workplace." }, { title: "Measurement", desc: "Review outcomes and continuously improve." }] },
       { id: id(), type: "values_list", eyebrow: "What Drives Us", heading: "Values & Principles", items: [{ title: "Quality & Efficiency", desc: "Every program is engineered to measurable standards — not theoretical content disconnected from practice." }, { title: "Professionalism & Impact", desc: "We deliver learning experiences with measurable operational impact, not a fleeting positive impression." }, { title: "Credibility & Commitment", desc: "Long-term partnerships built on full transparency and actual delivery against what was agreed." }, { title: "Leadership & Innovation", desc: "We track labour market shifts and integrate modern tools with purpose — not trend-chasing." }, { title: "Time Discipline", desc: "We respect our clients' time as much as participants'. Schedule discipline is not a detail — it is a performance indicator." }, { title: "Social Responsibility", desc: "Our role goes beyond training — we help build the talent driving Oman's economic diversification and knowledge society." }] },
-      { id: id(), type: "accreditation", accredHeading: "QABA Approved Provider", accredBody: "Kayan Training & Consulting holds QABA approval as a Qualified Approved Course Provider, ensuring clients receive internationally-recognized training content, assessment standards, and certifications.", badgeLabel: "QABA", badgeTitle: "Qualified Approved Course Provider", badgeSub: "International recognition — global content & assessment standards", partnersHeading: "Who Trusts Us", partnersBody: "We're trusted by public and private sector institutions across the Sultanate of Oman, from oil & gas companies to government bodies and educational institutions.", partners: [{ name: "OQ" }, { name: "OXY OMAN" }, { name: "Government Entities" }, { name: "Multiple Sectors" }] },
+      { id: id(), type: "accreditation", accredHeading: "QABA Approved Provider", accredBody: "Kayan Training & Consulting holds QABA approval as a Qualified Approved Course Provider, ensuring clients receive internationally-recognized training content, assessment standards, and certifications.", badgeLabel: "QABA", badgeTitle: "Qualified Approved Course Provider", badgeSub: "International recognition — global content & assessment standards", partnersHeading: "Who Trusts Us", partnersBody: "We're trusted by public and private sector institutions across the Sultanate of Oman, from oil & gas companies to government bodies and educational institutions.", partners: [{ name: "QABA Approved Coursework Provider", logo: "/accreditations/QABA_Approved_Coursework_Provider_Logo.png" }, { name: "QABA Approved Training Program", logo: "/accreditations/QABA_Approved_Training_Program_Badge.png" }, { name: "OQ" }, { name: "OXY OMAN" }, { name: "Ministry of Higher Education, Research and Innovation" }] },
       { id: id(), type: "cta_banner", eyebrow: "Your Development Partner", heading: "Looking for a Custom Training Track for Your Institution?", body: "We design development tracks built on an actual diagnosis of your team's needs — no off-the-shelf solutions.", buttonText: "training@kayan.om", buttonUrl: "mailto:training@kayan.om", linkText: "Browse All Events →", linkUrl: "/en/events" },
     ],
     // AR blocks
@@ -1649,7 +1647,7 @@ async function seedSystemPages() {
       { id: id(), type: "mission_vision", items: [{ title: "رسالتنا", body: "تمكين المؤسسات من تحويل التعلم إلى ممارسة تشغيلية مستقرة تُحسن النتائج وتدعم الاستدامة." }, { title: "رؤيتنا", body: "أن تكون كيان المرجع الأول إقليميًا في الربط بين بناء القدرات والنتائج المؤسسية الملموسة." }, { title: "منهجية العمل", body: "تشخيص الاحتياج، تصميم الحل، التنفيذ الموجّه، ثم قياس الأثر وتحديث المسار." }] },
       { id: id(), type: "process_steps", heading: "كيف نخلق الأثر؟", body: "نبدأ من مؤشرات الأداء الفعلية في المؤسسة، ثم نصمم تدخلات تدريبية واستشارية مرتبطة مباشرة بسياق العمل.", steps: [{ title: "التشخيص", desc: "تحديد فجوات الأداء والمهارات." }, { title: "التصميم", desc: "بناء مسار تعلم وتنفيذ واضح." }, { title: "التطبيق", desc: "تفعيل الأدوات داخل بيئة العمل." }, { title: "القياس", desc: "مراجعة النتائج وتحسين مستمر." }] },
       { id: id(), type: "values_list", eyebrow: "ما يميّزنا", heading: "قيمنا ومبادئنا", items: [{ title: "الجودة والكفاءة", desc: "نُصمم كل برنامج وفق معايير صارمة تضمن نتائج قابلة للقياس — لا محتوى نظرياً بمعزل عن الواقع." }, { title: "الاحترافية والتأثير", desc: "نُقدّم تجارب تعلم تُحدث أثرًا تشغيليًا ملموسًا، لا انطباعًا إيجابيًا مؤقتًا يتبخر خارج القاعة." }, { title: "المصداقية والالتزام", desc: "نبني علاقات طويلة الأمد مبنية على الشفافية الكاملة والتسليم الفعلي وفق ما اتُّفق عليه." }, { title: "الريادة والابتكار", desc: "نواكب تحولات سوق العمل ونُدرج أدوات التعلم الحديثة في كل مسار — بمنهجية لا بمجاراة الاتجاه." }, { title: "الانضباط في الزمن", desc: "نحترم وقت عملائنا كما نحترم وقت المتدربين. الالتزام بالجدول ليس تفصيلاً — هو مؤشر أداء." }, { title: "المسؤولية المجتمعية", desc: "ندرك أن دورنا يتجاوز التدريب — نحن نُسهم في بناء كوادر تقود تنويع اقتصاد عُمان وتُرسّخ مجتمع المعرفة." }] },
-      { id: id(), type: "accreditation", accredHeading: "معتمدون من QABA", accredBody: "حصلت كيان للتدريب والاستشارات على اعتماد QABA كمزوّد معتمد للدورات التدريبية، مما يضمن لعملائنا جودة المحتوى التدريبي ومعايير التقييم والاعتراف الدولي بالشهادات.", badgeLabel: "QABA", badgeTitle: "مزوّد دورات تدريبية معتمد", badgeSub: "اعتراف دولي — معايير محتوى وتقييم دولية", partnersHeading: "من عملائنا", partnersBody: "نفخر بثقة مؤسسات من القطاعين الحكومي والخاص في سلطنة عُمان، من شركات النفط والغاز إلى الجهات الحكومية والمؤسسات التعليمية.", partners: [{ name: "OQ" }, { name: "OXY OMAN" }, { name: "جهات حكومية" }, { name: "قطاع خاص متعدد" }] },
+      { id: id(), type: "accreditation", accredHeading: "معتمدون من QABA", accredBody: "حصلت كيان للتدريب والاستشارات على اعتماد QABA كمزوّد معتمد للدورات التدريبية، مما يضمن لعملائنا جودة المحتوى التدريبي ومعايير التقييم والاعتراف الدولي بالشهادات.", badgeLabel: "QABA", badgeTitle: "مزوّد دورات تدريبية معتمد", badgeSub: "اعتراف دولي — معايير محتوى وتقييم دولية", partnersHeading: "من عملائنا", partnersBody: "نفخر بثقة مؤسسات من القطاعين الحكومي والخاص في سلطنة عُمان، من شركات النفط والغاز إلى الجهات الحكومية والمؤسسات التعليمية.", partners: [{ name: "QABA", logo: "/accreditations/QABA_Approved_Coursework_Provider_Logo.png" }, { name: "اعتماد QABA", logo: "/accreditations/QABA_Approved_Training_Program_Badge.png" }, { name: "OQ" }, { name: "OXY OMAN" }, { name: "وزارة التعليم العالي والبحث العلمي والابتكار" }] },
       { id: id(), type: "cta_banner", eyebrow: "شريكك في التطوير", heading: "هل تبحث عن مسار تدريبي مخصص لمؤسستك؟", body: "نُصمم مسارات تطوير مبنية على تشخيص فعلي لاحتياجات فريقك — لا حلولاً جاهزة.", buttonText: "training@kayan.om", buttonUrl: "mailto:training@kayan.om", linkText: "استعراض كل الفعاليات →", linkUrl: "/ar/events" },
     ],
   );
@@ -1667,7 +1665,7 @@ async function seedSystemPages() {
     [
       { id: id(), type: "page_hero", eyebrow: "Outcome-Led Offers", heading: "Our Solutions", subheading: "Each service is tied to a specific operating problem, a clear KPI, and a practical implementation path.", image: "https://images.unsplash.com/photo-1597734187998-e1931acfe2ed?w=1400&q=60" },
       { id: id(), type: "service_cards", items: [{ badge: "Applied Training", title: "Training Programs", desc: "Need-based programs with execution tracks and post-training impact indicators.", image: "https://images.unsplash.com/photo-1756840210475-1e0f006d6169?w=1200&q=80" }, { badge: "Public Impact", title: "Public Evenings", desc: "Focused knowledge evenings that raise awareness and turn ideas into practical professional habits.", image: "https://images.unsplash.com/photo-1711889067043-579e7f118b6d?w=1200&q=80" }, { badge: "Institutional Improvement", title: "Execution Consulting", desc: "Deep diagnosis, execution roadmap, and operational accompaniment until outcomes are delivered.", image: "https://images.unsplash.com/photo-1756840210349-7bc0ae472ef8?w=1200&q=80" }] },
-      { id: id(), type: "training_domains", eyebrow: "Specializations", heading: "Eight Training Domains" },
+      { id: id(), type: "training_domains", eyebrow: "Specializations", heading: "Seven Training Domains", description: "Specialized domains aligned with market needs and institutional capability development.", descriptionSize: "lg", customDescriptionSize: 16 },
       { id: id(), type: "process_steps", heading: "What Each Track Includes", body: "Each organization receives a tailored mix of training, consulting, and execution support based on maturity stage.", steps: [{ title: "Diagnostic Sessions", desc: "Assess gaps and priorities." }, { title: "Program Design", desc: "Build tailored content per sector." }, { title: "Delivery & Follow-up", desc: "Applied training with operational tasks." }, { title: "Impact Measurement", desc: "Pre/post indicators and improvement reports." }] },
       { id: id(), type: "cta_banner", eyebrow: "Your Development Partner", heading: "Ready to design a custom development track?", body: "We start with a diagnosis of your team's actual performance gaps, not a catalog of pre-built courses.", buttonText: "training@kayan.om", buttonUrl: "mailto:training@kayan.om", linkText: "Browse All Events →", linkUrl: "/en/events" },
     ],
@@ -1675,7 +1673,7 @@ async function seedSystemPages() {
     [
       { id: id(), type: "page_hero", eyebrow: "عروض موجّهة بالنتائج", heading: "حلولنا", subheading: "كل خدمة لدينا مرتبطة بمشكلة تشغيلية محددة، ومؤشر قياس واضح، ومسار تطبيق عملي.", image: "https://images.unsplash.com/photo-1597734187998-e1931acfe2ed?w=1400&q=60" },
       { id: id(), type: "service_cards", items: [{ badge: "تدريب تطبيقي", title: "البرامج التدريبية", desc: "برامج مبنية على تحليل الاحتياج مع مسارات تنفيذ ومؤشرات متابعة لما بعد التدريب.", image: "https://images.unsplash.com/photo-1756840210475-1e0f006d6169?w=1200&q=80" }, { badge: "أثر مجتمعي", title: "الأمسيات الجماهيرية", desc: "أمسيات معرفية مركزة ترفع الوعي وتحوّل المفاهيم إلى ممارسات مهنية قابلة للتطبيق.", image: "https://images.unsplash.com/photo-1711889067043-579e7f118b6d?w=1200&q=80" }, { badge: "تحسين مؤسسي", title: "الاستشارات التنفيذية", desc: "تشخيص مؤسسي عميق، خارطة تنفيذ، ومرافقة تشغيلية حتى تحقق النتائج المستهدفة.", image: "https://images.unsplash.com/photo-1756840210349-7bc0ae472ef8?w=1200&q=80" }] },
-      { id: id(), type: "training_domains", eyebrow: "التخصصات", heading: "مجالات التدريب الثمانية" },
+      { id: id(), type: "training_domains", eyebrow: "التخصصات", heading: "مجالات التدريب السبعة", description: "مجالات متخصصة متوائمة مع احتياجات سوق العمل وتنمية القدرات المؤسسية.", descriptionSize: "lg", customDescriptionSize: 16 },
       { id: id(), type: "process_steps", heading: "ماذا يشمل كل مسار؟", body: "نصمّم لكل جهة مزيجًا مناسبًا من التدريب والاستشارات والدعم التنفيذي وفق مستوى النضج المؤسسي.", steps: [{ title: "جلسات تشخيص", desc: "تقييم الفجوات والأولويات." }, { title: "تصميم المسار", desc: "بناء محتوى مخصص لكل قطاع." }, { title: "تنفيذ ومتابعة", desc: "تدريب تطبيقي مع مهام تشغيلية." }, { title: "قياس أثر", desc: "مؤشرات قبل/بعد وتقارير تحسين." }] },
       { id: id(), type: "cta_banner", eyebrow: "شريكك في التطوير", heading: "هل أنت مستعد لتصميم مسار تطوير مخصص؟", body: "نبدأ بتشخيص فجوات الأداء الفعلية لفريقك — لا من كتالوج برامج جاهزة.", buttonText: "training@kayan.om", buttonUrl: "mailto:training@kayan.om", linkText: "استعراض كل الفعاليات →", linkUrl: "/ar/events" },
     ],
@@ -1688,11 +1686,11 @@ async function seedSystemPages() {
     "سياسة الخصوصية",
     "Privacy Policy — Kayan",
     "سياسة الخصوصية — كيان",
-    "How Kayan Training & Consulting collects and uses your personal data.",
-    "كيف تجمع كيان للتدريب والاستشارات بياناتك الشخصية وتستخدمها.",
+    "How Kayan Training & Consulting collects and uses your personal data for registrations and service delivery.",
+    "كيف تجمع كيان للتدريب والاستشارات بياناتك الشخصية وتستخدمها لأغراض التسجيل وتقديم الخدمات.",
     // EN blocks
     [
-      { id: id(), type: "page_hero", eyebrow: "", heading: "Privacy Policy", subheading: "Last updated: 2026", image: "" },
+      { id: id(), type: "page_hero", eyebrow: "", heading: "Privacy Policy", subheading: "Last updated: May 6, 2026", image: "" },
       {
         id: id(), type: "richtext", html: `
 <h2>1. Information We Collect</h2>
@@ -1710,7 +1708,7 @@ async function seedSystemPages() {
     ],
     // AR blocks
     [
-      { id: id(), type: "page_hero", eyebrow: "", heading: "سياسة الخصوصية", subheading: "آخر تحديث: ٢٠٢٦", image: "" },
+      { id: id(), type: "page_hero", eyebrow: "", heading: "سياسة الخصوصية", subheading: "آخر تحديث: 6 مايو 2026", image: "" },
       {
         id: id(), type: "richtext", html: `
 <h2>١. المعلومات التي نجمعها</h2>
@@ -1739,7 +1737,7 @@ async function seedSystemPages() {
     "الشروط المنظِّمة لاستخدام خدمات وموقع كيان للتدريب والاستشارات.",
     // EN blocks
     [
-      { id: id(), type: "page_hero", eyebrow: "", heading: "Terms & Conditions", subheading: "Last updated: 2026", image: "" },
+      { id: id(), type: "page_hero", eyebrow: "", heading: "Terms & Conditions", subheading: "Last updated: May 6, 2026", image: "" },
       {
         id: id(), type: "richtext", html: `
 <h2>1. Acceptance of Terms</h2>
@@ -1747,7 +1745,7 @@ async function seedSystemPages() {
 <h2>2. Registration & Payment</h2>
 <p>Registration is confirmed upon receipt of payment. Kayan reserves the right to cancel or reschedule events due to unforeseen circumstances, with full refunds issued in such cases.</p>
 <h2>3. Cancellation Policy</h2>
-<p>Cancellations made more than 7 days before the event date are eligible for a full refund. Cancellations within 7 days may be subject to an administrative fee.</p>
+<p>Cancellation and refund handling follows the terms communicated for each specific program at the time of registration.</p>
 <h2>4. Intellectual Property</h2>
 <p>All training materials, content, and resources provided by Kayan are proprietary. Reproduction or redistribution without written permission is prohibited.</p>
 <h2>5. Liability</h2>
@@ -1759,7 +1757,7 @@ async function seedSystemPages() {
     ],
     // AR blocks
     [
-      { id: id(), type: "page_hero", eyebrow: "", heading: "الشروط والأحكام", subheading: "آخر تحديث: ٢٠٢٦", image: "" },
+      { id: id(), type: "page_hero", eyebrow: "", heading: "الشروط والأحكام", subheading: "آخر تحديث: 6 مايو 2026", image: "" },
       {
         id: id(), type: "richtext", html: `
 <h2>١. قبول الشروط</h2>
@@ -1767,7 +1765,7 @@ async function seedSystemPages() {
 <h2>٢. التسجيل والدفع</h2>
 <p>يُؤكَّد التسجيل عند استلام الدفع. تحتفظ كيان بحق إلغاء الفعاليات أو إعادة جدولتها في حالات استثنائية، مع استرداد كامل المبلغ في هذه الحالات.</p>
 <h2>٣. سياسة الإلغاء</h2>
-<p>يحق استرداد المبلغ كاملاً عند الإلغاء قبل ٧ أيام من تاريخ الفعالية. قد يترتب على الإلغاء خلال ٧ أيام رسوم إدارية.</p>
+<p>تُطبَّق سياسات الإلغاء والاسترداد وفق الشروط الخاصة بكل برنامج كما يتم توضيحها عند التسجيل.</p>
 <h2>٤. الملكية الفكرية</h2>
 <p>جميع المواد التدريبية والمحتوى والموارد التي تقدمها كيان هي ملكية خاصة. يُحظر نسخها أو إعادة توزيعها دون إذن كتابي.</p>
 <h2>٥. المسؤولية</h2>
@@ -1879,13 +1877,16 @@ async function seedSystemPages() {
         badgeTitle: "Qualified Approved Course Provider",
         badgeSub: "International recognition — global content & assessment standards",
         clientsHeading: "Trusted by leading organizations",
-        clients: ["OQ", "OXY OMAN", "Ministry of Education", "OPAL", "PDO", "Omantel", "National Bank of Oman", "Oman Air"],
+        clients: [{ id: id(), name: "QABA", logo: "/accreditations/QABA_Approved_Coursework_Provider_Logo.png" }, { id: id(), name: "QABA Badge", logo: "/accreditations/QABA_Approved_Training_Program_Badge.png" }, { id: id(), name: "OQ" }, { id: id(), name: "OXY OMAN" }, { id: id(), name: "Ministry of Higher Education, Research and Innovation" }],
       },
       {
         id: id(),
         type: "training_domains",
         eyebrow: "Specializations",
-        heading: "Eight Training Domains",
+        heading: "Seven Training Domains",
+        description: "Specialized domains aligned with market needs and institutional capability development.",
+        descriptionSize: "lg",
+        customDescriptionSize: 16,
       },
       {
         id: id(),
@@ -1965,13 +1966,16 @@ async function seedSystemPages() {
         badgeTitle: "مزوّد دورات تدريبية معتمد",
         badgeSub: "اعتراف دولي — معايير محتوى وتقييم دولية",
         clientsHeading: "نفخر بثقة كبرى المؤسسات",
-        clients: ["OQ", "OXY OMAN", "وزارة التربية", "OPAL", "PDO", "عُمانتل", "بنك عُمان الوطني", "طيران عُمان"],
+        clients: [{ id: id(), name: "QABA", logo: "/accreditations/QABA_Approved_Coursework_Provider_Logo.png" }, { id: id(), name: "شارة QABA", logo: "/accreditations/QABA_Approved_Training_Program_Badge.png" }, { id: id(), name: "OQ" }, { id: id(), name: "OXY OMAN" }, { id: id(), name: "وزارة التعليم العالي والبحث العلمي والابتكار" }],
       },
       {
         id: id(),
         type: "training_domains",
         eyebrow: "التخصصات",
-        heading: "مجالات التدريب الثمانية",
+        heading: "مجالات التدريب السبعة",
+        description: "مجالات متخصصة متوائمة مع احتياجات سوق العمل وتنمية القدرات المؤسسية.",
+        descriptionSize: "lg",
+        customDescriptionSize: 16,
       },
       {
         id: id(),

@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { getLocalizedEvents, getLocalizedPosts } from "@/lib/content/queries";
-import { cn } from "@/lib/utils";
 import type {
   AboutIntroBlock,
   AccreditationBarBlock,
@@ -22,6 +21,7 @@ import type {
   TrainingDomainsBlock,
   ValuesListBlock,
 } from "@/lib/pages/block-types";
+import { cn } from "@/lib/utils";
 import { type FeaturedEventCard, HeroSlider } from "./hero-slider";
 import { HomeEventsCarouselRail } from "./home-events-carousel-rail";
 
@@ -376,10 +376,6 @@ type TrainingDomainItem = {
 };
 
 const DOMAIN_IMAGES: Record<string, { accent: string; img: string }> = {
-  arts: {
-    accent: "#c2b59b",
-    img: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&q=70",
-  },
   lifestyle: {
     accent: "#03c3cd",
     img: "https://images.unsplash.com/photo-1743093278216-adfa4740356b?w=600&q=70",
@@ -404,9 +400,9 @@ const DOMAIN_IMAGES: Record<string, { accent: string; img: string }> = {
     accent: "#f4b91d",
     img: "https://images.unsplash.com/photo-1597065750970-694c472ee2d2?w=600&q=70",
   },
-  entertainment: {
-    accent: "#8787de",
-    img: "https://images.unsplash.com/photo-1542653700088-680c3095396c?w=600&q=70",
+  "continuous-improvement": {
+    accent: "#14b8a6",
+    img: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=70",
   },
 };
 
@@ -428,8 +424,31 @@ function TrainingDomainsRenderer({
     img:
       DOMAIN_IMAGES[cat.slug]?.img ??
       "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&q=70",
-    icon: `/icons/kayan_profile_${cat.slug === "management-leadership" ? "Management & Leadership" : cat.slug === "media-communication" ? "Media & Communication" : cat.slug === "education-psychology" ? "Education & Psychology" : cat.slug.charAt(0).toUpperCase() + cat.slug.slice(1)}.svg`,
+    icon: `/icons/${
+      cat.slug === "management-leadership"
+        ? "kayan_profile_Management & Leadership.svg"
+        : cat.slug === "media-communication"
+          ? "kayan_profile_Media & Communication.svg"
+          : cat.slug === "education-psychology"
+            ? "kayan_profile_Education & Psychology.svg"
+            : cat.slug === "continuous-improvement"
+              ? "kayan_profile_NEW.svg"
+              : `kayan_profile_${cat.slug.charAt(0).toUpperCase()}${cat.slug.slice(1)}.svg`
+    }`,
   }));
+
+  const descriptionSizeClass =
+    block.descriptionSize === "sm"
+      ? "text-sm"
+      : block.descriptionSize === "lg"
+        ? "text-lg"
+        : block.descriptionSize === "xl"
+          ? "text-xl"
+          : "text-base";
+  const customDescriptionSize =
+    Number.isFinite(block.customDescriptionSize) && block.customDescriptionSize > 0
+      ? Math.max(12, Math.min(40, block.customDescriptionSize))
+      : 16;
 
   return (
     <section className="bg-surface py-20">
@@ -444,6 +463,21 @@ function TrainingDomainsRenderer({
           >
             {block.heading}
           </h2>
+          {block.description ? (
+            <p
+              className={cn(
+                "mt-3 max-w-3xl leading-relaxed text-on-surface-variant",
+                block.descriptionSize === "custom" ? undefined : descriptionSizeClass,
+              )}
+              style={
+                block.descriptionSize === "custom"
+                  ? { fontSize: `${customDescriptionSize}px` }
+                  : undefined
+              }
+            >
+              {block.description}
+            </p>
+          ) : null}
         </div>
         <div className="grid grid-cols-2 border border-outline-variant/20 md:grid-cols-4">
           {items.map((domain, index) => (
@@ -662,7 +696,10 @@ async function AccreditationBarRenderer({
             </span>
           )}
           {clients.length === 0 ? null : useMarquee ? (
-            <div className="accreditation-logo-marquee" dir={locale === "ar" ? "rtl" : "ltr"}>
+            <div
+              className="accreditation-logo-marquee"
+              dir={locale === "ar" ? "rtl" : "ltr"}
+            >
               <div className="accreditation-logo-track">
                 {marqueeClients.map((client, index) => (
                   <div
@@ -691,7 +728,10 @@ async function AccreditationBarRenderer({
           ) : useGrid ? (
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               {clients.map((client) => (
-                <div className="flex items-center gap-3 rounded-md border border-outline-variant/20 px-3 py-2" key={client.id}>
+                <div
+                  className="flex items-center gap-3 rounded-md border border-outline-variant/20 px-3 py-2"
+                  key={client.id}
+                >
                   {client.logo ? (
                     <Image
                       alt={client.name || "Organization logo"}

@@ -74,7 +74,12 @@ function makeHomeDefaultBlock(type: Block["type"], locale: Locale): Block | null
         id: `home-default-${type}`,
         type: "training_domains",
         eyebrow: isAr ? "التخصصات" : "Specializations",
-        heading: isAr ? "مجالات التدريب الثمانية" : "Eight Training Domains",
+        heading: isAr ? "مجالات التدريب السبعة" : "Seven Training Domains",
+        description: isAr
+          ? "مجالات تدريبية متخصصة مصممة لتطوير القدرات ورفع الأداء المؤسسي."
+          : "Specialized training domains designed to build capabilities and improve institutional performance.",
+        descriptionSize: "md",
+        customDescriptionSize: 16,
       };
     case "home_events_carousel":
       return {
