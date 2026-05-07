@@ -7,6 +7,13 @@ import { db } from "@/lib/db";
 import { LOCALE_DIRECTION, isSupportedLocale, type AppLocale } from "@/lib/i18n/config";
 import { getLocalizedSiteSettings } from "@/lib/settings";
 
+function localizeMenuHref(href: string, locale: AppLocale): string {
+  if (!href.startsWith("/")) return href;
+  if (href.startsWith("//")) return href;
+  const normalized = href.replace(/^\/(ar|en)(?=\/|$)/, "");
+  return `/${locale}${normalized || ""}`;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -85,8 +92,9 @@ export default async function LocaleLayout({
         }
       }
       if (!href) return null;
+      const localizedHref = localizeMenuHref(href, locale);
       return {
-        href,
+        href: localizedHref,
         labelEn: item.translations.find((t) => t.locale === "en")?.label ?? "",
         labelAr: item.translations.find((t) => t.locale === "ar")?.label ?? "",
       };
