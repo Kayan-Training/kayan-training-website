@@ -26,6 +26,7 @@ export async function updateEventAction(
       data: {
         slug: values.slug,
         status: values.status,
+        eventKind: values.eventKind,
         type: values.type,
         language: values.language,
         coverImage: values.coverImage || null,
@@ -152,7 +153,7 @@ export async function updateEventAction(
       });
     }
 
-    revalidatePath(`/${locale}/dashboard/events`);
+    revalidatePath(`/${locale}/dashboard/programs`);
     revalidatePath(`/${locale}/events`);
     return {};
   } catch (err) {
@@ -170,6 +171,7 @@ export async function createEventAction(
       data: {
         slug: values.slug,
         status: values.status,
+        eventKind: values.eventKind,
         type: values.type,
         language: values.language,
         coverImage: values.coverImage || null,
@@ -249,9 +251,28 @@ export async function createEventAction(
       },
     });
     createdId = created.id;
-    revalidatePath(`/${locale}/dashboard/events`);
+    revalidatePath(`/${locale}/dashboard/programs`);
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to create event" };
   }
-  redirect(`/${locale}/dashboard/events/${createdId}`);
+  redirect(`/${locale}/dashboard/programs/${createdId}`);
 }
+
+export async function deleteProgramsAction(
+  locale: string,
+  ids: string[],
+): Promise<{ error?: string }> {
+  if (!ids.length) return { error: "No programs selected." };
+  try {
+    await db.event.deleteMany({
+      where: { id: { in: ids } },
+    });
+    revalidatePath(`/${locale}/dashboard/programs`);
+    revalidatePath(`/${locale}/events`);
+    revalidatePath(`/${locale}/training-courses`);
+    return {};
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to delete programs." };
+  }
+}
+

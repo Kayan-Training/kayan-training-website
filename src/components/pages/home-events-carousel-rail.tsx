@@ -58,6 +58,7 @@ export function HomeEventsCarouselRail({
               key={item.slug}
             >
               <EventCard
+                basePath={item.pathBase ?? "events"}
                 className="min-h-[420px] w-full max-w-[360px]"
                 event={item}
                 locale={locale}

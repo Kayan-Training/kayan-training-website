@@ -134,6 +134,8 @@ export type HomeEventsCarouselBlock = {
   eyebrow: string;
   heading: string;
   limit: number;
+  source: "events" | "training_courses" | "mixed";
+  showViewMore: boolean;
 };
 
 export type HomePostsGridBlock = {

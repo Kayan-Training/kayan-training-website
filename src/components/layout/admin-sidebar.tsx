@@ -30,8 +30,8 @@ import {
 
 const links = [
   { icon: DashboardSquare01Icon, label: "Overview", segment: "" },
-  { icon: Calendar03Icon, label: "Events", segment: "events" },
-  { icon: NewsIcon, label: "Posts", segment: "posts" },
+  { icon: Calendar03Icon, label: "Programs", segment: "programs" },
+  { icon: NewsIcon, label: "Blog", segment: "blog" },
   { icon: Mail01Icon, label: "Registrations", segment: "registrations" },
   { icon: FolderLibraryIcon, label: "Pages", segment: "pages" },
   { icon: Menu01Icon, label: "Menus", segment: "menus" },

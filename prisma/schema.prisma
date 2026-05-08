@@ -146,6 +146,7 @@ model Event {
   id                   String    @id @default(cuid())
   slug                 String    @unique
   status               String    @default("draft")
+  eventKind            String    @default("event")
   type                 String
   location             String?
   featuredImageId      String?

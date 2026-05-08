@@ -68,7 +68,7 @@ export default async function LocaleLayout({
       ? db.post.findMany({ where: { id: { in: targetIds } }, select: { id: true, slug: true } })
       : Promise.resolve([]),
     targetIds.length
-      ? db.event.findMany({ where: { id: { in: targetIds } }, select: { id: true, slug: true } })
+      ? db.event.findMany({ where: { id: { in: targetIds } }, select: { id: true, slug: true, eventKind: true } })
       : Promise.resolve([]),
   ]);
 
@@ -85,10 +85,15 @@ export default async function LocaleLayout({
           href = page ? `/${locale}/${page.slug}` : "";
         } else if (item.type === "post") {
           const post = postById.get(item.targetId);
-          href = post ? `/${locale}/posts/${post.slug}` : "";
+          href = post ? `/${locale}/blog/${post.slug}` : "";
         } else if (item.type === "event") {
           const event = eventById.get(item.targetId);
-          href = event ? `/${locale}/events/${event.slug}` : "";
+          const eventKind = (event as { eventKind?: string } | undefined)?.eventKind;
+          href = event
+            ? eventKind === "training_course"
+              ? `/${locale}/training-courses/${event.slug}`
+              : `/${locale}/events/${event.slug}`
+            : "";
         }
       }
       if (!href) return null;

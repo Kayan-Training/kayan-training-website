@@ -7,7 +7,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const now = new Date();
 
-  const staticPaths = ["", "/events", "/posts", "/about"];
+  const staticPaths = ["", "/events", "/training-courses", "/blog", "/about"];
   const entries: MetadataRoute.Sitemap = [];
 
   for (const locale of SUPPORTED_LOCALES) {
@@ -23,17 +23,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   if (process.env.DATABASE_URL) {
     const [events, posts] = await Promise.all([
-      db.event.findMany({ where: { status: "published" }, select: { slug: true, updatedAt: true } }),
+      db.event.findMany({ where: { status: "published" }, select: { slug: true, updatedAt: true, eventKind: true } }),
       db.post.findMany({ where: { status: "published" }, select: { slug: true, updatedAt: true } }),
     ]);
 
     for (const locale of SUPPORTED_LOCALES) {
       for (const event of events) {
+        const basePath = event.eventKind === "training_course" ? "training-courses" : "events";
         entries.push({
           changeFrequency: "weekly",
           lastModified: event.updatedAt,
           priority: 0.7,
-          url: `${baseUrl}/${locale}/events/${event.slug}`,
+          url: `${baseUrl}/${locale}/${basePath}/${event.slug}`,
         });
       }
       for (const post of posts) {
@@ -41,7 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           changeFrequency: "weekly",
           lastModified: post.updatedAt,
           priority: 0.7,
-          url: `${baseUrl}/${locale}/posts/${post.slug}`,
+          url: `${baseUrl}/${locale}/blog/${post.slug}`,
         });
       }
     }

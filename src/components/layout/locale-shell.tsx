@@ -31,6 +31,11 @@ export function LocaleShell({
     socialLinks?: { platform: string; url: string }[];
     socialX: string;
     socialYouTube: string;
+    headerCta?: {
+      labelAr: string;
+      labelEn: string;
+      url: string;
+    };
     frontendTheme?: {
       background: string;
       foreground: string;
@@ -83,7 +88,7 @@ export function LocaleShell({
           : undefined
       }
     >
-      <SiteNav locale={locale} menuItems={menuItems} />
+      <SiteNav locale={locale} menuItems={menuItems} cta={siteSettings?.headerCta} />
       <div className="">{children}</div>
       <SiteFooter locale={locale} settings={siteSettings} />
     </div>

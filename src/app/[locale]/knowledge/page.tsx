@@ -142,7 +142,7 @@ function KnowledgeCard({
   return (
     <Link
       className="group relative flex flex-col overflow-hidden ghost-border bg-surface-container-low transition-colors hover:bg-surface-container"
-      href={`/${locale}/posts/${post.slug}`}
+      href={`/${locale}/blog/${post.slug}`}
     >
       <div className="relative h-48 w-full overflow-hidden">
         <Image
@@ -204,7 +204,7 @@ function EmptyState({ locale }: { locale: "ar" | "en" }) {
       </p>
       <Link
         className="inline-flex h-9 items-center gap-2 rounded-full border border-outline-variant/40 bg-surface-container-high px-5 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container-highest hover:text-on-surface"
-        href={`/${locale}/posts`}
+        href={`/${locale}/blog`}
       >
         {locale === "ar" ? "تصفح المقالات" : "Browse Articles"}
         <HugeiconsIcon className="rtl:rotate-180" icon={ArrowRight01Icon} size={16} strokeWidth={2} />

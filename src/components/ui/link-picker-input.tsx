@@ -27,6 +27,7 @@ export type LinkPickerEntities = {
   pages: LinkEntityOption[];
   posts: LinkEntityOption[];
   events: LinkEntityOption[];
+  trainingCourses?: LinkEntityOption[];
 };
 
 const inputCls =
@@ -58,7 +59,8 @@ export function LinkPickerInput({
   const hasEntities =
     entities.pages.length > 0 ||
     entities.posts.length > 0 ||
-    entities.events.length > 0;
+    entities.events.length > 0 ||
+    (entities.trainingCourses?.length ?? 0) > 0;
   const isInternalLink = useMemo(() => value.trim().startsWith("/"), [value]);
   const showInternalChip = isInternalLink && !isEditingInternal;
 
@@ -113,12 +115,12 @@ export function LinkPickerInput({
         <PopoverTrigger
           render={
             <button
-              aria-label="Browse pages, posts, and events"
+              aria-label="Browse pages, posts, events, and training courses"
               className={cn(
                 "flex h-10 items-center gap-1.5 rounded-r-md border border-border/70 bg-muted/40 px-3",
                 "text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
               )}
-              title="Browse pages, posts, and events"
+              title="Browse pages, posts, events, and training courses"
               type="button"
             >
               {/* <HugeiconsIcon icon={SearchMdIcon} className="size-3.5" /> */}
@@ -129,7 +131,7 @@ export function LinkPickerInput({
         ></PopoverTrigger>
         <PopoverContent align="end" className="w-80 p-0" sideOffset={4}>
           <Command>
-            <CommandInput placeholder="Search pages, posts, events…" />
+            <CommandInput placeholder="Search pages, posts, events, training courses…" />
             <CommandList>
               {!hasEntities && <CommandEmpty>No items found.</CommandEmpty>}
               <CommandEmpty>No results.</CommandEmpty>
@@ -175,6 +177,24 @@ export function LinkPickerInput({
                     <CommandItem
                       key={e.id}
                       value={`event-${e.label}-${e.url}`}
+                      onSelect={() => handleSelect(e.url)}
+                    >
+                      <div className="flex min-w-0 flex-col">
+                        <span className="truncate text-sm">{e.label}</span>
+                        <span className="truncate font-mono text-[10px] text-muted-foreground">
+                          {e.url}
+                        </span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+              {(entities.trainingCourses?.length ?? 0) > 0 && (
+                <CommandGroup heading="Training Courses">
+                  {(entities.trainingCourses ?? []).map((e) => (
+                    <CommandItem
+                      key={e.id}
+                      value={`training-${e.label}-${e.url}`}
                       onSelect={() => handleSelect(e.url)}
                     >
                       <div className="flex min-w-0 flex-col">

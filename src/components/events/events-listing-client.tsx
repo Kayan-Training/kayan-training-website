@@ -41,26 +41,40 @@ function formatDayNumber(dateIso: string, locale: "ar" | "en") {
 }
 
 export function EventsListingClient({
+  basePath = "events",
   eyebrow,
   heading,
   initialEvents,
+  initialPastEvents = [],
   locale,
   pageSize = DEFAULT_PAGE_SIZE,
   subheading,
 }: {
+  basePath?: "events" | "training-courses";
   eyebrow?: string;
   heading?: string;
   initialEvents: ListingEvent[];
+  initialPastEvents?: ListingEvent[];
   locale: "ar" | "en";
   pageSize?: number;
   subheading?: string;
 }) {
+  const listingLabel = basePath === "training-courses"
+    ? (locale === "ar" ? "الدورات التدريبية" : "Training Courses")
+    : (locale === "ar" ? "الفعاليات" : "Events");
   const [activeFilter, setActiveFilter] = useState<"all" | "consulting" | "evenings" | "featured" | "training">("all");
   const [inputValue, setInputValue] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [page, setPage] = useState(1);
   const [carouselApi, setCarouselApi] = useState<EmblaCarouselType>();
+  const pastEvents = useMemo(
+    () =>
+      initialPastEvents
+        .slice()
+        .sort((a, b) => new Date(b.dateIso).getTime() - new Date(a.dateIso).getTime()),
+    [initialPastEvents],
+  );
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -141,7 +155,7 @@ export function EventsListingClient({
               {locale === "ar" ? "الرئيسية" : "Home"}
             </Link>
             <span className="text-outline">/</span>
-            <span className="text-xs text-primary">{locale === "ar" ? "الفعاليات" : "Events"}</span>
+            <span className="text-xs text-primary">{listingLabel}</span>
           </div>
           {eyebrow && (
             <span className="mb-3 block text-[11px] font-bold uppercase text-primary">{eyebrow}</span>
@@ -210,7 +224,7 @@ export function EventsListingClient({
               {featuredEvents.map((featuredEvent) => (
                 <CarouselItem key={featuredEvent.slug}>
                   <Link
-                    href={`/${locale}/events/${featuredEvent.slug}`}
+                    href={`/${locale}/${basePath}/${featuredEvent.slug}`}
                     className="group relative block h-[480px] overflow-hidden ghost-border md:h-[560px]"
                   >
                     <Image
@@ -287,7 +301,7 @@ export function EventsListingClient({
                     : locale === "ar" ? "تدريب" : "Training",
               title: event.title,
             };
-            return <EventCard event={card} key={event.slug} locale={locale} />;
+            return <EventCard basePath={basePath} event={card} key={event.slug} locale={locale} />;
           })}
         </div>
 
@@ -314,6 +328,29 @@ export function EventsListingClient({
           </button>
         </div>
       </section>
+
+      {pastEvents.length > 0 ? (
+        <section className="mx-auto w-full max-w-[1440px] border-t border-outline-variant/20 px-6 py-12 md:px-10">
+          <h2 className="mb-2 text-2xl font-semibold text-on-surface">
+            {locale === "ar" ? "البرامج السابقة" : "Past Programs"}
+          </h2>
+          <p className="mb-8 text-sm text-on-surface-variant">
+            {locale === "ar" ? "الفعاليات والدورات التي انتهى موعدها." : "Events and training courses that already concluded."}
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {pastEvents.slice(0, 12).map((event) => {
+              const card: EventCardItem = {
+                coverImage: event.coverImage,
+                dateLabel: formatDate(event.dateIso, locale),
+                slug: event.slug,
+                tag: locale === "ar" ? "انتهى" : "Completed",
+                title: event.title,
+              };
+              return <EventCard basePath={basePath} event={card} key={`past-${event.slug}`} locale={locale} />;
+            })}
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }

@@ -241,7 +241,7 @@ export function PostForm({
         <div className="px-4 py-5">
           <Button
             className="mb-6 h-8 w-full justify-start gap-2 border-zinc-200 bg-zinc-50 text-xs text-zinc-600 hover:bg-zinc-100"
-            render={<Link href={`/${locale}/dashboard/posts`} />}
+            render={<Link href={`/${locale}/dashboard/blog`} />}
             size="sm"
             type="button"
             variant="outline"

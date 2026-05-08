@@ -2,6 +2,7 @@
 
 import {
   ArrowUpDownIcon,
+  Delete02Icon,
   FilterResetIcon,
   LinkSquare02Icon,
   PencilEdit02Icon,
@@ -10,7 +11,8 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -33,10 +35,12 @@ import {
 import { formatDate, formatEventStatus, formatEventType } from "@/lib/format";
 import { getEventStatusTone, getEventTypeTone } from "@/lib/tone";
 import { cn } from "@/lib/utils";
+import { deleteProgramsAction } from "./_actions";
 
 export type EventRow = {
   coverImage: string | null;
   endDate: Date;
+  eventKind: "event" | "training_course";
   id: string;
   isFeatured: boolean;
   locale: string;
@@ -74,18 +78,34 @@ const sortLabels: Record<SortValue, string> = {
 export function EventsTable({
   events,
   activeLocale,
+  emptyTitle = "No programs found",
+  emptyDescription = "Try another search or filter combination.",
+  programKindLabel = "Programs",
+  onDeleted,
 }: {
   events: EventRow[];
   activeLocale: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  programKindLabel?: string;
+  onDeleted?: (ids: string[]) => void;
 }) {
+  const [rows, setRows] = useState(events);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [sortBy, setSortBy] = useState<SortValue>("createdDesc");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isDeleting, startDeleting] = useTransition();
+
+  useEffect(() => {
+    setRows(events);
+    setSelectedIds(new Set());
+  }, [events]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = events.filter((event) => {
+    const list = rows.filter((event) => {
       const matchesQuery =
         q.length === 0 || event.title.toLowerCase().includes(q);
       const matchesStatus =
@@ -101,13 +121,53 @@ export function EventsTable({
     if (sortBy === "startDesc")
       sorted.sort((a, b) => b.startDate.getTime() - a.startDate.getTime());
     return sorted;
-  }, [events, query, sortBy, statusFilter, typeFilter]);
+  }, [rows, query, sortBy, statusFilter, typeFilter]);
+
+  const allVisibleSelected =
+    filtered.length > 0 && filtered.every((event) => selectedIds.has(event.id));
 
   function reset() {
     setQuery("");
     setSortBy("createdDesc");
     setStatusFilter("all");
     setTypeFilter("all");
+  }
+
+  function toggleRow(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleVisible() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        for (const event of filtered) next.delete(event.id);
+      } else {
+        for (const event of filtered) next.add(event.id);
+      }
+      return next;
+    });
+  }
+
+  function handleDeleteSelected() {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    startDeleting(async () => {
+      const result = await deleteProgramsAction(activeLocale, ids);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`${ids.length} ${programKindLabel.toLowerCase()} deleted.`);
+      setRows((prev) => prev.filter((row) => !ids.includes(row.id)));
+      setSelectedIds(new Set());
+      onDeleted?.(ids);
+    });
   }
 
   return (
@@ -123,7 +183,7 @@ export function EventsTable({
             <Input
               className="h-10 pl-9"
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search event title..."
+              placeholder="Search program title..."
               value={query}
             />
           </div>
@@ -205,12 +265,30 @@ export function EventsTable({
             Reset
           </Button>
         </div>
+        {selectedIds.size > 0 ? (
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
+            <span className="text-xs font-medium text-foreground">
+              {selectedIds.size} selected
+            </span>
+            <Button
+              className="h-8 gap-1.5 text-xs"
+              disabled={isDeleting}
+              size="sm"
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteSelected}
+            >
+              <HugeiconsIcon className="size-3.5" icon={Delete02Icon} strokeWidth={2} />
+              {isDeleting ? "Deleting..." : "Delete Selected"}
+            </Button>
+          </div>
+        ) : null}
         <p className="mt-2 text-xs text-muted-foreground">
           Showing{" "}
           <span className="font-medium text-foreground">{filtered.length}</span>{" "}
           of{" "}
-          <span className="font-medium text-foreground">{events.length}</span>{" "}
-          events
+          <span className="font-medium text-foreground">{rows.length}</span>{" "}
+          programs
         </p>
       </div>
 
@@ -218,7 +296,16 @@ export function EventsTable({
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/20">
-              <TableHead className="w-[45%]">Event</TableHead>
+              <TableHead className="w-[34px]">
+                <input
+                  aria-label="Select all visible rows"
+                  checked={allVisibleSelected}
+                  className="size-3.5 accent-primary"
+                  type="checkbox"
+                  onChange={toggleVisible}
+                />
+              </TableHead>
+              <TableHead className="w-[45%]">Program</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Registrations</TableHead>
@@ -229,11 +316,11 @@ export function EventsTable({
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6}>
+                <TableCell colSpan={7}>
                   <EmptyState
                     className="py-10"
-                    description="Try another search or filter combination."
-                    title="No events found"
+                    description={emptyDescription}
+                    title={emptyTitle}
                   />
                 </TableCell>
               </TableRow>
@@ -245,6 +332,15 @@ export function EventsTable({
                     event.isFeatured && "bg-yellow-50/70 hover:bg-yellow-50/90",
                   )}
                 >
+                  <TableCell>
+                    <input
+                      aria-label={`Select ${event.title}`}
+                      checked={selectedIds.has(event.id)}
+                      className="size-3.5 accent-primary"
+                      type="checkbox"
+                      onChange={() => toggleRow(event.id)}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3 ps-2">
                       <div className="relative w-12 aspect-square shrink-0 overflow-hidden rounded-[8px] border border-border/70 bg-muted">
@@ -262,7 +358,7 @@ export function EventsTable({
                       <div className="min-w-0">
                         <Link
                           className="line-clamp-1 text-sm font-semibold text-foreground hover:underline hover:text-primary"
-                          href={`/${event.locale}/dashboard/events/${event.id}`}
+                          href={`/${event.locale}/dashboard/programs/${event.id}`}
                         >
                           {event.title}
                         </Link>
@@ -320,7 +416,7 @@ export function EventsTable({
                           "h-8 px-3 text-xs",
                         )}
                         aria-label="Edit event"
-                        href={`/${event.locale}/dashboard/events/${event.id}`}
+                        href={`/${event.locale}/dashboard/programs/${event.id}`}
                       >
                         <HugeiconsIcon icon={PencilEdit02Icon} />
                         <span className="ml-1">Edit</span>
@@ -331,7 +427,7 @@ export function EventsTable({
                           buttonVariants({ size: "sm", variant: "outline" }),
                           "h-8 px-3 text-xs",
                         )}
-                        href={`/${activeLocale}/${event.slug}`}
+                        href={`/${activeLocale}/${event.eventKind === "training_course" ? "training-courses" : "events"}/${event.slug}`}
                         target="_blank"
                       >
                         <HugeiconsIcon icon={LinkSquare02Icon} />
@@ -342,7 +438,7 @@ export function EventsTable({
                           <HugeiconsIcon icon={MoreHorizontalIcon} strokeWidth={2} />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem render={<Link href={`/${event.locale}/dashboard/events/${event.id}`} />}>Open Editor</DropdownMenuItem>
+                          <DropdownMenuItem render={<Link href={`/${event.locale}/dashboard/programs/${event.id}`} />}>Open Editor</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu> */}
                     </div>
@@ -356,3 +452,4 @@ export function EventsTable({
     </div>
   );
 }
+

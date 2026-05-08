@@ -239,13 +239,13 @@ export default async function LocaleHomePage({
               <span className="mb-3 block text-[11px] font-semibold uppercase text-secondary">{activeLocale === "ar" ? "المعرفة" : "Knowledge"}</span>
               <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-semibold leading-tight">{activeLocale === "ar" ? "أحدث المقالات" : "Latest Posts"}</h2>
             </div>
-            <Link className="text-xs uppercase tracking-widest text-secondary transition-colors hover:text-primary" href={`/${activeLocale}/posts`}>
+            <Link className="text-xs uppercase tracking-widest text-secondary transition-colors hover:text-primary" href={`/${activeLocale}/blog`}>
               {activeLocale === "ar" ? "كل المقالات" : "All Posts"}
             </Link>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {posts.slice(0, 3).map((post) => (
-              <Link className="ghost-border group block bg-surface-container-highest p-6 transition-colors hover:border-secondary/40" href={`/${activeLocale}/posts/${post.slug}`} key={post.slug}>
+              <Link className="ghost-border group block bg-surface-container-highest p-6 transition-colors hover:border-secondary/40" href={`/${activeLocale}/blog/${post.slug}`} key={post.slug}>
                 <h3 className="mb-3 line-clamp-2 text-lg font-semibold transition-colors group-hover:text-secondary">{post.title}</h3>
                 <p className="line-clamp-3 text-sm leading-relaxed text-on-surface-variant">{post.excerpt || "..."}</p>
               </Link>

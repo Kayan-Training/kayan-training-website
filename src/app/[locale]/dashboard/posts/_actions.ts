@@ -79,7 +79,8 @@ export async function updatePostAction(
     }
 
     revalidatePath(`/${locale}/dashboard/posts`);
-    revalidatePath(`/${locale}/posts/${values.slug}`);
+    revalidatePath(`/${locale}/dashboard/blog`);
+    revalidatePath(`/${locale}/blog/${values.slug}`);
     return {};
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to save post" };
@@ -128,8 +129,9 @@ export async function createPostAction(
     });
     createdId = created.id;
     revalidatePath(`/${locale}/dashboard/posts`);
+    revalidatePath(`/${locale}/dashboard/blog`);
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to create post" };
   }
-  redirect(`/${locale}/dashboard/posts/${createdId}`);
+  redirect(`/${locale}/dashboard/blog/${createdId}`);
 }

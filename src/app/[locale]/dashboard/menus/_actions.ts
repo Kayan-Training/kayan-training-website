@@ -100,3 +100,39 @@ export async function reorderMenuItems(
     return { error: "Failed to reorder items." };
   }
 }
+
+export async function updateHeaderCta(
+  locale: string,
+  payload: { labelEn: string; labelAr: string; url: string },
+): Promise<{ error?: string }> {
+  const labelEn = payload.labelEn.trim();
+  const labelAr = payload.labelAr.trim();
+  const url = payload.url.trim();
+  if (!labelEn || !labelAr || !url) {
+    return { error: "CTA labels and URL are required." };
+  }
+  try {
+    await Promise.all([
+      db.setting.upsert({
+        where: { key: "header.cta.label.en" },
+        create: { key: "header.cta.label.en", value: labelEn },
+        update: { value: labelEn },
+      }),
+      db.setting.upsert({
+        where: { key: "header.cta.label.ar" },
+        create: { key: "header.cta.label.ar", value: labelAr },
+        update: { value: labelAr },
+      }),
+      db.setting.upsert({
+        where: { key: "header.cta.url" },
+        create: { key: "header.cta.url", value: url },
+        update: { value: url },
+      }),
+    ]);
+    revalidatePath(`/${locale}`, "layout");
+    revalidatePath(`/${locale}/dashboard/menus`);
+    return {};
+  } catch {
+    return { error: "Failed to update header CTA." };
+  }
+}

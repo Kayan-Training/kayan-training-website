@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
 
+import { HeaderCtaSettings } from "./header-cta-settings";
 import { MenuItemList, type EntityOption, type MenuItemRow } from "./menu-item-list";
 
 export const metadata = { title: "Menus" };
@@ -13,7 +14,7 @@ export default async function MenusDashboardPage({
   const { locale } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
 
-  const [menus, pages, posts, events] = await Promise.all([
+  const [menus, pages, posts, events, ctaSettings] = await Promise.all([
     db.menu.findMany({
       include: {
         items: { include: { translations: true }, orderBy: { order: "asc" } },
@@ -34,7 +35,18 @@ export default async function MenusDashboardPage({
       include: { translations: { where: { locale: activeLocale }, take: 1 } },
       orderBy: { startDate: "desc" },
     }),
+    db.setting.findMany({
+      where: { key: { in: ["header.cta.label.en", "header.cta.label.ar", "header.cta.url"] } },
+    }),
   ]);
+  const ctaMap = new Map(
+    ctaSettings.map((setting) => [setting.key, typeof setting.value === "string" ? setting.value : ""]),
+  );
+  const initialHeaderCta = {
+    labelEn: ctaMap.get("header.cta.label.en")?.trim() || "View Events",
+    labelAr: ctaMap.get("header.cta.label.ar")?.trim() || "الفعاليات",
+    url: ctaMap.get("header.cta.url")?.trim() || `/${activeLocale}/events`,
+  };
 
   const entityPages: EntityOption[] = pages.map((p) => ({
     id: p.id,
@@ -45,16 +57,26 @@ export default async function MenusDashboardPage({
   const entityPosts: EntityOption[] = posts.map((p) => ({
     id: p.id,
     label: p.translations[0]?.title ?? p.slug,
-    url: `/${activeLocale}/posts/${p.slug}`,
+    url: `/${activeLocale}/blog/${p.slug}`,
   }));
 
   const entityEvents: EntityOption[] = events.map((e) => ({
     id: e.id,
     label: e.translations[0]?.title ?? e.slug,
-    url: `/${activeLocale}/events/${e.slug}`,
+    url:
+      (e as { eventKind?: string }).eventKind === "training_course"
+        ? `/${activeLocale}/training-courses/${e.slug}`
+        : `/${activeLocale}/events/${e.slug}`,
+  }));
+  const entityTrainingCourses: EntityOption[] = events
+    .filter((e) => (e as { eventKind?: string }).eventKind === "training_course")
+    .map((e) => ({
+    id: e.id,
+    label: e.translations[0]?.title ?? e.slug,
+    url: `/${activeLocale}/training-courses/${e.slug}`,
   }));
 
-  const entities = { pages: entityPages, posts: entityPosts, events: entityEvents };
+  const entities = { pages: entityPages, posts: entityPosts, events: entityEvents, trainingCourses: entityTrainingCourses };
 
   return (
     <section className="mx-auto max-w-6xl space-y-5">
@@ -62,10 +84,11 @@ export default async function MenusDashboardPage({
         <div>
           <h1 className="text-2xl font-semibold">Menus</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage navigation menus. Link to pages, posts, events, or custom URLs.
+            Manage navigation menus. Link to pages, blog posts, events, or custom URLs.
           </p>
         </div>
       </div>
+      <HeaderCtaSettings entities={entities} initialValue={initialHeaderCta} locale={activeLocale} />
 
       {menus.length === 0 ? (
         <div className="rounded-xl border border-border/70 bg-card px-5 py-10 text-center">

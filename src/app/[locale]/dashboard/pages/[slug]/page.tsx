@@ -83,12 +83,15 @@ export default async function DashboardPageEditor({
     posts: posts.map((p) => ({
       id: p.id,
       label: p.translations[0]?.title ?? p.slug,
-      url: `/${activeLocale}/posts/${p.slug}`,
+      url: `/${activeLocale}/blog/${p.slug}`,
     })),
     events: events.map((e) => ({
       id: e.id,
       label: e.translations[0]?.title ?? e.slug,
-      url: `/${activeLocale}/events/${e.slug}`,
+      url:
+        (e as { eventKind?: string }).eventKind === "training_course"
+          ? `/${activeLocale}/training-courses/${e.slug}`
+          : `/${activeLocale}/events/${e.slug}`,
     })),
   };
 

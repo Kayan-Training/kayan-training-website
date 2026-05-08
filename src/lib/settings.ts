@@ -39,6 +39,9 @@ const getSettingsMap = cache(async (): Promise<SettingMap> => {
           "frontend.theme.surfaceContainerLowest",
           "frontend.theme.accent",
           "frontend.theme.border",
+          "header.cta.label.en",
+          "header.cta.label.ar",
+          "header.cta.url",
         ],
       },
     },
@@ -118,6 +121,11 @@ export async function getLocalizedSiteSettings(locale: AppLocale) {
       fromMap(map, "frontend.theme.surfaceContainerLowest") || "#0d0f0f",
     accent: fromMap(map, "frontend.theme.accent") || "#1e2020",
   };
+  const headerCta = {
+    labelEn: fromMap(map, "header.cta.label.en") || "View Events",
+    labelAr: fromMap(map, "header.cta.label.ar") || "الفعاليات",
+    url: fromMap(map, "header.cta.url") || `/${locale}/events`,
+  };
 
   return {
     contactAddress,
@@ -132,5 +140,6 @@ export async function getLocalizedSiteSettings(locale: AppLocale) {
     socialX,
     socialYouTube,
     frontendTheme,
+    headerCta,
   };
 }

@@ -25,7 +25,12 @@ export default async function EventsPage({
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
   const listingConfig = await getListingConfig(activeLocale, "events");
   const pageSize = listingConfig?.resultsPerPage ?? 12;
-  const events = await getLocalizedEvents(activeLocale, pageSize * 10);
+  const [events, pastEvents] = await Promise.all([
+    getLocalizedEvents(activeLocale, pageSize * 10, { kind: "event" }),
+    getLocalizedEvents(activeLocale, pageSize * 10, { kind: "event", includePast: true }),
+  ]);
+  const upcomingSlugs = new Set(events.map((event) => event.slug));
+  const pastOnly = pastEvents.filter((event) => !upcomingSlugs.has(event.slug));
 
   const listingEvents = events.map((event) => {
     const categorySlugs = event.categories.map((category) => category.slug.toLowerCase());
@@ -54,6 +59,17 @@ export default async function EventsPage({
         eyebrow={listingConfig?.eyebrow}
         heading={listingConfig?.heading}
         initialEvents={listingEvents}
+        initialPastEvents={pastOnly.map((event) => ({
+          coverImage: event.coverImage,
+          dateIso: event.startDate.toISOString(),
+          excerpt: event.excerpt,
+          isFeatured: event.isFeatured,
+          listingType: "training" as const,
+          location: event.location,
+          searchText: `${event.title} ${event.excerpt} ${event.location}`.toLowerCase(),
+          slug: event.slug,
+          title: event.title,
+        }))}
         locale={activeLocale}
         pageSize={pageSize}
         subheading={listingConfig?.subheading}

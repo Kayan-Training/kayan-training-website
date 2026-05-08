@@ -97,6 +97,8 @@ export async function GET(request: Request) {
 
     const base: Record<string, string> = {
       event_name: eventTitle,
+      event_kind: ((row.event as { eventKind?: string }).eventKind ?? "event") === "training_course" ? "training_course" : "event",
+      event_path: ((row.event as { eventKind?: string }).eventKind ?? "event") === "training_course" ? `/training-courses/${row.event.slug}` : `/events/${row.event.slug}`,
       event_start_date: row.event.startDate.toISOString(),
       event_end_date: row.event.endDate.toISOString(),
       registrant_name: registrantName,

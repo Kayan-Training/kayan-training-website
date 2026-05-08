@@ -793,7 +793,14 @@ async function HomeEventsCarouselRenderer({
   block: HomeEventsCarouselBlock;
   locale: "ar" | "en";
 }) {
-  const events = await getLocalizedEvents(locale, block.limit ?? 5);
+  const source = block.source ?? "mixed";
+  const [eventOnly, trainingOnly] = await Promise.all([
+    source === "training_courses" ? Promise.resolve([]) : getLocalizedEvents(locale, block.limit ?? 5, { kind: "event" }),
+    source === "events" ? Promise.resolve([]) : getLocalizedEvents(locale, block.limit ?? 5, { kind: "training_course" }),
+  ]);
+  const events = [...eventOnly, ...trainingOnly]
+    .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())
+    .slice(0, block.limit ?? 5);
 
   function formatDate(date: Date) {
     return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-GB", {
@@ -820,12 +827,20 @@ async function HomeEventsCarouselRenderer({
               {block.heading}
             </h2>
           </div>
-          <Link
-            className="hidden text-xs uppercase tracking-widest text-secondary transition-colors hover:text-primary sm:inline-flex"
-            href={`/${locale}/events`}
-          >
-            {locale === "ar" ? "كل الفعاليات" : "All Events"}
-          </Link>
+          {block.showViewMore !== false ? (
+            <Link
+              className="hidden text-xs uppercase tracking-widest text-secondary transition-colors hover:text-primary sm:inline-flex"
+              href={
+                source === "training_courses"
+                  ? `/${locale}/training-courses`
+                  : `/${locale}/events`
+              }
+            >
+              {source === "training_courses"
+                ? locale === "ar" ? "كل الدورات" : "All Courses"
+                : locale === "ar" ? "كل الفعاليات" : "All Events"}
+            </Link>
+          ) : null}
         </div>
         {events.length === 0 ? (
           <p className="text-sm text-on-surface-variant">
@@ -837,6 +852,7 @@ async function HomeEventsCarouselRenderer({
               coverImage: event.coverImage,
               dateLabel: formatDate(event.startDate),
               slug: event.slug,
+              pathBase: event.eventKind === "training_course" ? "training-courses" : "events",
               tag: event.isFeatured
                 ? locale === "ar"
                   ? "مميّز"
@@ -888,7 +904,7 @@ async function HomePostsGridRenderer({
           </div>
           <Link
             className="text-xs uppercase tracking-widest text-secondary transition-colors hover:text-primary"
-            href={`/${locale}/posts`}
+            href={`/${locale}/blog`}
           >
             {locale === "ar" ? "كل المقالات" : "All Posts"}
           </Link>
@@ -902,7 +918,7 @@ async function HomePostsGridRenderer({
             {posts.map((post) => (
               <Link
                 className="group relative block min-h-[420px] overflow-hidden ghost-border transition-all duration-300 hover:-translate-y-1 hover:border-secondary/40"
-                href={`/${locale}/posts/${post.slug}`}
+                href={`/${locale}/blog/${post.slug}`}
                 key={post.slug}
               >
                 {post.image ? (

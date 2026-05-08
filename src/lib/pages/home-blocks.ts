@@ -88,6 +88,8 @@ function makeHomeDefaultBlock(type: Block["type"], locale: Locale): Block | null
         eyebrow: isAr ? "الفعاليات القادمة" : "Upcoming Events",
         heading: isAr ? "استكشف برامجنا" : "Explore Our Programs",
         limit: 6,
+        source: "mixed",
+        showViewMore: false,
       };
     case "home_posts_grid":
       return {

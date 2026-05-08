@@ -133,6 +133,7 @@ const eventSchema = z.object({
   contentEn: z.string(),
   coverImage: z.string(),
   endDate: z.string().min(1),
+  eventKind: z.enum(["event", "training_course"]),
   googleMapsLink: z.string(),
   isCertified: z.boolean(),
   isFeatured: z.boolean(),
@@ -177,6 +178,7 @@ export type EventFormValues = z.infer<typeof eventSchema>;
 // ─────────────────────────────────────────────────────────────────────────────
 
 const eventTypeLabels = { onsite: "On-site", online: "Online", hybrid: "Hybrid" } as const;
+const eventKindLabels = { event: "Event", training_course: "Training Course" } as const;
 const languageLabels = { en: "English", ar: "Arabic", both: "Bilingual (EN + AR)" } as const;
 const statusLabels = { published: "Published", draft: "Draft" } as const;
 const paymentLabels = {
@@ -482,6 +484,7 @@ export function EventForm({
       contentEn: "",
       coverImage: "",
       endDate: "",
+      eventKind: "event",
       googleMapsLink: "",
       isCertified: false,
       isFeatured: false,
@@ -527,6 +530,7 @@ export function EventForm({
 
   // ── Watched values ────────────────────────────────────────────────────────
   const eventType = form.watch("type");
+  const eventKind = form.watch("eventKind");
   const status = form.watch("status");
   const startDate = form.watch("startDate");
   const capacity = form.watch("capacity");
@@ -563,7 +567,8 @@ export function EventForm({
   );
 
   const activeTitle = form.watch(activeLocale === "en" ? "titleEn" : "titleAr").trim();
-  const pageHeading = activeTitle || (submitLabel.includes("Create") ? "New Event" : "Edit Event");
+  const contentTypeText = eventKind === "training_course" ? "Training Course" : "Event";
+  const pageHeading = activeTitle || (submitLabel.includes("Create") ? `New ${contentTypeText}` : `Edit ${contentTypeText}`);
 
   // ── Nav sections list ─────────────────────────────────────────────────────
   const sections: Array<{ icon: React.ElementType; id: SectionId; label: string }> = [
@@ -595,8 +600,8 @@ export function EventForm({
     startTransition(async () => {
       const result = await onSubmit(values);
       if (result.error) { toast.error(result.error); return; }
-      toast.success("Event saved.");
-      router.push(`/${locale}/dashboard/events`);
+      toast.success(`${contentTypeText} saved.`);
+      router.push(`/${locale}/dashboard/programs`);
       router.refresh();
     });
   }
@@ -698,9 +703,9 @@ export function EventForm({
           <div className="border-b border-zinc-100 px-4 py-4">
             <Link
               className="inline-flex items-center gap-1.5 text-[11px] font-medium text-zinc-400 transition-colors hover:text-zinc-700"
-              href={`/${locale}/dashboard/events`}
+              href={`/${locale}/dashboard/programs`}
             >
-              <ArrowLeft className="size-3" /> Events
+              <ArrowLeft className="size-3" /> Programs
             </Link>
             <h1 className="mt-2 line-clamp-2 text-[13px] font-bold leading-snug text-zinc-800">
               {pageHeading}
@@ -753,7 +758,7 @@ export function EventForm({
 
           {/* Breadcrumb bar */}
           <div className="sticky top-0 z-10 flex shrink-0 items-center gap-2 border-b border-zinc-100 bg-white px-7 py-3 text-[12px]">
-            <span className="text-zinc-400">Events</span>
+            <span className="text-zinc-400">Programs</span>
             <ChevronRight className="size-3.5 text-zinc-300" />
             <span className="text-zinc-400">{pageHeading}</span>
             <ChevronRight className="size-3.5 text-zinc-300" />
@@ -807,7 +812,7 @@ export function EventForm({
                 className={cn(
                   "inline-flex h-8 items-center justify-center rounded-md border border-zinc-200 px-3 text-[12px] font-medium text-zinc-500 transition-colors hover:border-zinc-300 hover:text-zinc-800",
                 )}
-                href={`/${locale}/dashboard/events`}
+                href={`/${locale}/dashboard/programs`}
               >
                 Discard
               </Link>
@@ -829,7 +834,7 @@ export function EventForm({
               {/* ─────────────────────────────────────────────────────────
                   §01  IDENTITY
                   Cover image · title + inline slug · short description
-                  Event type · language of instruction
+                  Delivery mode · language of instruction
               ───────────────────────────────────────────────────────── */}
               {activeSection === "identity" && (
                 <div className="space-y-5">
@@ -1017,11 +1022,11 @@ export function EventForm({
                     }}
                   />
 
-                  {/* Event type + language */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Delivery mode + language */}
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <FormField control={form.control} name="type" render={({ field }) => (
                       <FormItem>
-                        <EnumSelect label="Event Type" onChange={field.onChange} options={eventTypeLabels} value={field.value} />
+                        <EnumSelect label="Delivery Mode" onChange={field.onChange} options={eventTypeLabels} value={field.value} />
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -1936,11 +1941,53 @@ export function EventForm({
               <h2 className="text-[13px] font-bold text-zinc-800">Settings</h2>
             </div>
             <p className="mt-1 text-[11.5px] leading-relaxed text-zinc-400">
-              Visibility, registration and certificate controls
+              Content type, visibility, registration and certificate controls
             </p>
           </div>
 
           <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
+            <div>
+              <p className={cn(labelCls, "mb-2.5")}>Program Type (Required)</p>
+              <FormField
+                control={form.control}
+                name="eventKind"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid gap-2">
+                      <button
+                        className={cn(
+                          "rounded-lg border px-3 py-2.5 text-left transition-colors",
+                          field.value === "event"
+                            ? "border-emerald-300 bg-emerald-50"
+                            : "border-zinc-200 bg-white hover:bg-zinc-50",
+                        )}
+                        type="button"
+                        onClick={() => field.onChange("event")}
+                      >
+                        <p className="text-[12px] font-semibold text-zinc-900">Event</p>
+                        <p className="mt-0.5 text-[11px] text-zinc-500">One-off or recurring event entry.</p>
+                      </button>
+                      <button
+                        className={cn(
+                          "rounded-lg border px-3 py-2.5 text-left transition-colors",
+                          field.value === "training_course"
+                            ? "border-indigo-300 bg-indigo-50"
+                            : "border-zinc-200 bg-white hover:bg-zinc-50",
+                        )}
+                        type="button"
+                        onClick={() => field.onChange("training_course")}
+                      >
+                        <p className="text-[12px] font-semibold text-zinc-900">Training Course</p>
+                        <p className="mt-0.5 text-[11px] text-zinc-500">Course-focused program shown under training courses.</p>
+                      </button>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="h-px bg-zinc-100" />
 
             {/* ── Status ── */}
             <div>
@@ -2097,3 +2144,4 @@ export function EventForm({
     </>
   );
 }
+

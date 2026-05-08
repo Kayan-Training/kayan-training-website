@@ -124,7 +124,7 @@ export function PostsTable({ locale, posts }: { locale: string; posts: PostRow[]
                   <TableCell>
                     <Link
                       className="line-clamp-1 text-sm font-semibold hover:text-primary"
-                      href={`/${locale}/dashboard/posts/${post.id}`}
+                      href={`/${locale}/dashboard/blog/${post.id}`}
                     >
                       {post.title}
                     </Link>
@@ -142,7 +142,7 @@ export function PostsTable({ locale, posts }: { locale: string; posts: PostRow[]
                     <div className="inline-flex items-center gap-1.5">
                       <Link
                         className={cn(buttonVariants({ size: "sm", variant: "outline" }), "h-8 px-3 text-xs")}
-                        href={`/${locale}/dashboard/posts/${post.id}`}
+                        href={`/${locale}/dashboard/blog/${post.id}`}
                       >
                         <Pencil className="mr-1.5 size-3.5" />
                         Edit
@@ -153,7 +153,7 @@ export function PostsTable({ locale, posts }: { locale: string; posts: PostRow[]
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            render={<Link href={`/${locale}/posts/${post.slug}`} target="_blank" />}
+                            render={<Link href={`/${locale}/blog/${post.slug}`} target="_blank" />}
                           >
                             <Eye className="mr-1.5 size-3.5" />
                             View on site

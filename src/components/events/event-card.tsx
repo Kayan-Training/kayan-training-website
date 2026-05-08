@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 export type EventCardItem = {
   coverImage: string;
   dateLabel: string;
+  pathBase?: "events" | "training-courses";
   slug: string;
   tag: string;
   title: string;
@@ -17,14 +18,16 @@ export function EventCard({
   event,
   locale,
   className,
+  basePath = "events",
 }: {
   event: EventCardItem;
   locale: "ar" | "en";
   className?: string;
+  basePath?: string;
 }) {
   return (
     <Link
-      href={`/${locale}/events/${event.slug}`}
+      href={`/${locale}/${basePath}/${event.slug}`}
       className={cn(
         "event-card group relative block h-full w-full overflow-hidden ghost-border",
         className,

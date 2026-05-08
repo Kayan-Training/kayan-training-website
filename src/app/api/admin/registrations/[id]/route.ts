@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 
 function toCsv(rows: Array<Record<string, string>>) {
   if (!rows.length) {
-    return "id,eventId,userId,status,paymentStatus,paymentMethod,amount,cancelledAt,createdAt";
+    return "id,eventId,userId,eventKind,eventPath,status,paymentStatus,paymentMethod,amount,cancelledAt,createdAt";
   }
 
   const headers = Object.keys(rows[0]);
@@ -32,6 +32,7 @@ export async function GET(request: Request) {
 
   const registrations = await db.registration.findMany({
     where: eventId ? { eventId } : undefined,
+    include: { event: { select: { slug: true, eventKind: true } } },
     orderBy: { createdAt: "desc" },
     take: 5000,
   });
@@ -41,6 +42,8 @@ export async function GET(request: Request) {
       id: row.id,
       eventId: row.eventId,
       userId: row.userId ?? "",
+      eventKind: (row.event.eventKind ?? "event") as string,
+      eventPath: row.event.eventKind === "training_course" ? `/training-courses/${row.event.slug}` : `/events/${row.event.slug}`,
       status: row.status,
       paymentStatus: row.paymentStatus,
       paymentMethod: row.paymentMethod,

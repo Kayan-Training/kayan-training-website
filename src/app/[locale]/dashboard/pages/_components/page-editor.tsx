@@ -2890,6 +2890,33 @@ function HomeEventsCarouselFields({
           onChange={(e) => onChange({ limit: Number(e.target.value) || 6 })}
         />
       </Field>
+      <Field label="Content Source">
+        <select
+          className={inputCls}
+          title="Content Source"
+          value={block.source ?? "mixed"}
+          onChange={(e) =>
+            onChange({
+              source: e.target.value as "events" | "training_courses" | "mixed",
+            })
+          }
+        >
+          <option value="mixed">Mixed (Events + Training Courses)</option>
+          <option value="events">Events only</option>
+          <option value="training_courses">Training Courses only</option>
+        </select>
+      </Field>
+      <Field label="Show View More">
+        <select
+          className={inputCls}
+          title="Show View More"
+          value={block.showViewMore === false ? "no" : "yes"}
+          onChange={(e) => onChange({ showViewMore: e.target.value === "yes" })}
+        >
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+      </Field>
     </FieldRow>
   );
 }
@@ -3207,7 +3234,7 @@ function makeBlock(type: BlockType): Block {
         clients: [],
       };
     case "home_events_carousel":
-      return { id, type, eyebrow: "", heading: "", limit: 6 };
+      return { id, type, eyebrow: "", heading: "", limit: 6, source: "mixed", showViewMore: false };
     case "home_posts_grid":
       return { id, type, eyebrow: "", heading: "", limit: 6 };
   }

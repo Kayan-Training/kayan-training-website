@@ -93,14 +93,22 @@ function DetailItem({
 }
 
 function RegisterCard({
+  basePath,
   event,
+  isPastProgram,
   locale,
   slug,
 }: {
+  basePath: "events" | "training-courses";
   event: NonNullable<Awaited<ReturnType<typeof getEventDetailBySlug>>>;
+  isPastProgram: boolean;
   locale: "ar" | "en";
   slug: string;
 }) {
+  const isTrainingCourse = event.eventKind === "training_course";
+  const contentNoun = isTrainingCourse
+    ? (locale === "ar" ? "الدورة" : "course")
+    : (locale === "ar" ? "الفعالية" : "event");
   const capacity = event.capacity ?? 0;
   const taken = event.registrationsCount;
   const progress = capacity
@@ -115,7 +123,7 @@ function RegisterCard({
   const registrationHref =
     event.registrationType === "external" && event.externalRegistrationUrl
       ? event.externalRegistrationUrl
-      : `/${locale}/events/${slug}/register`;
+      : `/${locale}/${basePath}/${slug}/register`;
 
   return (
     <div className="bg-surface-container-highest ghost-border p-7">
@@ -145,21 +153,29 @@ function RegisterCard({
           </div>
         </div>
       ) : null}
-      <Link
-        className="mb-3 flex w-full items-center justify-center gap-2 bg-primary py-4 text-xs uppercase tracking-widest text-primary-foreground transition-colors hover:bg-secondary"
-        href={registrationHref}
-        rel={event.registrationType === "external" ? "noreferrer" : undefined}
-        target={event.registrationType === "external" ? "_blank" : undefined}
-      >
-        {event.registrationType === "external"
-          ? (locale === "ar" ? "التسجيل عبر الرابط الخارجي" : "Register Externally")
-          : (locale === "ar" ? "التسجيل في الفعالية" : "Register for Event")}
-      </Link>
-      <p className="text-center text-[10px] text-on-surface-variant">
-        {locale === "ar"
-          ? "سيتم إرسال تأكيد التسجيل عبر البريد الإلكتروني."
-          : "Registration confirmation is sent by email."}
-      </p>
+      {isPastProgram ? (
+        <p className="rounded border border-outline-variant/30 bg-surface-container px-4 py-3 text-center text-xs text-on-surface-variant">
+          {locale === "ar" ? "انتهى موعد هذا البرنامج." : "This program has already concluded."}
+        </p>
+      ) : (
+        <>
+          <Link
+            className="mb-3 flex w-full items-center justify-center gap-2 bg-primary py-4 text-xs uppercase tracking-widest text-primary-foreground transition-colors hover:bg-secondary"
+            href={registrationHref}
+            rel={event.registrationType === "external" ? "noreferrer" : undefined}
+            target={event.registrationType === "external" ? "_blank" : undefined}
+          >
+            {event.registrationType === "external"
+              ? (locale === "ar" ? "التسجيل عبر الرابط الخارجي" : "Register Externally")
+              : (locale === "ar" ? `التسجيل في ${contentNoun}` : `Register for ${contentNoun}`)}
+          </Link>
+          <p className="text-center text-[10px] text-on-surface-variant">
+            {locale === "ar"
+              ? "سيتم إرسال تأكيد التسجيل عبر البريد الإلكتروني."
+              : "Registration confirmation is sent by email."}
+          </p>
+        </>
+      )}
     </div>
   );
 }
@@ -171,16 +187,20 @@ export default async function EventDetailPage({
 }) {
   const { locale, slug } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
-  const [event, related, session] = await Promise.all([
-    getEventDetailBySlug(activeLocale, slug),
-    getLocalizedEvents(activeLocale),
+  const [event, session] = await Promise.all([
+    getEventDetailBySlug(activeLocale, slug, { kind: "event" }),
     getServerSession(),
   ]);
 
   if (!event) notFound();
+  const basePath: "events" = "events";
+  const related = await getLocalizedEvents(activeLocale, 48, {
+    kind: "event",
+  });
 
   const startDate = new Date(event.startDate);
   const endDate = new Date(event.endDate);
+  const isPastProgram = endDate.getTime() < Date.now();
   const descriptionHtml = renderDescription(
     event.description,
     event.excerpt ?? "",
@@ -189,7 +209,7 @@ export default async function EventDetailPage({
     session?.user?.role === "admin" ? (
       <Link
         className="ghost-border inline-flex items-center px-4 py-2 text-xs uppercase tracking-widest text-on-surface-variant hover:text-primary"
-        href={`/${activeLocale}/dashboard/events/${event.id}`}
+        href={`/${activeLocale}/dashboard/programs/${event.id}`}
       >
         {activeLocale === "ar" ? "تحرير الفعالية" : "Edit Event"}
       </Link>
@@ -235,26 +255,28 @@ export default async function EventDetailPage({
                 />
               </div>
               <div className="flex flex-wrap gap-4">
-                <Link
-                  className="flex items-center gap-2 bg-secondary px-8 py-4 text-xs uppercase tracking-widest text-surface-dim transition-colors hover:bg-primary"
-                  href={
-                    event.registrationType === "external" && event.externalRegistrationUrl
-                      ? event.externalRegistrationUrl
-                      : `/${activeLocale}/events/${slug}/register`
-                  }
-                  rel={event.registrationType === "external" ? "noreferrer" : undefined}
-                  target={event.registrationType === "external" ? "_blank" : undefined}
-                >
-                  {event.registrationType === "external"
-                    ? (activeLocale === "ar" ? "سجّل عبر الرابط الخارجي" : "Register via External Link")
-                    : (activeLocale === "ar" ? "سجّل مكانك الآن" : "Reserve Your Seat Now")}
-                  <HugeiconsIcon
-                    className="rtl:rotate-180"
-                    icon={ArrowRight01Icon}
-                    size={16}
-                    strokeWidth={1.8}
-                  />
-                </Link>
+                {!isPastProgram ? (
+                  <Link
+                    className="flex items-center gap-2 bg-secondary px-8 py-4 text-xs uppercase tracking-widest text-surface-dim transition-colors hover:bg-primary"
+                    href={
+                      event.registrationType === "external" && event.externalRegistrationUrl
+                        ? event.externalRegistrationUrl
+                        : `/${activeLocale}/${basePath}/${slug}/register`
+                    }
+                    rel={event.registrationType === "external" ? "noreferrer" : undefined}
+                    target={event.registrationType === "external" ? "_blank" : undefined}
+                  >
+                    {event.registrationType === "external"
+                      ? (activeLocale === "ar" ? "سجّل عبر الرابط الخارجي" : "Register via External Link")
+                      : (activeLocale === "ar" ? "سجّل مكانك الآن" : "Reserve Your Seat Now")}
+                    <HugeiconsIcon
+                      className="rtl:rotate-180"
+                      icon={ArrowRight01Icon}
+                      size={16}
+                      strokeWidth={1.8}
+                    />
+                  </Link>
+                ) : null}
                 <a
                   className="ghost-border flex items-center gap-2 px-8 py-4 text-xs uppercase tracking-widest text-on-surface-variant transition-colors hover:text-on-surface"
                   href="#details"
@@ -318,7 +340,7 @@ export default async function EventDetailPage({
           </div>
           <aside className="col-span-12 lg:col-span-5">
             <div className="sticky top-24 flex flex-col gap-4">
-              <RegisterCard event={event} locale={activeLocale} slug={slug} />
+              <RegisterCard basePath={basePath} event={event} isPastProgram={isPastProgram} locale={activeLocale} slug={slug} />
               <EventMetaCard
                 event={event}
                 locale={activeLocale}
@@ -345,9 +367,7 @@ export default async function EventDetailPage({
         />
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(18,20,20,0.3)_0%,rgba(18,20,20,0.95)_100%)]" />
         <div className="absolute bottom-6 start-6 flex items-center gap-3 md:start-10">
-          <span className="badge-teal font-body">
-            {activeLocale === "ar" ? "برنامج تدريبي" : "Training Program"}
-          </span>
+          <span className="badge-teal font-body">{activeLocale === "ar" ? "فعالية" : "Event"}</span>
           {adminEdit}
         </div>
       </div>
@@ -360,7 +380,7 @@ export default async function EventDetailPage({
             <span className="text-outline">/</span>
             <Link
               className="hover:text-on-surface"
-              href={`/${activeLocale}/events`}
+              href={`/${activeLocale}/${basePath}`}
             >
               {activeLocale === "ar" ? "الفعاليات" : "Events"}
             </Link>
@@ -397,7 +417,7 @@ export default async function EventDetailPage({
         </article>
         <aside className="col-span-12 lg:col-span-4">
           <div className="sticky top-24 flex flex-col gap-4">
-            <RegisterCard event={event} locale={activeLocale} slug={slug} />
+            <RegisterCard basePath={basePath} event={event} isPastProgram={isPastProgram} locale={activeLocale} slug={slug} />
             <EventMetaCard
               event={event}
               locale={activeLocale}
@@ -409,9 +429,7 @@ export default async function EventDetailPage({
       </div>
       <section className="mx-auto max-w-[1440px] px-6 pb-16 md:px-10">
         <h2 className="mb-6 border-b border-outline-variant/20 pb-3 text-xl font-semibold">
-          {activeLocale === "ar"
-            ? "فعاليات أخرى قد تهمك"
-            : "Other Events You May Like"}
+          {activeLocale === "ar" ? "فعاليات أخرى قد تهمك" : "Other Events You May Like"}
         </h2>
         <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
           {related
@@ -420,7 +438,7 @@ export default async function EventDetailPage({
             .map((item) => (
               <Link
                 className="group w-[260px] flex-none bg-surface-container-highest ghost-border transition-colors hover:border-secondary/30"
-                href={`/${activeLocale}/events/${item.slug}`}
+                href={`/${activeLocale}/${basePath}/${item.slug}`}
                 key={item.slug}
               >
                 <div className="relative h-32 overflow-hidden">
@@ -589,3 +607,4 @@ function AgendaAndTrainers({
     </>
   );
 }
+

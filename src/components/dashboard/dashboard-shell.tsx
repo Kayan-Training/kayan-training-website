@@ -55,16 +55,16 @@ const items = [
     label: { ar: "لوحة التحكم", en: "Overview" },
   },
   {
-    href: "/dashboard/events",
+    href: "/dashboard/programs",
     icon: Calendar03Icon,
-    key: "events",
-    label: { ar: "الفعاليات", en: "Events" },
+    key: "programs",
+    label: { ar: "البرامج", en: "Programs" },
   },
   {
-    href: "/dashboard/posts",
+    href: "/dashboard/blog",
     icon: File01Icon,
     key: "posts",
-    label: { ar: "المحتوى", en: "Posts" },
+    label: { ar: "المدونة", en: "Blog" },
   },
   {
     href: "/dashboard/registrations",

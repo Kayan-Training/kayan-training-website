@@ -13,7 +13,7 @@ export default async function EventRegisterPage({
 }) {
   const { locale, slug } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
-  const event = await getEventDetailBySlug(activeLocale, slug);
+  const event = await getEventDetailBySlug(activeLocale, slug, { kind: "event" });
   if (!event) {
     notFound();
   }

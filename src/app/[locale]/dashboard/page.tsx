@@ -6,6 +6,5 @@ export default async function DashboardIndex({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  redirect(`/${locale}/dashboard/events`);
+  redirect(`/${locale}/dashboard/programs`);
 }
-

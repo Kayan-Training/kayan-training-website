@@ -3,13 +3,22 @@
  */
 import { db } from "@/lib/db";
 
-export async function getLocalizedEvents(locale: "ar" | "en", take = 48) {
+export async function getLocalizedEvents(
+  locale: "ar" | "en",
+  take = 48,
+  options?: { kind?: "event" | "training_course"; includePast?: boolean },
+) {
   const events = await db.event.findMany({
     where: {
       status: "published",
-      endDate: {
-        gte: new Date(),
-      },
+      eventKind: options?.kind ?? "event",
+      ...(options?.includePast
+        ? {}
+        : {
+            endDate: {
+              gte: new Date(),
+            },
+          }),
     },
     orderBy: {
       startDate: "asc",
@@ -51,6 +60,7 @@ export async function getLocalizedEvents(locale: "ar" | "en", take = 48) {
     seoDescription: event.translations[0]?.seoDescription ?? event.translations[0]?.shortDescription ?? "",
     seoTitle: event.translations[0]?.seoTitle ?? event.translations[0]?.title ?? event.slug,
     slug: event.slug,
+    eventKind: (event as { eventKind?: string }).eventKind ?? "event",
     startDate: event.startDate,
     title: event.translations[0]?.title ?? event.slug,
     type: event.type,
@@ -58,11 +68,16 @@ export async function getLocalizedEvents(locale: "ar" | "en", take = 48) {
   }));
 }
 
-export async function getEventDetailBySlug(locale: "ar" | "en", slug: string) {
+export async function getEventDetailBySlug(
+  locale: "ar" | "en",
+  slug: string,
+  options?: { kind?: "event" | "training_course" },
+) {
   const event = await db.event.findFirst({
     where: {
       slug,
       status: "published",
+      ...(options?.kind ? { eventKind: options.kind } : {}),
     },
     include: {
       formFields: {
@@ -132,6 +147,7 @@ export async function getEventDetailBySlug(locale: "ar" | "en", slug: string) {
       "https://images.unsplash.com/photo-1558008258-3256797b43f3?w=1400&q=80",
     startDate: event.startDate,
     endDate: event.endDate,
+    eventKind: (event as { eventKind?: string }).eventKind ?? "event",
     type: event.type,
     isFeatured: event.isFeatured,
     meetingLink: event.meetingLink ?? "",
