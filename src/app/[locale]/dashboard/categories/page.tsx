@@ -12,12 +12,26 @@ export default async function CategoriesDashboardPage({
   const { locale } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
 
-  const raw = await db.category.findMany({
-    include: { translations: true },
-    orderBy: { slug: "asc" },
-  });
+  const [raw, orderSetting] = await Promise.all([
+    db.category.findMany({
+      include: { translations: true },
+      orderBy: { slug: "asc" },
+    }),
+    db.setting.findUnique({ where: { key: "categories.order" } }),
+  ]);
+  const orderedRaw = (() => {
+    const orderedIds =
+      Array.isArray(orderSetting?.value)
+        ? (orderSetting?.value as unknown[]).filter((id): id is string => typeof id === "string")
+        : [];
+    if (orderedIds.length === 0) return raw;
+    const byId = new Map(raw.map((c) => [c.id, c]));
+    const head = orderedIds.map((id) => byId.get(id)).filter((c): c is (typeof raw)[number] => Boolean(c));
+    const tail = raw.filter((c) => !orderedIds.includes(c.id));
+    return [...head, ...tail];
+  })();
 
-  const categories: CategoryItem[] = raw.map((c) => ({
+  const categories: CategoryItem[] = orderedRaw.map((c) => ({
     id: c.id,
     slug: c.slug,
     icon: c.icon,

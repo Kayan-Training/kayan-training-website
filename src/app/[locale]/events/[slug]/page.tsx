@@ -13,6 +13,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { FeaturedCountdown } from "@/components/events/featured-countdown";
+import { ProgramGallery } from "@/components/events/program-gallery";
 import {
   getEventDetailBySlug,
   getLocalizedEvents,
@@ -201,6 +202,9 @@ export default async function EventDetailPage({
   const startDate = new Date(event.startDate);
   const endDate = new Date(event.endDate);
   const isPastProgram = endDate.getTime() < Date.now();
+  const showGallery =
+    event.galleryMode === "always" ||
+    (event.galleryMode === "after_passed" && isPastProgram);
   const descriptionHtml = renderDescription(
     event.description,
     event.excerpt ?? "",
@@ -414,6 +418,9 @@ export default async function EventDetailPage({
             dangerouslySetInnerHTML={{ __html: descriptionHtml }}
           />
           <AgendaAndTrainers event={event} locale={activeLocale} />
+          {showGallery && event.gallery.length > 0 ? (
+            <ProgramGallery items={event.gallery} locale={activeLocale} />
+          ) : null}
         </article>
         <aside className="col-span-12 lg:col-span-4">
           <div className="sticky top-24 flex flex-col gap-4">

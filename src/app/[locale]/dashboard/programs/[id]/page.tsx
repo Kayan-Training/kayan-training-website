@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
-import { fetchMediaAction, updateEventAction } from "../../events/_actions";
+import { fetchGalleryMediaAction, fetchMediaAction, updateEventAction } from "../../events/_actions";
 import { EventForm, type EventFormValues } from "../../events/_components/event-form";
 
 export default async function EditProgramPage({
@@ -56,6 +56,12 @@ export default async function EditProgramPage({
           };
         })
       : {};
+  const galleryDetails =
+    event.bankTransferDetails && typeof event.bankTransferDetails === "object"
+      ? (event.bankTransferDetails as {
+          gallery?: { mode?: "always" | "after_passed" | "hidden"; mediaIds?: string[] };
+        })
+      : {};
 
   const defaultValues: Partial<EventFormValues> = {
     slug: event.slug,
@@ -78,6 +84,8 @@ export default async function EditProgramPage({
     externalRegistrationUrl: eventExternalRegistrationUrl,
     meetingLink: event.meetingLink ?? "",
     meetingPlatform: (event.meetingPlatform ?? "zoom") as EventFormValues["meetingPlatform"],
+    galleryMode: (galleryDetails.gallery?.mode ?? "hidden") as EventFormValues["galleryMode"],
+    galleryMediaIds: Array.isArray(galleryDetails.gallery?.mediaIds) ? galleryDetails.gallery?.mediaIds ?? [] : [],
     paymentMethods: (event.paymentMethods ?? "both") as EventFormValues["paymentMethods"],
     bankAccountName: bankDetails.payment?.accountName ?? "",
     bankName: bankDetails.payment?.bankName ?? "",
@@ -153,6 +161,7 @@ export default async function EditProgramPage({
       categoryOptions={categoryOptions}
       defaultValues={defaultValues}
       eventId={id}
+      fetchGalleryMedia={fetchGalleryMediaAction}
       fetchMedia={fetchMediaAction}
       locale={activeLocale}
       onSubmit={boundAction}

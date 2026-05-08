@@ -81,14 +81,20 @@ export function HomeEventsCarouselRail({
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-surface-container-lowest to-transparent transition-opacity duration-200",
+          "pointer-events-none absolute inset-y-0 w-8 transition-opacity duration-200",
+          locale === "ar"
+            ? "right-0 bg-gradient-to-l from-surface-container-lowest to-transparent"
+            : "left-0 bg-gradient-to-r from-surface-container-lowest to-transparent",
           canPrev ? "opacity-100" : "opacity-0",
         )}
       />
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface-container-lowest to-transparent transition-opacity duration-200",
+          "pointer-events-none absolute inset-y-0 w-8 transition-opacity duration-200",
+          locale === "ar"
+            ? "left-0 bg-gradient-to-r from-surface-container-lowest to-transparent"
+            : "right-0 bg-gradient-to-l from-surface-container-lowest to-transparent",
           canNext ? "opacity-100" : "opacity-0",
         )}
       />

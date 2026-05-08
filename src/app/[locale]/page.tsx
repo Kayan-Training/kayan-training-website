@@ -49,11 +49,27 @@ export default async function LocaleHomePage({
     const needsCategories = blocks.some((b) => b.type === "training_domains");
     let categories: { slug: string; color: string; icon: string; image: string | null; nameEn: string; nameAr: string }[] = [];
     if (needsCategories) {
-      const cats = await db.category.findMany({
-        include: { translations: true },
-        orderBy: { slug: "asc" },
-      });
-      categories = cats.map((cat) => ({
+      const [cats, orderSetting] = await Promise.all([
+        db.category.findMany({
+          include: { translations: true },
+          orderBy: { slug: "asc" },
+        }),
+        db.setting.findUnique({ where: { key: "categories.order" } }),
+      ]);
+      const orderedIds =
+        Array.isArray(orderSetting?.value)
+          ? (orderSetting?.value as unknown[]).filter((id): id is string => typeof id === "string")
+          : [];
+      const byId = new Map(cats.map((cat) => [cat.id, cat]));
+      const orderedCats = orderedIds.length > 0
+        ? [
+            ...orderedIds
+              .map((id) => byId.get(id))
+              .filter((cat): cat is (typeof cats)[number] => Boolean(cat)),
+            ...cats.filter((cat) => !orderedIds.includes(cat.id)),
+          ]
+        : cats;
+      categories = orderedCats.map((cat) => ({
         slug: cat.slug,
         color: cat.color,
         icon: cat.icon,

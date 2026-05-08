@@ -142,6 +142,8 @@ const eventSchema = z.object({
   location: z.string(),
   meetingLink: z.string(),
   meetingPlatform: z.enum(["zoom", "teams", "meet", "other"]),
+  galleryMode: z.enum(["always", "after_passed", "hidden"]),
+  galleryMediaIds: z.array(z.string()),
   paymentMethods: z.enum(["both", "card", "bank"]),
   registrationType: z.enum(["internal", "external"]),
   externalRegistrationUrl: z.string(),
@@ -433,6 +435,7 @@ export function EventForm({
   defaultValues,
   eventId,
   fetchMedia,
+  fetchGalleryMedia,
   locale,
   onSubmit,
   registrations = [],
@@ -443,6 +446,7 @@ export function EventForm({
   defaultValues?: Partial<EventFormValues>;
   eventId?: string;
   fetchMedia: () => Promise<{ id: string; originalName: string; url: string; mimeType: string }[]>;
+  fetchGalleryMedia: () => Promise<{ id: string; originalName: string; url: string; mimeType: string }[]>;
   locale: string;
   onSubmit: (values: EventFormValues) => Promise<{ error?: string }>;
   registrations?: Array<{
@@ -472,6 +476,12 @@ export function EventForm({
   const [coverLibraryOpen, setCoverLibraryOpen] = useState(false);
   const [coverLibraryLoading, setCoverLibraryLoading] = useState(false);
   const [coverLibraryItems, setCoverLibraryItems] = useState<{ id: string; originalName: string; url: string; mimeType: string }[]>([]);
+  const [galleryLibraryOpen, setGalleryLibraryOpen] = useState(false);
+  const [galleryLibraryLoading, setGalleryLibraryLoading] = useState(false);
+  const [galleryLibraryItems, setGalleryLibraryItems] = useState<{ id: string; originalName: string; url: string; mimeType: string }[]>([]);
+  const [isGalleryUploading, setIsGalleryUploading] = useState(false);
+  const [galleryUploadProgress, setGalleryUploadProgress] = useState(0);
+  const [galleryUploadStatus, setGalleryUploadStatus] = useState("");
   const [trainerCandidate, setTrainerCandidate] = useState("");
 
   // ── Form ──────────────────────────────────────────────────────────────────
@@ -493,6 +503,8 @@ export function EventForm({
       location: "",
       meetingLink: "",
       meetingPlatform: "zoom",
+      galleryMode: "hidden",
+      galleryMediaIds: [],
       paymentMethods: "both",
       registrationType: "internal",
       externalRegistrationUrl: "",
@@ -540,6 +552,8 @@ export function EventForm({
   const selectedTrainerIds = form.watch("trainerIds");
   const selectedCategoryIds = form.watch("categories");
   const coverImage = form.watch("coverImage");
+  const galleryMode = form.watch("galleryMode");
+  const galleryMediaIds = form.watch("galleryMediaIds");
   const shortEnLen = form.watch("shortEn").length;
   const shortArLen = form.watch("shortAr").length;
   const registrationsCount = registrations.length;
@@ -663,6 +677,59 @@ export function EventForm({
       setCoverLibraryOpen(true);
     } finally {
       setCoverLibraryLoading(false);
+    }
+  }
+
+  async function openGalleryLibrary() {
+    setGalleryLibraryLoading(true);
+    try {
+      const items = await fetchGalleryMedia();
+      setGalleryLibraryItems(items);
+      setGalleryLibraryOpen(true);
+    } finally {
+      setGalleryLibraryLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (galleryMediaIds.length === 0 || galleryLibraryItems.length > 0) return;
+    void (async () => {
+      const items = await fetchGalleryMedia();
+      setGalleryLibraryItems(items);
+    })();
+  }, [fetchGalleryMedia, galleryLibraryItems.length, galleryMediaIds.length]);
+
+  async function uploadGalleryFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const accepted = Array.from(files).filter((file) =>
+      file.type.startsWith("image/") || file.type.startsWith("video/"),
+    );
+    if (accepted.length === 0) {
+      toast.error("Please select image/video files.");
+      return;
+    }
+    setIsGalleryUploading(true);
+    setGalleryUploadProgress(0);
+    setGalleryUploadStatus("");
+    try {
+      const createdIds: string[] = [];
+      for (let i = 0; i < accepted.length; i++) {
+        const file = accepted[i];
+        const media = await uploadMediaFile(file, {
+          onProgress: (percent) => {
+            const overall = Math.round(((i + percent / 100) / accepted.length) * 100);
+            setGalleryUploadProgress(overall);
+          },
+          onStatus: (status) => setGalleryUploadStatus(status),
+        });
+        createdIds.push(media.id);
+      }
+      form.setValue("galleryMediaIds", Array.from(new Set([...galleryMediaIds, ...createdIds])), { shouldDirty: true });
+      toast.success(`${createdIds.length} gallery item(s) uploaded.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gallery upload failed.");
+    } finally {
+      setIsGalleryUploading(false);
     }
   }
 
@@ -1414,6 +1481,109 @@ export function EventForm({
                     )}
                   />
 
+                  <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[13px] font-semibold text-zinc-800">Program Gallery</p>
+                        <p className="text-[11.5px] text-zinc-400">Photos and videos shown on the public program page.</p>
+                      </div>
+                      <Badge variant="outline">{galleryMediaIds.length} items</Badge>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="galleryMode"
+                        render={({ field }) => (
+                          <FormItem>
+                            <EnumSelect
+                              label="Gallery Visibility"
+                              onChange={field.onChange}
+                              options={{
+                                always: "Show always",
+                                after_passed: "Show only after program ends",
+                                hidden: "Hide gallery",
+                              }}
+                              value={field.value}
+                            />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="space-y-1.5">
+                        <Label className={labelCls}>Add Media</Label>
+                        <div className="flex flex-wrap gap-2">
+                          <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-600 hover:border-zinc-300 hover:text-zinc-900">
+                            <Upload className="size-3.5" />
+                            Upload Files
+                            <input
+                              accept="image/*,video/*"
+                              className="hidden"
+                              multiple
+                              type="file"
+                              onChange={(e) => void uploadGalleryFiles(e.target.files)}
+                            />
+                          </label>
+                          <Button
+                            className="h-9 gap-1.5 text-xs"
+                            disabled={galleryLibraryLoading}
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                            onClick={() => void openGalleryLibrary()}
+                          >
+                            {galleryLibraryLoading ? <Loader2 className="size-3.5 animate-spin" /> : <Search className="size-3.5" />}
+                            Browse Library
+                          </Button>
+                        </div>
+                        <UploadProgress
+                          className="mt-1"
+                          isActive={isGalleryUploading}
+                          percent={galleryUploadProgress}
+                          status={galleryUploadStatus}
+                        />
+                      </div>
+                    </div>
+                    {galleryMode === "hidden" ? (
+                      <Note className="mt-3">Gallery is currently hidden on the frontend.</Note>
+                    ) : null}
+                    {galleryMediaIds.length > 0 ? (
+                      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                        {galleryMediaIds.map((id) => {
+                          const media = galleryLibraryItems.find((m) => m.id === id);
+                          return (
+                            <div className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50" key={id}>
+                              {media ? (
+                                media.mimeType.startsWith("image/") ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img alt={media.originalName} className="h-full w-full object-cover" src={media.url} />
+                                ) : (
+                                  <video className="h-full w-full object-cover" muted preload="metadata" src={media.url} />
+                                )
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-[11px] text-zinc-400">Media</div>
+                              )}
+                              <button
+                                className="absolute right-1 top-1 inline-flex size-6 items-center justify-center rounded-md bg-black/70 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                                type="button"
+                                onClick={() =>
+                                  form.setValue(
+                                    "galleryMediaIds",
+                                    galleryMediaIds.filter((itemId) => itemId !== id),
+                                    { shouldDirty: true },
+                                  )
+                                }
+                              >
+                                <X className="size-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-[12px] text-zinc-400">No gallery media selected yet.</p>
+                    )}
+                  </div>
+
                 </div>
               )}
 
@@ -2137,6 +2307,57 @@ export function EventForm({
                   </span>
                 </button>
               ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog onOpenChange={setGalleryLibraryOpen} open={galleryLibraryOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Gallery Media Library</DialogTitle>
+          </DialogHeader>
+          {galleryLibraryItems.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">No media uploaded yet.</p>
+          ) : (
+            <div className="grid max-h-[70vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
+              {galleryLibraryItems.map((item) => {
+                const selected = galleryMediaIds.includes(item.id);
+                return (
+                  <button
+                    className={cn(
+                      "group relative aspect-[4/3] overflow-hidden rounded-lg border transition-colors",
+                      selected ? "border-primary ring-2 ring-primary/30" : "border-border/50 hover:border-primary",
+                    )}
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      form.setValue(
+                        "galleryMediaIds",
+                        selected
+                          ? galleryMediaIds.filter((id) => id !== item.id)
+                          : [...galleryMediaIds, item.id],
+                        { shouldDirty: true },
+                      );
+                    }}
+                  >
+                    {item.mimeType.startsWith("image/") ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img alt={item.originalName} className="h-full w-full object-cover transition-transform group-hover:scale-105" src={item.url} />
+                    ) : (
+                      <video className="h-full w-full object-cover" muted preload="metadata" src={item.url} />
+                    )}
+                    <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                      {item.mimeType.startsWith("image/") ? "image" : "video"}
+                    </span>
+                    {selected ? (
+                      <span className="absolute right-2 top-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
+                        Selected
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
             </div>
           )}
         </DialogContent>

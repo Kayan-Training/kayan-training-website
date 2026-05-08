@@ -91,3 +91,22 @@ export async function deleteCategory(id: string, locale: string): Promise<{ erro
     return { error: "Failed to delete category" };
   }
 }
+
+export async function saveCategoryOrder(
+  ids: string[],
+  locale: string,
+): Promise<{ error?: string }> {
+  if (!Array.isArray(ids) || ids.length === 0) return { error: "No categories to reorder." };
+  try {
+    await db.setting.upsert({
+      where: { key: "categories.order" },
+      create: { key: "categories.order", value: ids },
+      update: { value: ids },
+    });
+    revalidatePath(`/${locale}/dashboard/categories`);
+    revalidatePath(`/${locale}`);
+    return {};
+  } catch {
+    return { error: "Failed to save category order." };
+  }
+}

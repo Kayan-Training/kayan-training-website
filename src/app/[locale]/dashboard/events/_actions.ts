@@ -15,6 +15,20 @@ export async function fetchMediaAction(): Promise<{ id: string; originalName: st
   return items;
 }
 
+export async function fetchGalleryMediaAction(): Promise<{ id: string; originalName: string; url: string; mimeType: string }[]> {
+  const items = await db.media.findMany({
+    where: {
+      OR: [
+        { mimeType: { startsWith: "image/" } },
+        { mimeType: { startsWith: "video/" } },
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, originalName: true, url: true, mimeType: true },
+  });
+  return items;
+}
+
 export async function updateEventAction(
   id: string,
   locale: string,
@@ -58,6 +72,10 @@ export async function updateEventAction(
               en: values.bankInstructionsEn || null,
               ar: values.bankInstructionsAr || null,
             },
+          },
+          gallery: {
+            mode: values.galleryMode,
+            mediaIds: values.galleryMediaIds,
           },
         },
         showMapEmbed: values.showMapEmbed,
@@ -203,6 +221,10 @@ export async function createEventAction(
               en: values.bankInstructionsEn || null,
               ar: values.bankInstructionsAr || null,
             },
+          },
+          gallery: {
+            mode: values.galleryMode,
+            mediaIds: values.galleryMediaIds,
           },
         },
         showMapEmbed: values.showMapEmbed,

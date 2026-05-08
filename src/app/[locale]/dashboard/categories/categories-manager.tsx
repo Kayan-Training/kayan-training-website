@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import { useMemo, useState, useTransition } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { closestCenter, DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -27,7 +30,7 @@ import { ImagePickerField } from "@/components/ui/image-picker-field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { createCategory, deleteCategory, fetchCategoryMediaAction, updateCategory } from "./_actions";
+import { createCategory, deleteCategory, fetchCategoryMediaAction, saveCategoryOrder, updateCategory } from "./_actions";
 
 const PROFILE_ICONS: Array<{ slug: string; label: string; path: string }> = [
   { slug: "continuous-improvement", label: "Continuous Improvement", path: "/icons/kayan_profile_NEW.svg" },
@@ -250,6 +253,9 @@ export function CategoriesManager({
   const [editingCat, setEditingCat] = useState<CategoryItem | null>(null);
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<"nameAsc" | "slugAsc">("nameAsc");
+  const [orderedIds, setOrderedIds] = useState<string[]>(categories.map((c) => c.id));
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -266,6 +272,11 @@ export function CategoriesManager({
     else sorted.sort((a, b) => a.nameEn.localeCompare(b.nameEn));
     return sorted;
   }, [categories, query, sortBy]);
+
+  const orderedCategories = useMemo(() => {
+    const byId = new Map(categories.map((c) => [c.id, c]));
+    return orderedIds.map((id) => byId.get(id)).filter((c): c is CategoryItem => Boolean(c));
+  }, [categories, orderedIds]);
 
   function handleCreate(form: FormState) {
     startTransition(async () => {
@@ -300,6 +311,23 @@ export function CategoriesManager({
       const result = await deleteCategory(id, locale);
       if (result.error) toast.error(result.error);
       else toast.success("Category deleted");
+    });
+  }
+
+  function handleOrderDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = orderedIds.findIndex((id) => id === active.id);
+    const newIndex = orderedIds.findIndex((id) => id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    setOrderedIds((prev) => arrayMove(prev, oldIndex, newIndex));
+  }
+
+  function handleSaveOrder() {
+    startTransition(async () => {
+      const result = await saveCategoryOrder(orderedIds, locale);
+      if (result.error) toast.error(result.error);
+      else toast.success("Category order saved.");
     });
   }
 
@@ -354,6 +382,24 @@ export function CategoriesManager({
           Showing <span className="font-medium text-foreground">{filtered.length}</span> of{" "}
           <span className="font-medium text-foreground">{categories.length}</span> categories
         </p>
+      </div>
+
+      <div className="rounded-xl border border-border/70 bg-card p-4">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <p className="text-sm font-semibold">Category Order (Drag & Drop)</p>
+          <Button className="h-8 text-xs" disabled={isPending} size="sm" type="button" onClick={handleSaveOrder}>
+            Save Order
+          </Button>
+        </div>
+        <DndContext collisionDetection={closestCenter} sensors={sensors} onDragEnd={handleOrderDragEnd}>
+          <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {orderedCategories.map((cat) => (
+                <SortableOrderRow key={cat.id} category={cat} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
       {/* Category list */}
@@ -478,6 +524,35 @@ export function CategoriesManager({
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function SortableOrderRow({ category }: { category: CategoryItem }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: category.id });
+  return (
+    <div
+      ref={setNodeRef}
+      className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2"
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab touch-none text-muted-foreground hover:text-foreground"
+        type="button"
+      >
+        <GripVertical className="size-4" />
+      </button>
+      <div className="relative size-8 overflow-hidden rounded-md bg-muted">
+        {category.image ? (
+          <Image alt={category.nameEn} className="object-cover" fill sizes="32px" src={category.image} />
+        ) : null}
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium">{category.nameEn}</p>
+        <p className="truncate text-xs text-muted-foreground">{category.slug}</p>
+      </div>
     </div>
   );
 }

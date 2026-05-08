@@ -138,6 +138,40 @@ export async function getEventDetailBySlug(
   }
   const registrationType = ((event as { registrationType?: string }).registrationType ?? "internal") as "internal" | "external";
   const externalRegistrationUrl = (event as { externalRegistrationUrl?: string | null }).externalRegistrationUrl ?? "";
+  const galleryConfig =
+    event.bankTransferDetails && typeof event.bankTransferDetails === "object"
+      ? (event.bankTransferDetails as {
+          gallery?: {
+            mode?: "always" | "after_passed" | "hidden";
+            mediaIds?: string[];
+          };
+        }).gallery
+      : undefined;
+  const galleryIds = Array.isArray(galleryConfig?.mediaIds)
+    ? (galleryConfig?.mediaIds ?? []).filter((id): id is string => typeof id === "string" && id.length > 0)
+    : [];
+  const galleryMediaRaw = galleryIds.length
+    ? await db.media.findMany({
+        where: { id: { in: galleryIds } },
+        include: {
+          uploadedBy: { select: { name: true, email: true } },
+          translations: { where: { locale }, take: 1 },
+        },
+      })
+    : [];
+  const galleryById = new Map(galleryMediaRaw.map((item) => [item.id, item]));
+  const gallery = galleryIds
+    .map((id) => galleryById.get(id))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .map((item) => ({
+      id: item.id,
+      url: item.url,
+      mimeType: item.mimeType,
+      title: item.translations[0]?.title ?? item.originalName,
+      description: item.translations[0]?.description ?? "",
+      uploadedBy: item.uploadedBy.name ?? item.uploadedBy.email ?? "Unknown",
+      createdAt: item.createdAt.toISOString(),
+    }));
 
   return {
     id: event.id,
@@ -264,6 +298,8 @@ export async function getEventDetailBySlug(
     slug: event.slug,
     title: event.translations[0]?.title ?? event.slug,
     excerpt: event.translations[0]?.shortDescription ?? "",
+    galleryMode: (galleryConfig?.mode ?? "hidden") as "always" | "after_passed" | "hidden",
+    gallery,
   };
 }
 
