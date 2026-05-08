@@ -28,6 +28,7 @@ export type LinkPickerEntities = {
   posts: LinkEntityOption[];
   events: LinkEntityOption[];
   trainingCourses?: LinkEntityOption[];
+  staticRoutes?: LinkEntityOption[];
 };
 
 const inputCls =
@@ -60,7 +61,8 @@ export function LinkPickerInput({
     entities.pages.length > 0 ||
     entities.posts.length > 0 ||
     entities.events.length > 0 ||
-    (entities.trainingCourses?.length ?? 0) > 0;
+    (entities.trainingCourses?.length ?? 0) > 0 ||
+    (entities.staticRoutes?.length ?? 0) > 0;
   const isInternalLink = useMemo(() => value.trim().startsWith("/"), [value]);
   const showInternalChip = isInternalLink && !isEditingInternal;
 
@@ -195,6 +197,24 @@ export function LinkPickerInput({
                     <CommandItem
                       key={e.id}
                       value={`training-${e.label}-${e.url}`}
+                      onSelect={() => handleSelect(e.url)}
+                    >
+                      <div className="flex min-w-0 flex-col">
+                        <span className="truncate text-sm">{e.label}</span>
+                        <span className="truncate font-mono text-[10px] text-muted-foreground">
+                          {e.url}
+                        </span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+              {(entities.staticRoutes?.length ?? 0) > 0 && (
+                <CommandGroup heading="Static Routes">
+                  {(entities.staticRoutes ?? []).map((e) => (
+                    <CommandItem
+                      key={e.id}
+                      value={`static-${e.label}-${e.url}`}
                       onSelect={() => handleSelect(e.url)}
                     >
                       <div className="flex min-w-0 flex-col">

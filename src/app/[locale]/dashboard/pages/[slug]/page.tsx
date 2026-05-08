@@ -93,6 +93,11 @@ export default async function DashboardPageEditor({
           ? `/${activeLocale}/training-courses/${e.slug}`
           : `/${activeLocale}/events/${e.slug}`,
     })),
+    staticRoutes: [
+      { id: "static-blog", label: activeLocale === "ar" ? "المدونة" : "Blog", url: `/${activeLocale}/blog` },
+      { id: "static-events", label: activeLocale === "ar" ? "الفعاليات" : "Events", url: `/${activeLocale}/events` },
+      { id: "static-training-courses", label: activeLocale === "ar" ? "الدورات التدريبية" : "Training Courses", url: `/${activeLocale}/training-courses` },
+    ].filter((route) => !pages.some((page) => `/${activeLocale}/${page.slug}` === route.url)),
   };
 
   return <PageEditor entities={entities} locale={activeLocale} pageData={pageData} />;

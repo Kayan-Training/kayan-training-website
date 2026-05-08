@@ -15,15 +15,18 @@ export async function createMenuItem(
   locale: string,
 ): Promise<{ error?: string; item?: { id: string; type: string; url: string | null; targetId: string | null; labelEn: string; labelAr: string; order: number } }> {
   if (!labelEn || !labelAr) return { error: "Both labels are required." };
-  if (type === "link" && !url) return { error: "URL is required for manual links." };
-  if (type !== "link" && !targetId) return { error: "A target must be selected." };
+  const normalizedUrl = url?.trim() ?? null;
+  const shouldFallbackToLink = type !== "link" && !targetId && Boolean(normalizedUrl);
+  const finalType = shouldFallbackToLink ? "link" : type;
+  if (finalType === "link" && !normalizedUrl) return { error: "URL is required for manual links." };
+  if (finalType !== "link" && !targetId) return { error: "A target must be selected." };
   try {
     const created = await db.menuItem.create({
       data: {
         menuId,
-        type,
-        url: type === "link" ? url : null,
-        targetId: type !== "link" ? targetId : null,
+        type: finalType,
+        url: finalType === "link" ? normalizedUrl : null,
+        targetId: finalType !== "link" ? targetId : null,
         order,
         translations: {
           create: [
@@ -34,7 +37,17 @@ export async function createMenuItem(
       },
     });
     revalidatePath(`/${locale}/dashboard/menus`);
-    return { item: { id: created.id, type, url: created.url, targetId: created.targetId, labelEn, labelAr, order } };
+    return {
+      item: {
+        id: created.id,
+        type: finalType,
+        url: created.url,
+        targetId: created.targetId,
+        labelEn,
+        labelAr,
+        order,
+      },
+    };
   } catch {
     return { error: "Failed to create menu item." };
   }
@@ -50,15 +63,18 @@ export async function updateMenuItem(
   locale: string,
 ): Promise<{ error?: string }> {
   if (!labelEn || !labelAr) return { error: "Both labels are required." };
-  if (type === "link" && !url) return { error: "URL is required for manual links." };
-  if (type !== "link" && !targetId) return { error: "A target must be selected." };
+  const normalizedUrl = url?.trim() ?? null;
+  const shouldFallbackToLink = type !== "link" && !targetId && Boolean(normalizedUrl);
+  const finalType = shouldFallbackToLink ? "link" : type;
+  if (finalType === "link" && !normalizedUrl) return { error: "URL is required for manual links." };
+  if (finalType !== "link" && !targetId) return { error: "A target must be selected." };
   try {
     await db.menuItem.update({
       where: { id },
       data: {
-        type,
-        url: type === "link" ? url : null,
-        targetId: type !== "link" ? targetId : null,
+        type: finalType,
+        url: finalType === "link" ? normalizedUrl : null,
+        targetId: finalType !== "link" ? targetId : null,
       },
     });
     await db.menuItemTranslation.upsert({

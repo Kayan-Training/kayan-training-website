@@ -116,7 +116,7 @@ export function SiteNav({
           <button
             aria-expanded={searchOpen}
             aria-label={locale === "ar" ? "بحث" : "Search"}
-            className="ghost-border hidden h-9 w-9 items-center justify-center text-on-surface-variant transition-colors hover:text-on-surface md:flex"
+            className="ghost-border flex h-9 w-9 items-center justify-center text-on-surface-variant transition-colors hover:text-on-surface"
             onClick={() => setSearchOpen((v) => !v)}
             type="button"
           >

@@ -76,7 +76,17 @@ export default async function MenusDashboardPage({
     url: `/${activeLocale}/training-courses/${e.slug}`,
   }));
 
-  const entities = { pages: entityPages, posts: entityPosts, events: entityEvents, trainingCourses: entityTrainingCourses };
+  const entities = {
+    pages: entityPages,
+    posts: entityPosts,
+    events: entityEvents,
+    trainingCourses: entityTrainingCourses,
+    staticRoutes: [
+      { id: "static-blog", label: activeLocale === "ar" ? "المدونة" : "Blog", url: `/${activeLocale}/blog` },
+      { id: "static-events", label: activeLocale === "ar" ? "الفعاليات" : "Events", url: `/${activeLocale}/events` },
+      { id: "static-training-courses", label: activeLocale === "ar" ? "الدورات التدريبية" : "Training Courses", url: `/${activeLocale}/training-courses` },
+    ].filter((route) => !pages.some((page) => `/${activeLocale}/${page.slug}` === route.url)),
+  };
 
   return (
     <section className="mx-auto max-w-6xl space-y-5">

@@ -51,7 +51,7 @@ export function HomeEventsCarouselRail({
       <Carousel
         className="w-full"
         opts={{
-          align: isMobile ? "center" : locale === "ar" ? "end" : "start",
+          align: isMobile ? "center" : "start",
           containScroll: false,
           direction: locale === "ar" ? "rtl" : "ltr",
           dragThreshold: 8,
