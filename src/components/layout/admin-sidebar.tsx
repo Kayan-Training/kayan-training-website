@@ -37,6 +37,7 @@ const links = [
   { icon: Menu01Icon, label: "Menus", segment: "menus" },
   { icon: Image01Icon, label: "Media", segment: "media" },
   { icon: Tag01Icon, label: "Categories", segment: "categories" },
+  { icon: UserGroupIcon, label: "Trainers", segment: "trainers" },
   { icon: UserGroupIcon, label: "Users", segment: "users" },
   { icon: Settings01Icon, label: "Settings", segment: "settings" },
 ] as const;

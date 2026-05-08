@@ -338,6 +338,9 @@ export default async function TrainingCourseDetailPage({
               />
             </div>
             <AgendaAndTrainers event={event} locale={activeLocale} />
+            {showGallery && event.gallery.length > 0 ? (
+              <ProgramGallery items={event.gallery} locale={activeLocale} />
+            ) : null}
           </div>
           <aside className="col-span-12 lg:col-span-5">
             <div className="sticky top-24 flex flex-col gap-4">

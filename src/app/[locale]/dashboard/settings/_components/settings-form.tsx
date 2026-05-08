@@ -100,7 +100,8 @@ const SETTINGS_SCHEMA: SettingGroup[] = [
     fields: [
       { key: "contact.email", label: "Email", inputType: "email", placeholder: "hello@example.com" },
       { key: "contact.phone", label: "Phone", inputType: "tel", placeholder: "+968 1234 5678" },
-      { key: "contact.address", label: "Address", inputType: "textarea", placeholder: "123 Main Street, Muscat, Oman" },
+      { key: "contact.address.en", label: "Address (English)", inputType: "textarea", placeholder: "123 Main Street, Muscat, Oman" },
+      { key: "contact.address.ar", label: "Address (Arabic)", inputType: "textarea", placeholder: "مسقط، سلطنة عُمان" },
     ],
   },
   {

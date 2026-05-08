@@ -49,18 +49,29 @@ export function ProgramGallery({
           ? "صور وفيديوهات من هذا البرنامج."
           : "Photos and videos from this program."}
       </p>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
         {items.map((item, index) => (
           <button
-            className="group relative aspect-[4/3] overflow-hidden rounded-md border border-outline-variant/30 bg-surface-container-lowest"
+            className="group relative aspect-[4/3] cursor-pointer overflow-hidden rounded-md border border-outline-variant/30 bg-surface-container-lowest"
             key={item.id}
             type="button"
             onClick={() => setActiveIndex(index)}
           >
             {item.mimeType.startsWith("image/") ? (
-              <Image alt={item.title} className="object-cover transition-transform duration-300 group-hover:scale-105" fill sizes="260px" src={item.url} />
+              <Image
+                alt={item.title}
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                fill
+                sizes="260px"
+                src={item.url}
+              />
             ) : (
-              <video className="h-full w-full object-cover" muted preload="metadata" src={item.url} />
+              <video
+                className="h-full w-full object-cover"
+                muted
+                preload="metadata"
+                src={item.url}
+              />
             )}
             <span className="absolute left-2 top-2 rounded bg-black/70 px-2 py-0.5 text-[10px] uppercase tracking-widest text-white">
               {item.mimeType.startsWith("image/") ? "image" : "video"}
@@ -95,17 +106,32 @@ export function ProgramGallery({
           <div className="mx-auto flex h-full w-full max-w-6xl items-center justify-center">
             {activeItem.mimeType.startsWith("image/") ? (
               <div className="relative h-[70vh] w-full">
-                <Image alt={activeItem.title} className="object-contain" fill sizes="100vw" src={activeItem.url} />
+                <Image
+                  alt={activeItem.title}
+                  className="object-contain"
+                  fill
+                  sizes="100vw"
+                  src={activeItem.url}
+                />
               </div>
             ) : (
-              <video className="max-h-[70vh] w-full" controls src={activeItem.url} />
+              <video
+                className="max-h-[70vh] w-full"
+                controls
+                src={activeItem.url}
+              />
             )}
           </div>
           <div className="mx-auto mt-4 w-full max-w-6xl text-white">
             <p className="text-sm font-semibold">{activeItem.title}</p>
-            {activeItem.description ? <p className="mt-1 text-sm text-white/75">{activeItem.description}</p> : null}
+            {activeItem.description ? (
+              <p className="mt-1 text-sm text-white/75">
+                {activeItem.description}
+              </p>
+            ) : null}
             <p className="mt-1 text-xs text-white/60">
-              {locale === "ar" ? "رُفع بواسطة" : "Uploaded by"}: {activeItem.uploadedBy} · {metaDate}
+              {locale === "ar" ? "رُفع بواسطة" : "Uploaded by"}:{" "}
+              {activeItem.uploadedBy} · {metaDate}
             </p>
           </div>
         </div>

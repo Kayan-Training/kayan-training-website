@@ -22,6 +22,8 @@ const getSettingsMap = cache(async (): Promise<SettingMap> => {
           "contact.email",
           "contact.phone",
           "contact.address",
+          "contact.address.ar",
+          "contact.address.en",
           "social.linkedin",
           "social.twitter",
           "social.instagram",
@@ -81,6 +83,7 @@ export async function getLocalizedSiteSettings(locale: AppLocale) {
   const contactEmail = fromMap(map, "contact.email") || "training@kayan.om";
   const contactPhone = fromMap(map, "contact.phone") || "+968 9538 3138";
   const contactAddress =
+    fromMap(map, `contact.address.${locale}`) ||
     fromMap(map, "contact.address") ||
     (locale === "ar" ? "سلطنة عُمان، مسقط" : "Sultanate of Oman, Muscat");
   const socialLinkedIn = fromMap(map, "social.linkedin");
