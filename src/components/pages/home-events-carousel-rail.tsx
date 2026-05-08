@@ -15,8 +15,18 @@ export function HomeEventsCarouselRail({
   locale: "ar" | "en";
 }) {
   const [api, setApi] = useState<EmblaCarouselType>();
+  const [isMobile, setIsMobile] = useState(false);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 639px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     if (!api) return;
@@ -41,7 +51,7 @@ export function HomeEventsCarouselRail({
       <Carousel
         className="w-full"
         opts={{
-          align: "center",
+          align: isMobile ? "center" : locale === "ar" ? "end" : "start",
           containScroll: false,
           direction: locale === "ar" ? "rtl" : "ltr",
           dragThreshold: 8,

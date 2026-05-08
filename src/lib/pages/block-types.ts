@@ -109,6 +109,7 @@ export type RichTextBlock = {
 
 export type HeroBlock = {
   type: "hero";
+  eyebrow: string;
   fullViewport: boolean;
   backgroundColor: string;
   overlayColor: string;

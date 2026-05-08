@@ -18,6 +18,7 @@ function makeHomeDefaultBlock(type: Block["type"], locale: Locale): Block | null
       return {
         id: `home-default-${type}`,
         type: "hero",
+        eyebrow: isAr ? "كيان للتدريب والاستشارات • عُمان" : "Kayan Training & Consulting • Oman",
         fullViewport: true,
         backgroundColor: "#121414",
         overlayColor: "#0c0e0e",

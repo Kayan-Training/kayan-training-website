@@ -2301,6 +2301,17 @@ function HeroBlockFields({
 }) {
   return (
     <>
+      <Field label="Eyebrow">
+        <input
+          className={cn(inputCls, dir === "rtl" && "text-right")}
+          dir={dir}
+          placeholder="Small heading above the hero title"
+          title="Eyebrow"
+          value={block.eyebrow}
+          onChange={(e) => onChange({ eyebrow: e.target.value })}
+        />
+      </Field>
+
       <OverlayControls
         backgroundColor={block.backgroundColor}
         fullViewport={block.fullViewport}
@@ -3197,6 +3208,7 @@ function makeBlock(type: BlockType): Block {
       return {
         id,
         type,
+        eyebrow: "",
         fullViewport: true,
         backgroundColor: "#121414",
         overlayColor: "#000000",

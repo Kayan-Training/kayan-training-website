@@ -24,6 +24,9 @@ function migrateHeroBlock(raw: RawBlock): Block {
     const slides = (raw.slides as RawSlide[]).map(migrateHeroSlide);
     return {
       ...raw,
+      eyebrow:
+        (typeof raw.eyebrow === "string" ? raw.eyebrow : "") ??
+        "",
       backgroundColor: (raw.backgroundColor as string) ?? "#121414",
       slides,
     } as unknown as Block;
@@ -31,6 +34,7 @@ function migrateHeroBlock(raw: RawBlock): Block {
   return {
     id: raw.id,
     type: "hero",
+    eyebrow: (raw.eyebrow as string) ?? "",
     fullViewport: true,
     backgroundColor: "#121414",
     overlayColor: "#000000",
