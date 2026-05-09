@@ -1,4 +1,6 @@
 import Image from "next/image";
+import { AnimatedCategoryIcons } from "@/components/shared/animated-category-icons";
+import { getAnimatedCategoryIcons } from "@/lib/content/category-icons";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils";
 
@@ -103,66 +105,6 @@ function TapePattern({ kind }: { kind: TapeKind }) {
   );
 }
 
-type IconDirection = "up" | "down" | "left" | "right";
-
-function AnimatedIcon({
-  src,
-  alt,
-  label,
-  direction,
-  duration,
-  offset,
-}: {
-  src: string;
-  alt: string;
-  label: string;
-  direction: IconDirection;
-  duration?: string;
-  offset?: string;
-}) {
-  const isVertical = direction === "up" || direction === "down";
-
-  const animationClass = {
-    up: "animate-icon-loop-up",
-    down: "animate-icon-loop-down",
-    left: "animate-icon-loop-left",
-    right: "animate-icon-loop-right",
-  }[direction];
-
-  return (
-    <div
-      className="relative h-12 w-12 overflow-hidden"
-      title={label}
-      aria-label={alt}
-    >
-      <div
-        className={cn(
-          "absolute inset-0 will-change-transform motion-reduce:animate-none",
-          isVertical ? "flex h-[200%] flex-col" : "flex h-full w-[200%]",
-          animationClass,
-        )}
-        style={{
-          animationDuration: duration ?? "5.5s",
-          animationDelay: offset ?? "0s",
-          animationIterationCount: "infinite",
-          animationTimingFunction: "linear",
-        }}
-      >
-        <div className="grid h-12 w-12 shrink-0 place-items-center">
-          <Image src={src} width={48} height={48} alt={alt} />
-        </div>
-
-        <div
-          className="grid h-12 w-12 shrink-0 place-items-center"
-          aria-hidden="true"
-        >
-          <Image src={src} width={48} height={48} alt="" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default async function MaintenancePage({
   params,
 }: {
@@ -171,73 +113,7 @@ export default async function MaintenancePage({
   const { locale } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
   const isAr = activeLocale === "ar";
-
-  const icons = [
-    {
-      src: "/icons/kayan_profile_Arts.svg",
-      alt: "Kayan Arts Icon",
-      label: "Arts",
-      direction: "up",
-      duration: "5.2s",
-      offset: "-0.4s",
-    },
-    {
-      src: "/icons/kayan_profile_Economy.svg",
-      alt: "Kayan Economy Icon",
-      label: "Economy",
-      direction: "right",
-      duration: "5.8s",
-      offset: "-1.2s",
-    },
-    {
-      src: "/icons/kayan_profile_Education & Psychology.svg",
-      alt: "Kayan Education & Psychology Icon",
-      label: "Education & Psychology",
-      direction: "down",
-      duration: "6.4s",
-      offset: "-2.1s",
-    },
-    {
-      src: "/icons/kayan_profile_Entertainment.svg",
-      alt: "Kayan Entertainment Icon",
-      label: "Entertainment",
-      direction: "left",
-      duration: "5.5s",
-      offset: "-0.9s",
-    },
-    {
-      src: "/icons/kayan_profile_Lifestyle.svg",
-      alt: "Kayan Lifestyle Icon",
-      label: "Lifestyle",
-      direction: "up",
-      duration: "6.1s",
-      offset: "-3s",
-    },
-    {
-      src: "/icons/kayan_profile_Management & Leadership.svg",
-      alt: "Kayan Management & Leadership Icon",
-      label: "Management & Leadership",
-      direction: "right",
-      duration: "5.9s",
-      offset: "-1.8s",
-    },
-    {
-      src: "/icons/kayan_profile_Media & Communication.svg",
-      alt: "Kayan Media & Communication Icon",
-      label: "Media & Communication",
-      direction: "down",
-      duration: "6.3s",
-      offset: "-2.7s",
-    },
-    {
-      src: "/icons/kayan_profile_Tech.svg",
-      alt: "Kayan Tech Icon",
-      label: "Tech",
-      direction: "left",
-      duration: "5.1s",
-      offset: "-0.6s",
-    },
-  ] as const;
+  const icons = await getAnimatedCategoryIcons(activeLocale);
 
   return (
     <main
@@ -256,6 +132,7 @@ export default async function MaintenancePage({
             src={"/brand/kayan-logo.svg"}
             width={240}
             height={240}
+            style={{ height: "auto", width: "auto" }}
             alt="Kayan Training & Consulting"
           />
         </div>
@@ -276,20 +153,9 @@ export default async function MaintenancePage({
           </p>
         </div>
 
-        <div className="mt-9 grid grid-cols-4 sm:grid-cols-8">
-          {icons.map((icon) => (
-            <AnimatedIcon
-              key={icon.src}
-              src={icon.src}
-              alt={icon.alt}
-              label={icon.label}
-              direction={icon.direction}
-              duration={icon.duration}
-              offset={icon.offset}
-            />
-          ))}
-        </div>
+        <AnimatedCategoryIcons className="mt-9" icons={icons} />
       </section>
     </main>
   );
 }
+

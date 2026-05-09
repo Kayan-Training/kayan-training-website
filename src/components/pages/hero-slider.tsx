@@ -5,6 +5,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { AnimatedCategoryIcons } from "@/components/shared/animated-category-icons";
+import type { AnimatedCategoryIconItem } from "@/lib/content/category-icons";
 import type { HeroBlock, HeroCta } from "@/lib/pages/block-types";
 import { cn } from "@/lib/utils";
 
@@ -222,10 +224,12 @@ export function HeroSlider({
   block,
   locale,
   featuredEvents,
+  categoryIcons,
 }: {
   block: HeroBlock;
   locale: "ar" | "en";
   featuredEvents?: FeaturedEventCard[] | null;
+  categoryIcons?: AnimatedCategoryIconItem[] | null;
 }) {
   const slides = block.slides ?? [];
   const media = block.media ?? [];
@@ -333,11 +337,11 @@ export function HeroSlider({
               : "translate-y-0 opacity-100 duration-[600ms]",
           )}
         >
-          {block.eyebrow?.trim() ? (
+          {(slide?.eyebrow?.trim() || block.eyebrow?.trim()) ? (
             <div className="mb-8 flex items-center gap-3">
               <div className="h-px w-8 bg-secondary" />
               <span className="text-[11px] font-semibold uppercase text-secondary">
-                {block.eyebrow}
+                {slide?.eyebrow?.trim() || block.eyebrow}
               </span>
             </div>
           ) : null}
@@ -363,6 +367,10 @@ export function HeroSlider({
             <p className="hero-subheading mb-10 max-w-xl leading-relaxed text-on-surface-variant">
               {slide.subheading}
             </p>
+          )}
+
+          {slide?.showCategoryIcons && (categoryIcons?.length ?? 0) > 0 && (
+            <AnimatedCategoryIcons className="mb-10 w-fit" icons={categoryIcons ?? []} />
           )}
 
           {(slide?.ctas ?? []).length > 0 && (

@@ -15,18 +15,37 @@ function migrateHeroSlide(raw: RawSlide): HeroSlide {
   if (raw.ctaText) {
     ctas.push({ id: uid(), text: raw.ctaText as string, url: (raw.ctaUrl as string) ?? "", style: "primary" });
   }
-  return { id: raw.id, heading: (raw.heading as string) ?? "", subheading: (raw.subheading as string) ?? "", ctas };
+  return {
+    id: raw.id,
+    eyebrow: (raw.eyebrow as string) ?? "",
+    showCategoryIcons: Boolean(raw.showCategoryIcons),
+    heading: (raw.heading as string) ?? "",
+    subheading: (raw.subheading as string) ?? "",
+    ctas,
+  };
 }
 
 function migrateHeroBlock(raw: RawBlock): Block {
   if (Array.isArray(raw.slides)) {
     // Slides exist — migrate each slide's CTA shape
-    const slides = (raw.slides as RawSlide[]).map(migrateHeroSlide);
+    const fallbackEyebrow = (raw.eyebrow as string) ?? "";
+    const fallbackShowCategoryIcons = Boolean(raw.showCategoryIcons);
+    const slides = (raw.slides as RawSlide[]).map((slide) => {
+      const migrated = migrateHeroSlide(slide);
+      return {
+        ...migrated,
+        eyebrow:
+          typeof migrated.eyebrow === "string" && migrated.eyebrow.trim()
+            ? migrated.eyebrow
+            : fallbackEyebrow,
+        showCategoryIcons:
+          typeof slide.showCategoryIcons === "boolean"
+            ? migrated.showCategoryIcons
+            : fallbackShowCategoryIcons,
+      };
+    });
     return {
       ...raw,
-      eyebrow:
-        (typeof raw.eyebrow === "string" ? raw.eyebrow : "") ??
-        "",
       backgroundColor: (raw.backgroundColor as string) ?? "#121414",
       slides,
     } as unknown as Block;
@@ -43,6 +62,8 @@ function migrateHeroBlock(raw: RawBlock): Block {
     slides: [
       {
         id: uid(),
+        eyebrow: (raw.eyebrow as string) ?? "",
+        showCategoryIcons: Boolean(raw.showCategoryIcons),
         heading: (raw.heading as string) ?? "",
         subheading: (raw.subheading as string) ?? "",
         ctas: raw.ctaText

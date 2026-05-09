@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { getLocalizedEvents, getLocalizedPosts } from "@/lib/content/queries";
+import { getAnimatedCategoryIcons } from "@/lib/content/category-icons";
+import { resolveCategoryIconPath } from "@/lib/category-icons";
 import type {
   AboutIntroBlock,
   AccreditationBarBlock,
@@ -377,16 +379,6 @@ type TrainingDomainItem = {
   icon: string;
 };
 
-const CATEGORY_ICON_PATHS: Record<string, string> = {
-  "continuous-improvement": "/icons/kayan_profile_NEW.svg",
-  economy: "/icons/kayan_profile_Economy.svg",
-  "education-psychology": "/icons/kayan_profile_Education & Psychology.svg",
-  lifestyle: "/icons/kayan_profile_Lifestyle.svg",
-  "management-leadership": "/icons/kayan_profile_Management & Leadership.svg",
-  "media-communication": "/icons/kayan_profile_Media & Communication.svg",
-  tech: "/icons/kayan_profile_Tech.svg",
-};
-
 const DOMAIN_IMAGES: Record<string, { accent: string; img: string }> = {
   lifestyle: {
     accent: "#03c3cd",
@@ -437,10 +429,7 @@ function TrainingDomainsRenderer({
       cat.image ||
       (DOMAIN_IMAGES[cat.slug]?.img ??
         "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&q=70"),
-    icon:
-      CATEGORY_ICON_PATHS[cat.icon] ??
-      CATEGORY_ICON_PATHS[cat.slug] ??
-      "/icons/kayan_profile_NEW.svg",
+    icon: resolveCategoryIconPath(cat.icon, cat.slug),
   }));
 
   const descriptionSizeClass =
@@ -626,8 +615,19 @@ async function HeroBlockRenderer({
       coverImage: ev.coverImage,
     }));
   }
+  const shouldShowCategoryIcons = (block.slides ?? []).some((slide) =>
+    Boolean(slide.showCategoryIcons),
+  );
+  const categoryIcons = shouldShowCategoryIcons
+    ? await getAnimatedCategoryIcons(locale)
+    : [];
   return (
-    <HeroSlider block={block} featuredEvents={featuredEvents} locale={locale} />
+    <HeroSlider
+      block={block}
+      categoryIcons={categoryIcons}
+      featuredEvents={featuredEvents}
+      locale={locale}
+    />
   );
 }
 

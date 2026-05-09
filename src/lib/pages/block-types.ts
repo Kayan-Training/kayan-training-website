@@ -13,6 +13,8 @@ export type HeroCta = {
 
 export type HeroSlide = {
   id: string;
+  eyebrow?: string;
+  showCategoryIcons?: boolean;
   heading: string;
   subheading: string;
   ctas: HeroCta[];
@@ -109,7 +111,7 @@ export type RichTextBlock = {
 
 export type HeroBlock = {
   type: "hero";
-  eyebrow: string;
+  eyebrow?: string;
   fullViewport: boolean;
   backgroundColor: string;
   overlayColor: string;
@@ -117,6 +119,7 @@ export type HeroBlock = {
   media: HeroMedia[];
   slides: HeroSlide[];
   showFeaturedEvent?: boolean;
+  showCategoryIcons?: boolean;
   grayscaleMedia?: boolean;
 };
 

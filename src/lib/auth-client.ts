@@ -11,6 +11,10 @@ const resolvedBaseUrl =
 
 export const authClient = createAuthClient({
   baseURL: resolvedBaseUrl,
+  fetchOptions: {
+    disableSignal: true,
+    timeout: 30000,
+  },
   plugins: [adminClient()],
 });
 

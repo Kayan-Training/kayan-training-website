@@ -2301,17 +2301,6 @@ function HeroBlockFields({
 }) {
   return (
     <>
-      <Field label="Eyebrow">
-        <input
-          className={cn(inputCls, dir === "rtl" && "text-right")}
-          dir={dir}
-          placeholder="Small heading above the hero title"
-          title="Eyebrow"
-          value={block.eyebrow}
-          onChange={(e) => onChange({ eyebrow: e.target.value })}
-        />
-      </Field>
-
       <OverlayControls
         backgroundColor={block.backgroundColor}
         fullViewport={block.fullViewport}
@@ -2361,6 +2350,25 @@ function HeroBlockFields({
               </div>
               <div className="space-y-2">
                 <FieldRow>
+                  <Field label="Eyebrow">
+                    <input
+                      className={cn(inputCls, dir === "rtl" && "text-right")}
+                      dir={dir}
+                      placeholder="Small heading above the hero title"
+                      title="Slide eyebrow"
+                      value={slide.eyebrow ?? ""}
+                      onChange={(e) =>
+                        onChange({
+                          slides: block.slides.map((s, j) =>
+                            j === i ? { ...s, eyebrow: e.target.value } : s,
+                          ),
+                        })
+                      }
+                    />
+                  </Field>
+                </FieldRow>
+
+                <FieldRow>
                   <Field label="Heading">
                     <input
                       className={cn(inputCls, dir === "rtl" && "text-right")}
@@ -2394,6 +2402,25 @@ function HeroBlockFields({
                     />
                   </Field>
                 </FieldRow>
+                <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/20 p-3">
+                  <Switch
+                    checked={!!slide.showCategoryIcons}
+                    id={`showCategoryIcons-${slide.id}`}
+                    onCheckedChange={(v) =>
+                      onChange({
+                        slides: block.slides.map((s, j) =>
+                          j === i ? { ...s, showCategoryIcons: v } : s,
+                        ),
+                      })
+                    }
+                  />
+                  <label
+                    className="cursor-pointer text-sm"
+                    htmlFor={`showCategoryIcons-${slide.id}`}
+                  >
+                    Show category icon set on this slide
+                  </label>
+                </div>
 
                 {/* CTAs */}
                 <div className="mt-2 space-y-2">
@@ -2588,6 +2615,8 @@ function HeroBlockFields({
                 ...block.slides,
                 {
                   id: makeId(),
+                  eyebrow: "",
+                  showCategoryIcons: false,
                   heading: "",
                   subheading: "",
                   ctas: [],
@@ -3208,7 +3237,6 @@ function makeBlock(type: BlockType): Block {
       return {
         id,
         type,
-        eyebrow: "",
         fullViewport: true,
         backgroundColor: "#121414",
         overlayColor: "#000000",
@@ -3217,11 +3245,14 @@ function makeBlock(type: BlockType): Block {
         slides: [
           {
             id: makeId(),
+            eyebrow: "",
+            showCategoryIcons: false,
             heading: "",
             subheading: "",
             ctas: [],
           },
         ],
+        showCategoryIcons: false,
       };
     case "cta":
       return { id, type, heading: "", text: "", buttonText: "", buttonUrl: "" };

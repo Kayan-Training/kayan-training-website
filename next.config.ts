@@ -22,6 +22,7 @@ const s3HostFromCustomBase = getHostnameFromUrl(s3PublicBase);
 
 const nextConfig: NextConfig = {
   images: {
+    qualities: [72, 75],
     remotePatterns: [
       {
         protocol: "https",

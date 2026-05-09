@@ -18,17 +18,21 @@ function makeHomeDefaultBlock(type: Block["type"], locale: Locale): Block | null
       return {
         id: `home-default-${type}`,
         type: "hero",
-        eyebrow: isAr ? "كيان للتدريب والاستشارات • عُمان" : "Kayan Training & Consulting • Oman",
         fullViewport: true,
         backgroundColor: "#121414",
         overlayColor: "#0c0e0e",
         overlayOpacity: 75,
         grayscaleMedia: true,
         showFeaturedEvent: true,
+        showCategoryIcons: false,
         media: [],
         slides: [
           {
             id: "home-default-hero-slide-1",
+            eyebrow: isAr
+              ? "كيان للتدريب والاستشارات • عُمان"
+              : "Kayan Training & Consulting • Oman",
+            showCategoryIcons: false,
             heading: isAr
               ? "نطوّر الفرق ونُسرّع الأثر المؤسسي"
               : "We Build Teams and Accelerate Institutional Impact",
