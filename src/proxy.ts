@@ -56,6 +56,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Force all dashboard routes to English locale, regardless of active locale.
+  const localizedDashboardMatch = pathname.match(/^\/(ar|en)\/dashboard(\/.*)?$/);
+  if (localizedDashboardMatch && localizedDashboardMatch[1] !== "en") {
+    const url = request.nextUrl.clone();
+    url.pathname = `/en/dashboard${localizedDashboardMatch[2] ?? ""}`;
+    return NextResponse.redirect(url);
+  }
+
   const hasLocalePrefix = SUPPORTED_LOCALES.some(
     (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
   );
@@ -95,6 +103,12 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!hasLocalePrefix) {
+    if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/en${pathname}`;
+      return NextResponse.redirect(url);
+    }
+
     const url = request.nextUrl.clone();
     url.pathname = `/${resolvedLocale}${pathname}`;
     return NextResponse.redirect(url);

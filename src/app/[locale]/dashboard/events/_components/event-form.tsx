@@ -68,8 +68,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useFieldArray,
+  useForm,
+} from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 // ── Lucide icons ──────────────────────────────────────────────────────────────
@@ -89,12 +92,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form";
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSeparator,
+  FieldSet,
+  FieldTitle,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -275,7 +283,7 @@ function formatDayLabel(day: number, startDate: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const inputCls =
-  "h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-xs " +
+  "h-9! w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-xs " +
   "placeholder:text-zinc-300 focus:border-teal-500 focus:outline-none focus:ring-2 " +
   "focus:ring-teal-500/10 transition-colors";
 
@@ -347,26 +355,44 @@ function FL({
  */
 function EnumSelect<T extends string>({
   disabled,
+  id,
   label,
   onChange,
   options,
   value,
 }: {
   disabled?: boolean;
+  id?: string;
   label?: string;
   onChange: (v: T) => void;
   options: Record<T, string>;
   value: T;
 }) {
+  const autoId = useId();
+  const triggerId = id ?? `enum-select-${autoId}`;
   return (
     <div className="space-y-1.5">
-      {label ? <Label className={labelCls}>{label}</Label> : null}
+      {label ? (
+        <Label
+          className={labelCls}
+          htmlFor={triggerId}
+          onClick={(e) => {
+            e.preventDefault();
+            document.getElementById(triggerId)?.click();
+          }}
+        >
+          {label}
+        </Label>
+      ) : null}
       <Select
         disabled={disabled}
         value={value}
         onValueChange={(v) => onChange(v as T)}
       >
-        <SelectTrigger className={cn(inputCls, "cursor-pointer pr-8")}>
+        <SelectTrigger
+          className={cn(inputCls, "cursor-pointer")}
+          id={triggerId}
+        >
           {/* Explicit span — avoids SelectValue placeholder flash */}
           <span className="truncate">{options[value]}</span>
         </SelectTrigger>
@@ -584,6 +610,13 @@ export function EventForm({
   const [isGalleryUploading, setIsGalleryUploading] = useState(false);
   const [galleryUploadProgress, setGalleryUploadProgress] = useState(0);
   const [galleryUploadStatus, setGalleryUploadStatus] = useState("");
+  const idPrefix = useId();
+  const coverImageInputId = `${idPrefix}-cover-image-input`;
+  const titleInputId = `${idPrefix}-title-input`;
+  const slugInputId = `${idPrefix}-slug-input`;
+  const shortDescriptionInputId = `${idPrefix}-short-description-input`;
+  const seoTitleInputId = `${idPrefix}-seo-title-input`;
+  const seoDescriptionInputId = `${idPrefix}-seo-description-input`;
   const [trainerCandidate, setTrainerCandidate] = useState("");
 
   // ── Form ──────────────────────────────────────────────────────────────────
@@ -755,7 +788,6 @@ export function EventForm({
         return;
       }
       toast.success(`${contentTypeText} saved.`);
-      router.push(`/${locale}/dashboard/programs`);
       router.refresh();
     });
   }
@@ -930,11 +962,10 @@ export function EventForm({
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <>
-      <Form {...form}>
-        <form
-          className="flex h-screen overflow-hidden bg-zinc-50"
-          onSubmit={form.handleSubmit(save)}
-        >
+      <form
+        className="flex h-screen overflow-hidden bg-zinc-50"
+        onSubmit={form.handleSubmit(save)}
+      >
           {/* ════════════════════════════════════════════════════════════════
             LEFT NAV RAIL  w-52
         ════════════════════════════════════════════════════════════════ */}
@@ -1076,7 +1107,7 @@ export function EventForm({
                   Delivery mode · language of instruction
               ───────────────────────────────────────────────────────── */}
                 {activeSection === "identity" && (
-                  <div className="space-y-5">
+                  <FieldSet className="">
                     <SectionHeader
                       description="Cover image, titles, URL slug, type and language"
                       icon={Pencil}
@@ -1085,16 +1116,13 @@ export function EventForm({
                     />
 
                     {/* Cover image upload */}
-                    <FormField
-                      control={form.control}
-                      name="coverImage"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FL>Cover Image</FL>
+                    <Field className="grid gap-2">
+                          <FieldLabel htmlFor={coverImageInputId}>Cover Image</FieldLabel>
                           <input
                             ref={coverInputRef}
                             accept="image/*"
                             className="sr-only"
+                            id={coverImageInputId}
                             type="file"
                             onChange={(e) =>
                               void uploadCoverImage(e.target.files?.[0])
@@ -1214,34 +1242,37 @@ export function EventForm({
                               </Button>
                             </div>
                           )}
-                          <input className="sr-only" type="text" {...field} />
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                          <input className="sr-only" type="text" {...form.register("coverImage")} />
+                          <FieldError errors={[form.formState.errors.coverImage]} />
+                    </Field>
 
                     {/* Title + inline editable slug */}
-                    <FormField
-                      control={form.control}
-                      name={activeLocale === "en" ? "titleEn" : "titleAr"}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FL>Title</FL>
-                          <FormControl>
+                    <Field className="grid gap-2">
+                          <FieldLabel htmlFor={titleInputId}>Title</FieldLabel>
+                          <FieldContent>
                             <Input
                               className={cn(
                                 inputCls,
                                 "text-[15px] font-semibold",
                               )}
                               dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                              id={titleInputId}
                               placeholder={
                                 activeLocale === "en"
                                   ? "Event title in English"
                                   : "عنوان الفعالية بالعربية"
                               }
-                              {...field}
+                              value={
+                                form.watch(
+                                  activeLocale === "en" ? "titleEn" : "titleAr",
+                                ) ?? ""
+                              }
                               onChange={(e) => {
-                                field.onChange(e);
+                                form.setValue(
+                                  activeLocale === "en" ? "titleEn" : "titleAr",
+                                  e.target.value,
+                                  { shouldDirty: true },
+                                );
                                 const cur = form.getValues("slug");
                                 const auto = toSlug(form.getValues("titleEn"));
                                 if (!cur || cur === auto) {
@@ -1253,26 +1284,31 @@ export function EventForm({
                                 }
                               }}
                             />
-                          </FormControl>
-                          <FormMessage />
+                          </FieldContent>
+                          <FieldError
+                            errors={[
+                              activeLocale === "en"
+                                ? form.formState.errors.titleEn
+                                : form.formState.errors.titleAr,
+                            ]}
+                          />
                           {/* Inline slug — directly beneath title */}
-                          <FormField
-                            control={form.control}
-                            name="slug"
-                            render={({ field: sf }) => (
+                          
                               <div className="mt-1.5 flex items-stretch overflow-hidden rounded-md border border-zinc-200 bg-zinc-50 text-[11.5px] shadow-xs focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-500/10">
                                 <span className="flex items-center border-r border-zinc-200 bg-zinc-100 px-2.5 font-medium text-zinc-400 select-none whitespace-nowrap">
                                   kayan.om/events/
                                 </span>
                                 <input
-                                  className="flex-1 min-w-0 bg-transparent px-2.5 py-1.5 font-mono font-semibold text-teal-600 outline-none placeholder:text-zinc-300"
+                                  className="flex-1 min-w-0 bg-transparent px-2.5 py-1.5 font-mono font-semibold text-teal-600! outline-none placeholder:text-zinc-300"
+                                  id={slugInputId}
                                   placeholder="event-slug"
                                   spellCheck={false}
-                                  {...sf}
+                                  {...form.register("slug")}
                                   onBlur={(e) => {
-                                    sf.onBlur();
-                                    sf.onChange(
+                                    form.setValue(
+                                      "slug",
                                       toSlug(e.target.value) || "event-slug",
+                                      { shouldDirty: true },
                                     );
                                   }}
                                 />
@@ -1280,49 +1316,43 @@ export function EventForm({
                                   <Pencil className="size-3" />
                                 </span>
                               </div>
-                            )}
-                          />
-                        </FormItem>
-                      )}
-                    />
+                              <FieldError errors={[form.formState.errors.slug]} />
+                        </Field>
 
                     {/* Short description */}
-                    <FormField
-                      control={form.control}
-                      name={activeLocale === "en" ? "shortEn" : "shortAr"}
-                      render={({ field }) => {
+                    {(() => {
                         const count =
                           activeLocale === "en" ? shortEnLen : shortArLen;
                         return (
-                          <FormItem>
-                            <FL
-                              hint={
-                                <span
-                                  className={cn(
-                                    "font-mono text-[10.5px] font-semibold",
-                                    count > 144
-                                      ? "text-red-500"
-                                      : count > 120
-                                        ? "text-amber-500"
-                                        : "text-zinc-300",
-                                  )}
-                                >
-                                  {count} / 160
+                          <Field className="grid gap-2">
+                            <div className="mb-1.5 flex items-center justify-between">
+                              <FieldLabel htmlFor={shortDescriptionInputId}>
+                                Short Description
+                                <span className="ml-1.5 font-normal normal-case tracking-normal text-zinc-400">
+                                  shown in listings
                                 </span>
-                              }
-                            >
-                              Short Description
-                              <span className="ml-1.5 font-normal normal-case tracking-normal text-zinc-400">
-                                shown in listings
+                              </FieldLabel>
+                              <span
+                                className={cn(
+                                  "font-mono text-[10.5px] font-semibold",
+                                  count > 144
+                                    ? "text-red-500"
+                                    : count > 120
+                                      ? "text-amber-500"
+                                      : "text-zinc-300",
+                                )}
+                              >
+                                {count} / 160
                               </span>
-                            </FL>
-                            <FormControl>
+                            </div>
+                            <FieldContent>
                               <Textarea
                                 className={cn(
                                   inputCls,
                                   "h-auto resize-none py-2",
                                 )}
                                 dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                                id={shortDescriptionInputId}
                                 maxLength={160}
                                 placeholder={
                                   activeLocale === "en"
@@ -1330,102 +1360,150 @@ export function EventForm({
                                     : "ملخص قصير يظهر في بطاقات الفعاليات…"
                                 }
                                 rows={2}
-                                {...field}
+                                value={
+                                  form.watch(
+                                    activeLocale === "en" ? "shortEn" : "shortAr",
+                                  ) ?? ""
+                                }
+                                onChange={(e) =>
+                                  form.setValue(
+                                    activeLocale === "en" ? "shortEn" : "shortAr",
+                                    e.target.value,
+                                    { shouldDirty: true },
+                                  )
+                                }
                               />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
+                            </FieldContent>
+                            <FieldError
+                              errors={[
+                                activeLocale === "en"
+                                  ? form.formState.errors.shortEn
+                                  : form.formState.errors.shortAr,
+                              ]}
+                            />
+                          </Field>
                         );
-                      }}
-                    />
+                      })()}
 
                     {/* Delivery mode + language */}
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <FormField
-                        control={form.control}
-                        name="type"
-                        render={({ field }) => (
-                          <FormItem>
+                    <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <Field className="grid gap-2">
                             <EnumSelect
                               label="Delivery Mode"
-                              onChange={field.onChange}
+                              onChange={(value) =>
+                                form.setValue("type", value, {
+                                  shouldDirty: true,
+                                })
+                              }
                               options={eventTypeLabels}
-                              value={field.value}
+                              value={form.watch("type")}
                             />
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="language"
-                        render={({ field }) => (
-                          <FormItem>
+                            <FieldError errors={[form.formState.errors.type]} />
+                      </Field>
+                      <Field className="grid gap-2">
                             <EnumSelect
                               label="Language of Instruction"
-                              onChange={field.onChange}
+                              onChange={(value) =>
+                                form.setValue("language", value, {
+                                  shouldDirty: true,
+                                })
+                              }
                               options={languageLabels}
-                              value={field.value}
+                              value={form.watch("language")}
                             />
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                            <FieldError errors={[form.formState.errors.language]} />
+                      </Field>
+                    </FieldGroup>
 
-                    <div className="h-px bg-zinc-100" />
+                    <div className="h-px border-0 bg-zinc-100" />
 
                     {/* SEO moved from right sidebar into Identity tab */}
-                    <div className="space-y-3">
-                      <p className={cn(labelCls, "mb-0")}>SEO Metadata</p>
-                      <FormField
-                        control={form.control}
-                        name={
-                          activeLocale === "en" ? "seoTitleEn" : "seoTitleAr"
-                        }
-                        render={({ field }) => (
-                          <FormItem>
-                            <FL>SEO Title ({activeLocale.toUpperCase()})</FL>
-                            <FormControl>
+                    <FieldSet className="">
+                      <FieldLegend variant="label">SEO Metadata</FieldLegend>
+                      <Field className="grid gap-2">
+                            <FieldLabel htmlFor={seoTitleInputId}>
+                              <FieldTitle>
+                                SEO Title ({activeLocale.toUpperCase()})
+                              </FieldTitle>
+                            </FieldLabel>
+                            <FieldContent>
                               <Input
                                 className={inputCls}
                                 dir={activeLocale === "ar" ? "rtl" : "ltr"}
-                                {...field}
+                                id={seoTitleInputId}
+                                value={
+                                  form.watch(
+                                    activeLocale === "en"
+                                      ? "seoTitleEn"
+                                      : "seoTitleAr",
+                                  ) ?? ""
+                                }
+                                onChange={(e) =>
+                                  form.setValue(
+                                    activeLocale === "en"
+                                      ? "seoTitleEn"
+                                      : "seoTitleAr",
+                                    e.target.value,
+                                    { shouldDirty: true },
+                                  )
+                                }
                               />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name={
-                          activeLocale === "en"
-                            ? "seoDescriptionEn"
-                            : "seoDescriptionAr"
-                        }
-                        render={({ field }) => (
-                          <FormItem>
-                            <FL>
+                            </FieldContent>
+                            <FieldError
+                              errors={[
+                                activeLocale === "en"
+                                  ? form.formState.errors.seoTitleEn
+                                  : form.formState.errors.seoTitleAr,
+                              ]}
+                            />
+                            <FieldDescription>
+                              Prefer 50-60 characters for search result titles.
+                            </FieldDescription>
+                      </Field>
+                      <Field className="grid gap-2">
+                            <FieldLabel htmlFor={seoDescriptionInputId}>
                               SEO Description ({activeLocale.toUpperCase()})
-                            </FL>
-                            <FormControl>
+                            </FieldLabel>
+                            <FieldContent>
                               <Textarea
                                 className={cn(
                                   inputCls,
                                   "h-auto resize-none py-2",
                                 )}
                                 dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                                id={seoDescriptionInputId}
                                 rows={3}
-                                {...field}
+                                value={
+                                  form.watch(
+                                    activeLocale === "en"
+                                      ? "seoDescriptionEn"
+                                      : "seoDescriptionAr",
+                                  ) ?? ""
+                                }
+                                onChange={(e) =>
+                                  form.setValue(
+                                    activeLocale === "en"
+                                      ? "seoDescriptionEn"
+                                      : "seoDescriptionAr",
+                                    e.target.value,
+                                    { shouldDirty: true },
+                                  )
+                                }
                               />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
+                            </FieldContent>
+                            <FieldError
+                              errors={[
+                                activeLocale === "en"
+                                  ? form.formState.errors.seoDescriptionEn
+                                  : form.formState.errors.seoDescriptionAr,
+                              ]}
+                            />
+                            <FieldDescription>
+                              Keep this concise for better click-through in listings.
+                            </FieldDescription>
+                      </Field>
+                    </FieldSet>
+                  </FieldSet>
                 )}
 
                 {/* ─────────────────────────────────────────────────────────
@@ -1433,91 +1511,79 @@ export function EventForm({
                   Start · end · registration deadline · capacity
               ───────────────────────────────────────────────────────── */}
                 {activeSection === "schedule" && (
-                  <div className="space-y-5">
+                  <FieldSet className="">
                     <SectionHeader
                       description="Dates, capacity and registration window"
                       icon={CalendarDays}
                       number="02"
                       title="Schedule"
                     />
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="startDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FL>Start Date</FL>
-                            <FormControl>
-                              <Input
-                                className={inputCls}
-                                type="date"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="endDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FL>End Date</FL>
-                            <FormControl>
-                              <Input
-                                className={inputCls}
-                                type="date"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="registrationDeadline"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FL hint="optional">Registration Deadline</FL>
-                            <FormControl>
-                              <Input
-                                className={inputCls}
-                                type="date"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="capacity"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FL hint="max seats">Capacity</FL>
-                            <FormControl>
-                              <Input
-                                className={inputCls}
-                                min={1}
-                                placeholder="e.g. 40"
-                                type="number"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    <FieldGroup className="grid grid-cols-2 gap-4">
+                      <Field className="grid gap-2">
+                        <FieldLabel htmlFor={`${idPrefix}-start-date`}>Start Date</FieldLabel>
+                        <FieldContent>
+                          <Input
+                            className={inputCls}
+                            id={`${idPrefix}-start-date`}
+                            type="date"
+                            {...form.register("startDate")}
+                          />
+                        </FieldContent>
+                        <FieldError errors={[form.formState.errors.startDate]} />
+                      </Field>
+                      <Field className="grid gap-2">
+                        <FieldLabel htmlFor={`${idPrefix}-end-date`}>End Date</FieldLabel>
+                        <FieldContent>
+                          <Input
+                            className={inputCls}
+                            id={`${idPrefix}-end-date`}
+                            type="date"
+                            {...form.register("endDate")}
+                          />
+                        </FieldContent>
+                        <FieldError errors={[form.formState.errors.endDate]} />
+                      </Field>
+                      <Field className="grid gap-2">
+                        <div className="mb-1.5 flex items-center justify-between">
+                          <FieldLabel htmlFor={`${idPrefix}-registration-deadline`}>
+                            Registration Deadline
+                          </FieldLabel>
+                          <span className="text-[11px] text-zinc-400">optional</span>
+                        </div>
+                        <FieldContent>
+                          <Input
+                            className={inputCls}
+                            id={`${idPrefix}-registration-deadline`}
+                            type="date"
+                            {...form.register("registrationDeadline")}
+                          />
+                        </FieldContent>
+                        <FieldError errors={[form.formState.errors.registrationDeadline]} />
+                      </Field>
+                      <Field className="grid gap-2">
+                        <div className="mb-1.5 flex items-center justify-between">
+                          <FieldLabel htmlFor={`${idPrefix}-capacity`}>Capacity</FieldLabel>
+                          <span className="text-[11px] text-zinc-400">max seats</span>
+                        </div>
+                        <FieldContent>
+                          <Input
+                            className={inputCls}
+                            id={`${idPrefix}-capacity`}
+                            min={1}
+                            placeholder="e.g. 40"
+                            type="number"
+                            {...form.register("capacity")}
+                          />
+                        </FieldContent>
+                        <FieldError errors={[form.formState.errors.capacity]} />
+                      </Field>
+                    </FieldGroup>
                     <Note>
                       Capacity is enforced automatically — registrations close
                       once the limit is reached, without any manual action
                       needed.
                     </Note>
-                  </div>
+                  </FieldSet>
                 )}
 
                 {/* ─────────────────────────────────────────────────────────
@@ -1525,7 +1591,7 @@ export function EventForm({
                   Conditional blocks: onsite / online / hybrid
               ───────────────────────────────────────────────────────── */}
                 {activeSection === "location" && (
-                  <div className="space-y-5">
+                  <FieldSet className="">
                     <SectionHeader
                       description={
                         eventType === "online"
@@ -1542,69 +1608,55 @@ export function EventForm({
                     {/* Onsite / Hybrid: venue + map */}
                     {(eventType === "onsite" || eventType === "hybrid") && (
                       <>
-                        <FormField
-                          control={form.control}
-                          name="location"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FL>Venue Name / Address</FL>
-                              <FormControl>
-                                <div className="relative">
-                                  <MapPin className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-zinc-400" />
-                                  <Input
-                                    className={cn(inputCls, "pl-8")}
-                                    placeholder="Grand Hyatt Muscat, Al Shati Street"
-                                    {...field}
-                                  />
-                                </div>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="googleMapsLink"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FL>Google Maps Link</FL>
-                                <FormControl>
-                                  <div className="relative">
-                                    <Link2 className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-zinc-400" />
-                                    <Input
-                                      className={cn(inputCls, "pl-8")}
-                                      placeholder="https://maps.google.com/…"
-                                      type="url"
-                                      {...field}
-                                    />
-                                  </div>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="showMapEmbed"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FL>Map Embed</FL>
-                                <ToggleControl
-                                  checked={field.value}
-                                  description="Show interactive map on event page"
-                                  iconBg="bg-teal-50"
-                                  iconEl={
-                                    <MapPin className="size-4 text-teal-600" />
-                                  }
-                                  title="Show map embed"
-                                  onCheckedChange={field.onChange}
+                        <Field className="grid gap-2">
+                          <FieldLabel htmlFor={`${idPrefix}-location`}>Venue Name / Address</FieldLabel>
+                          <FieldContent>
+                            <div className="relative">
+                              <MapPin className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-zinc-400" />
+                              <Input
+                                className={cn(inputCls, "pl-8")}
+                                id={`${idPrefix}-location`}
+                                placeholder="Grand Hyatt Muscat, Al Shati Street"
+                                {...form.register("location")}
+                              />
+                            </div>
+                          </FieldContent>
+                          <FieldError errors={[form.formState.errors.location]} />
+                        </Field>
+                        <FieldGroup className="grid grid-cols-2 gap-4">
+                          <Field className="grid gap-2">
+                            <FieldLabel htmlFor={`${idPrefix}-google-maps-link`}>Google Maps Link</FieldLabel>
+                            <FieldContent>
+                              <div className="relative">
+                                <Link2 className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-zinc-400" />
+                                <Input
+                                  className={cn(inputCls, "pl-8")}
+                                  id={`${idPrefix}-google-maps-link`}
+                                  placeholder="https://maps.google.com/…"
+                                  type="url"
+                                  {...form.register("googleMapsLink")}
                                 />
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+                              </div>
+                            </FieldContent>
+                            <FieldError errors={[form.formState.errors.googleMapsLink]} />
+                          </Field>
+                          <Field className="grid gap-2">
+                            <FieldLabel>Map Embed</FieldLabel>
+                            <ToggleControl
+                              checked={form.watch("showMapEmbed")}
+                              description="Show interactive map on event page"
+                              iconBg="bg-teal-50"
+                              iconEl={<MapPin className="size-4 text-teal-600" />}
+                              title="Show map embed"
+                              onCheckedChange={(v) =>
+                                form.setValue("showMapEmbed", v, {
+                                  shouldDirty: true,
+                                })
+                              }
+                            />
+                            <FieldError errors={[form.formState.errors.showMapEmbed]} />
+                          </Field>
+                        </FieldGroup>
                       </>
                     )}
 
@@ -1617,12 +1669,8 @@ export function EventForm({
                             Online Delivery
                           </p>
                         </div>
-                        <FormField
-                          control={form.control}
-                          name="meetingPlatform"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FL>Platform</FL>
+                        <Field className="grid gap-2">
+                              <FieldLabel>Platform</FieldLabel>
                               <div className="flex flex-wrap gap-2">
                                 {(
                                   Object.entries(platformLabels) as [
@@ -1633,50 +1681,47 @@ export function EventForm({
                                   <button
                                     className={cn(
                                       "rounded-md border px-3 py-1.5 text-[12px] font-semibold transition-all",
-                                      field.value === v
+                                      form.watch("meetingPlatform") === v
                                         ? "border-teal-500 bg-teal-50 text-teal-700"
                                         : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300",
                                     )}
                                     key={v}
                                     type="button"
-                                    onClick={() => field.onChange(v)}
+                                    onClick={() =>
+                                      form.setValue("meetingPlatform", v, {
+                                        shouldDirty: true,
+                                      })
+                                    }
                                   >
                                     {lbl}
                                   </button>
                                 ))}
                               </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="meetingLink"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FL>Meeting Link</FL>
-                              <FormControl>
+                              <FieldError errors={[form.formState.errors.meetingPlatform]} />
+                        </Field>
+                        <Field className="grid gap-2">
+                              <FieldLabel htmlFor={`${idPrefix}-meeting-link`}>Meeting Link</FieldLabel>
+                              <FieldContent>
                                 <div className="relative">
                                   <Link2 className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-zinc-400" />
                                   <Input
                                     className={cn(inputCls, "pl-8")}
+                                    id={`${idPrefix}-meeting-link`}
                                     placeholder="https://zoom.us/j/…"
                                     type="url"
-                                    {...field}
+                                    {...form.register("meetingLink")}
                                   />
                                 </div>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                              </FieldContent>
+                              <FieldError errors={[form.formState.errors.meetingLink]} />
+                        </Field>
                         <p className="text-[11.5px] text-zinc-400">
                           Sent only to registered participants — not publicly
                           visible.
                         </p>
                       </div>
                     )}
-                  </div>
+                  </FieldSet>
                 )}
 
                 {/* ─────────────────────────────────────────────────────────
@@ -1684,70 +1729,61 @@ export function EventForm({
                   Free toggle · price (OMR) · payment methods
               ───────────────────────────────────────────────────────── */}
                 {activeSection === "pricing" && (
-                  <div className="space-y-4">
+                  <FieldSet className="">
                     <SectionHeader
                       description="Fees and accepted payment methods"
                       icon={CircleDollarSign}
                       number="04"
                       title="Pricing"
                     />
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="registrationType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <EnumSelect
-                              label="Registration Type"
-                              onChange={field.onChange}
-                              options={registrationTypeLabels}
-                              value={field.value}
-                            />
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      {registrationType === "external" ? (
-                        <FormField
-                          control={form.control}
-                          name="externalRegistrationUrl"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FL>External Registration URL</FL>
-                              <FormControl>
-                                <Input
-                                  className={inputCls}
-                                  placeholder="https://..."
-                                  type="url"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
+                    <FieldGroup className="grid grid-cols-2 gap-4">
+                      <Field className="grid gap-2">
+                        <EnumSelect
+                          label="Registration Type"
+                          onChange={(value) =>
+                            form.setValue("registrationType", value, {
+                              shouldDirty: true,
+                            })
+                          }
+                          options={registrationTypeLabels}
+                          value={form.watch("registrationType")}
                         />
+                        <FieldError errors={[form.formState.errors.registrationType]} />
+                      </Field>
+                      {registrationType === "external" ? (
+                        <Field className="grid gap-2">
+                          <FieldLabel htmlFor={`${idPrefix}-external-registration-url`}>
+                            External Registration URL
+                          </FieldLabel>
+                          <FieldContent>
+                            <Input
+                              className={inputCls}
+                              id={`${idPrefix}-external-registration-url`}
+                              placeholder="https://..."
+                              type="url"
+                              {...form.register("externalRegistrationUrl")}
+                            />
+                          </FieldContent>
+                          <FieldError errors={[form.formState.errors.externalRegistrationUrl]} />
+                        </Field>
                       ) : (
                         <div />
                       )}
-                    </div>
-                    <FormField
-                      control={form.control}
-                      name="isFree"
-                      render={({ field }) => (
-                        <FormItem>
-                          <ToggleControl
-                            checked={field.value}
-                            description="Hides the price and removes payment requirement entirely"
-                            iconBg="bg-teal-50"
-                            iconEl={
-                              <CircleDollarSign className="size-4 text-teal-600" />
-                            }
-                            title="Mark as free event"
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormItem>
-                      )}
-                    />
+                    </FieldGroup>
+                    <Field className="grid gap-2">
+                      <ToggleControl
+                        checked={form.watch("isFree")}
+                        description="Hides the price and removes payment requirement entirely"
+                        iconBg="bg-teal-50"
+                        iconEl={<CircleDollarSign className="size-4 text-teal-600" />}
+                        title="Mark as free event"
+                        onCheckedChange={(v) =>
+                          form.setValue("isFree", v, {
+                            shouldDirty: true,
+                          })
+                        }
+                      />
+                    </Field>
                     {isFree ? (
                       <Note>
                         This event is free — price and payment fields are hidden
@@ -1755,145 +1791,122 @@ export function EventForm({
                       </Note>
                     ) : (
                       <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="price"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FL>Price</FL>
+                        <FieldGroup className="grid grid-cols-2 gap-4">
+                          <Field className="grid gap-2">
+                                <FieldLabel htmlFor={`${idPrefix}-price`}>Price</FieldLabel>
                                 <div className="flex h-9 overflow-hidden rounded-md border border-zinc-200 bg-white shadow-xs focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/10">
                                   <span className="flex items-center border-r border-zinc-200 bg-zinc-50 px-3 text-[11px] font-bold text-zinc-500">
                                     OMR
                                   </span>
                                   <input
                                     className="flex-1 min-w-0 bg-transparent px-3 text-sm text-zinc-900 outline-none"
+                                    id={`${idPrefix}-price`}
                                     min={0}
                                     step="0.001"
                                     type="number"
-                                    {...field}
+                                    {...form.register("price")}
                                   />
                                 </div>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="paymentMethods"
-                            render={({ field }) => (
-                              <FormItem>
-                                <EnumSelect
-                                  label="Payment Methods"
-                                  onChange={field.onChange}
-                                  options={paymentLabels}
-                                  value={field.value}
-                                />
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+                                <FieldError errors={[form.formState.errors.price]} />
+                          </Field>
+                          <Field className="grid gap-2">
+                            <EnumSelect
+                              label="Payment Methods"
+                              onChange={(value) =>
+                                form.setValue("paymentMethods", value, {
+                                  shouldDirty: true,
+                                })
+                              }
+                              options={paymentLabels}
+                              value={form.watch("paymentMethods")}
+                            />
+                            <FieldError errors={[form.formState.errors.paymentMethods]} />
+                          </Field>
+                        </FieldGroup>
                         {(paymentMethods === "both" ||
                           paymentMethods === "bank") && (
-                          <div className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4">
-                            <p className="text-[12px] font-semibold text-zinc-700">
-                              Bank Transfer Details
-                            </p>
-                            <div className="grid grid-cols-2 gap-3">
-                              <FormField
-                                control={form.control}
-                                name="bankName"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FL>Bank Name</FL>
-                                    <FormControl>
-                                      <Input className={inputCls} {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <FormField
-                                control={form.control}
-                                name="bankAccountName"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FL>Account Name</FL>
-                                    <FormControl>
-                                      <Input className={inputCls} {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <FormField
-                                control={form.control}
-                                name="bankIban"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FL>IBAN</FL>
-                                    <FormControl>
-                                      <Input className={inputCls} {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <FormField
-                                control={form.control}
-                                name="bankSwift"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FL>SWIFT</FL>
-                                    <FormControl>
-                                      <Input className={inputCls} {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <FormField
-                                control={form.control}
-                                name="bankInstructionsEn"
-                                render={({ field }) => (
-                                  <FormItem className="col-span-2">
-                                    <FL>Instructions (EN)</FL>
-                                    <FormControl>
-                                      <Textarea
-                                        className={cn(inputCls, "h-auto py-2")}
-                                        rows={2}
-                                        {...field}
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <FormField
-                                control={form.control}
-                                name="bankInstructionsAr"
-                                render={({ field }) => (
-                                  <FormItem className="col-span-2">
-                                    <FL>Instructions (AR)</FL>
-                                    <FormControl>
-                                      <Textarea
-                                        className={cn(inputCls, "h-auto py-2")}
-                                        dir="rtl"
-                                        rows={2}
-                                        {...field}
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
-                          </div>
+                          <FieldSet className="rounded-xl border border-zinc-200 bg-white p-4">
+                            <FieldLegend>Bank Transfer Details</FieldLegend>
+                            <FieldGroup className="grid grid-cols-2 gap-3">
+                              <Field className="grid gap-2">
+                                <FieldLabel htmlFor={`${idPrefix}-bank-name`}>Bank Name</FieldLabel>
+                                <FieldContent>
+                                  <Input
+                                    className={inputCls}
+                                    id={`${idPrefix}-bank-name`}
+                                    {...form.register("bankName")}
+                                  />
+                                </FieldContent>
+                                <FieldError errors={[form.formState.errors.bankName]} />
+                              </Field>
+                              <Field className="grid gap-2">
+                                <FieldLabel htmlFor={`${idPrefix}-bank-account-name`}>Account Name</FieldLabel>
+                                <FieldContent>
+                                  <Input
+                                    className={inputCls}
+                                    id={`${idPrefix}-bank-account-name`}
+                                    {...form.register("bankAccountName")}
+                                  />
+                                </FieldContent>
+                                <FieldError errors={[form.formState.errors.bankAccountName]} />
+                              </Field>
+                              <Field className="grid gap-2">
+                                <FieldLabel htmlFor={`${idPrefix}-bank-iban`}>IBAN</FieldLabel>
+                                <FieldContent>
+                                  <Input
+                                    className={inputCls}
+                                    id={`${idPrefix}-bank-iban`}
+                                    {...form.register("bankIban")}
+                                  />
+                                </FieldContent>
+                                <FieldError errors={[form.formState.errors.bankIban]} />
+                              </Field>
+                              <Field className="grid gap-2">
+                                <FieldLabel htmlFor={`${idPrefix}-bank-swift`}>SWIFT</FieldLabel>
+                                <FieldContent>
+                                  <Input
+                                    className={inputCls}
+                                    id={`${idPrefix}-bank-swift`}
+                                    {...form.register("bankSwift")}
+                                  />
+                                </FieldContent>
+                                <FieldError errors={[form.formState.errors.bankSwift]} />
+                              </Field>
+                              <Field className="col-span-2 grid gap-2">
+                                <FieldLabel htmlFor={`${idPrefix}-bank-instructions-en`}>
+                                  Instructions (EN)
+                                </FieldLabel>
+                                <FieldContent>
+                                  <Textarea
+                                    className={cn(inputCls, "h-auto py-2")}
+                                    id={`${idPrefix}-bank-instructions-en`}
+                                    rows={2}
+                                    {...form.register("bankInstructionsEn")}
+                                  />
+                                </FieldContent>
+                                <FieldError errors={[form.formState.errors.bankInstructionsEn]} />
+                              </Field>
+                              <Field className="col-span-2 grid gap-2">
+                                <FieldLabel htmlFor={`${idPrefix}-bank-instructions-ar`}>
+                                  Instructions (AR)
+                                </FieldLabel>
+                                <FieldContent>
+                                  <Textarea
+                                    className={cn(inputCls, "h-auto py-2")}
+                                    dir="rtl"
+                                    id={`${idPrefix}-bank-instructions-ar`}
+                                    rows={2}
+                                    {...form.register("bankInstructionsAr")}
+                                  />
+                                </FieldContent>
+                                <FieldError errors={[form.formState.errors.bankInstructionsAr]} />
+                              </Field>
+                            </FieldGroup>
+                          </FieldSet>
                         )}
                       </div>
                     )}
-                  </div>
+                  </FieldSet>
                 )}
 
                 {/* ─────────────────────────────────────────────────────────
@@ -1903,7 +1916,7 @@ export function EventForm({
                   that would clip or resize it. Props are passed directly.
               ───────────────────────────────────────────────────────── */}
                 {activeSection === "content" && (
-                  <div className="space-y-5">
+                  <FieldSet className="">
                     <SectionHeader
                       description="Rich text content shown on the public event detail page"
                       icon={AlignLeft}
@@ -1912,21 +1925,17 @@ export function EventForm({
                     />
 
                     {/* Short description */}
-                    <FormField
-                      control={form.control}
-                      name={activeLocale === "en" ? "shortEn" : "shortAr"}
-                      render={({ field }) => {
-                        const count =
-                          activeLocale === "en" ? shortEnLen : shortArLen;
-                        return (
-                          <FormItem>
+                    {(() => {
+                      const count = activeLocale === "en" ? shortEnLen : shortArLen;
+                      return (
+                        <Field className="grid gap-2">
                             <div className="mb-1.5 flex items-center justify-between">
-                              <Label className={labelCls}>
+                              <FieldLabel htmlFor={`${idPrefix}-content-short`}>
                                 Short Description
                                 <span className="ml-1.5 font-normal normal-case tracking-normal text-zinc-400">
                                   shown in listings
                                 </span>
-                              </Label>
+                              </FieldLabel>
                               <span
                                 className={cn(
                                   "font-mono text-[10.5px] font-semibold",
@@ -1940,13 +1949,14 @@ export function EventForm({
                                 {count} / 160
                               </span>
                             </div>
-                            <FormControl>
+                            <FieldContent>
                               <Textarea
                                 className={cn(
                                   inputCls,
                                   "h-auto resize-none py-2",
                                 )}
                                 dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                                id={`${idPrefix}-content-short`}
                                 maxLength={160}
                                 placeholder={
                                   activeLocale === "en"
@@ -1954,40 +1964,66 @@ export function EventForm({
                                     : "ملخص قصير يظهر في بطاقات الفعاليات…"
                                 }
                                 rows={2}
-                                {...field}
+                                value={
+                                  form.watch(
+                                    activeLocale === "en" ? "shortEn" : "shortAr",
+                                  ) ?? ""
+                                }
+                                onChange={(e) =>
+                                  form.setValue(
+                                    activeLocale === "en" ? "shortEn" : "shortAr",
+                                    e.target.value,
+                                    { shouldDirty: true },
+                                  )
+                                }
                               />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        );
-                      }}
-                    />
+                            </FieldContent>
+                            <FieldError
+                              errors={[
+                                activeLocale === "en"
+                                  ? form.formState.errors.shortEn
+                                  : form.formState.errors.shortAr,
+                              ]}
+                            />
+                        </Field>
+                      );
+                    })()}
 
                     {/* Long description — Tiptap (unwrapped) */}
-                    <FormField
-                      control={form.control}
-                      name={activeLocale === "en" ? "contentEn" : "contentAr"}
-                      render={({ field }) => (
-                        <FormItem>
+                    <Field className="grid gap-2">
                           <div className="mb-1.5 flex items-center justify-between">
-                            <Label className={labelCls}>
+                            <FieldLabel>
                               Long Description
                               <span className="ml-1.5 font-normal normal-case tracking-normal text-zinc-400">
                                 Powered by Tiptap
                               </span>
-                            </Label>
+                            </FieldLabel>
                           </div>
                           {/* RichTextEditor manages its own border/toolbar — no wrapper */}
                           <RichTextEditor
                             dir={activeLocale === "ar" ? "rtl" : "ltr"}
-                            onChange={field.onChange}
+                            onChange={(value) =>
+                              form.setValue(
+                                activeLocale === "en" ? "contentEn" : "contentAr",
+                                value,
+                                { shouldDirty: true },
+                              )
+                            }
                             placeholder="Build the full event page content — headings, lists, tables, images…"
-                            value={field.value}
+                            value={
+                              form.watch(
+                                activeLocale === "en" ? "contentEn" : "contentAr",
+                              ) ?? ""
+                            }
                           />
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                          <FieldError
+                            errors={[
+                              activeLocale === "en"
+                                ? form.formState.errors.contentEn
+                                : form.formState.errors.contentAr,
+                            ]}
+                          />
+                    </Field>
 
                     <div className="rounded-xl border border-zinc-200 bg-white p-4">
                       <div className="mb-3 flex items-center justify-between gap-3">
@@ -2004,27 +2040,25 @@ export function EventForm({
                         </Badge>
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2">
-                        <FormField
-                          control={form.control}
-                          name="galleryMode"
-                          render={({ field }) => (
-                            <FormItem>
-                              <EnumSelect
-                                label="Gallery Visibility"
-                                onChange={field.onChange}
-                                options={{
-                                  always: "Show always",
-                                  after_passed: "Show only after program ends",
-                                  hidden: "Hide gallery",
-                                }}
-                                value={field.value}
-                              />
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <div className="space-y-1.5">
-                          <Label className={labelCls}>Add Media</Label>
+                        <Field className="grid gap-2">
+                          <EnumSelect
+                            label="Gallery Visibility"
+                            onChange={(value) =>
+                              form.setValue("galleryMode", value, {
+                                shouldDirty: true,
+                              })
+                            }
+                            options={{
+                              always: "Show always",
+                              after_passed: "Show only after program ends",
+                              hidden: "Hide gallery",
+                            }}
+                            value={form.watch("galleryMode")}
+                          />
+                          <FieldError errors={[form.formState.errors.galleryMode]} />
+                        </Field>
+                        <Field className="space-y-1.5">
+                          <FieldLabel>Add Media</FieldLabel>
                           <div className="flex flex-wrap gap-2">
                             <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-600 hover:border-zinc-300 hover:text-zinc-900">
                               <Upload className="size-3.5" />
@@ -2061,7 +2095,7 @@ export function EventForm({
                             percent={galleryUploadProgress}
                             status={galleryUploadStatus}
                           />
-                        </div>
+                        </Field>
                       </div>
                       {galleryMode === "hidden" ? (
                         <Note className="mt-3">
@@ -2125,7 +2159,7 @@ export function EventForm({
                         </p>
                       )}
                     </div>
-                  </div>
+                  </FieldSet>
                 )}
 
                 {/* ─────────────────────────────────────────────────────────
@@ -2133,7 +2167,7 @@ export function EventForm({
                   Day tabs · session table (time / title / type / speaker)
               ───────────────────────────────────────────────────────── */}
                 {activeSection === "agenda" && (
-                  <div className="space-y-4">
+                  <FieldSet className="">
                     <SectionHeader
                       description="Displayed as a timetable on the public event page"
                       icon={LayoutList}
@@ -2220,100 +2254,83 @@ export function EventForm({
                             key={item.id}
                           >
                             <div className="border-r border-zinc-100">
-                              <FormField
-                                control={form.control}
-                                name={`agenda.${index}.time`}
-                                render={({ field }) => (
-                                  <input
-                                    className="h-10 w-full bg-transparent px-3 font-mono text-[11.5px] text-zinc-700 outline-none focus:bg-teal-50/40"
-                                    type="time"
-                                    {...field}
-                                  />
-                                )}
+                              <input
+                                className="h-10 w-full bg-transparent px-3 font-mono text-[11.5px] text-zinc-700 outline-none focus:bg-teal-50/40"
+                                type="time"
+                                {...form.register(`agenda.${index}.time` as const)}
                               />
                             </div>
                             <div className="border-r border-zinc-100">
-                              <FormField
-                                control={form.control}
-                                name={`agenda.${index}.title`}
-                                render={({ field }) => (
-                                  <input
-                                    className="h-10 w-full bg-transparent px-3 text-[13px] text-zinc-800 outline-none placeholder:text-zinc-300 focus:bg-teal-50/40"
-                                    placeholder="Session title…"
-                                    {...field}
-                                  />
-                                )}
+                              <input
+                                className="h-10 w-full bg-transparent px-3 text-[13px] text-zinc-800 outline-none placeholder:text-zinc-300 focus:bg-teal-50/40"
+                                placeholder="Session title…"
+                                {...form.register(`agenda.${index}.title` as const)}
                               />
                             </div>
                             <div className="border-r border-zinc-100">
-                              <FormField
-                                control={form.control}
-                                name={`agenda.${index}.type`}
-                                render={({ field }) => (
-                                  <Select
-                                    value={field.value}
-                                    onValueChange={(v) =>
-                                      field.onChange(v ?? "talk")
-                                    }
-                                  >
-                                    <SelectTrigger className="!h-10 w-full rounded-none border-0 bg-transparent px-3 text-[12px] font-medium text-zinc-600 shadow-none focus:ring-0">
-                                      <span>
-                                        {agendaTypeLabels[
-                                          field.value as keyof typeof agendaTypeLabels
-                                        ] ?? "Talk"}
-                                      </span>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {Object.entries(agendaTypeLabels).map(
-                                        ([v, l]) => (
-                                          <SelectItem key={v} value={v}>
-                                            {l}
-                                          </SelectItem>
-                                        ),
-                                      )}
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              />
-                            </div>
-                            <div className="border-r border-zinc-100">
-                              <FormField
-                                control={form.control}
-                                name={`agenda.${index}.trainerId`}
-                                render={({ field }) => (
-                                  <Select
-                                    value={field.value ?? "__none__"}
-                                    onValueChange={(v) =>
-                                      field.onChange(
-                                        v === "__none__" ? undefined : v,
-                                      )
-                                    }
-                                  >
-                                    <SelectTrigger className="!h-10 w-full rounded-none border-0 bg-transparent px-3 text-[12px] text-zinc-600 shadow-none focus:ring-0">
-                                      <span>
-                                        {field.value
-                                          ? (trainerOptions.find(
-                                              (t) => t.value === field.value,
-                                            )?.label ?? "Speaker")
-                                          : "No speaker"}
-                                      </span>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="__none__">
-                                        No speaker
+                              <Select
+                                value={form.watch(`agenda.${index}.type`) ?? "talk"}
+                                onValueChange={(v) =>
+                                  form.setValue(`agenda.${index}.type`, (v ?? "talk") as "talk" | "break" | "workshop" | "panel", {
+                                    shouldDirty: true,
+                                  })
+                                }
+                              >
+                                <SelectTrigger className="!h-10 w-full rounded-none border-0 bg-transparent px-3 text-[12px] font-medium text-zinc-600 shadow-none focus:ring-0">
+                                  <span>
+                                    {agendaTypeLabels[
+                                      (form.watch(`agenda.${index}.type`) ??
+                                        "talk") as keyof typeof agendaTypeLabels
+                                    ] ?? "Talk"}
+                                  </span>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.entries(agendaTypeLabels).map(
+                                    ([v, l]) => (
+                                      <SelectItem key={v} value={v}>
+                                        {l}
                                       </SelectItem>
-                                      {trainerOptions.map((t) => (
-                                        <SelectItem
-                                          key={t.value}
-                                          value={t.value}
-                                        >
-                                          {t.label}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              />
+                                    ),
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="border-r border-zinc-100">
+                              <Select
+                                value={form.watch(`agenda.${index}.trainerId`) ?? "__none__"}
+                                onValueChange={(v) =>
+                                  form.setValue(
+                                    `agenda.${index}.trainerId`,
+                                    v && v !== "__none__" ? v : undefined,
+                                    { shouldDirty: true },
+                                  )
+                                }
+                              >
+                                <SelectTrigger className="!h-10 w-full rounded-none border-0 bg-transparent px-3 text-[12px] text-zinc-600 shadow-none focus:ring-0">
+                                  <span>
+                                    {form.watch(`agenda.${index}.trainerId`)
+                                      ? (trainerOptions.find(
+                                          (t) =>
+                                            t.value ===
+                                            form.watch(`agenda.${index}.trainerId`),
+                                        )?.label ?? "Speaker")
+                                      : "No speaker"}
+                                  </span>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__none__">
+                                    No speaker
+                                  </SelectItem>
+                                  {trainerOptions.map((t) => (
+                                    <SelectItem
+                                      key={t.value}
+                                      value={t.value}
+                                    >
+                                      {t.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div className="flex items-center justify-center">
                               <button
@@ -2354,7 +2371,7 @@ export function EventForm({
                     >
                       <Plus className="mr-1.5 size-3.5" /> Add session
                     </Button>
-                  </div>
+                  </FieldSet>
                 )}
 
                 {/* ─────────────────────────────────────────────────────────
@@ -2362,7 +2379,7 @@ export function EventForm({
                   Select from existing trainers · displayed as grid cards
               ───────────────────────────────────────────────────────── */}
                 {activeSection === "trainers" && (
-                  <div className="space-y-4">
+                  <FieldSet className="">
                     <SectionHeader
                       description="People leading this event"
                       icon={Users}
@@ -2377,7 +2394,7 @@ export function EventForm({
                         onValueChange={(v) => setTrainerCandidate(v ?? "")}
                       >
                         <SelectTrigger
-                          className={cn(inputCls, "flex-1 cursor-pointer pr-8")}
+                          className={cn(inputCls, "flex-1 cursor-pointer h-9!")}
                         >
                           <span
                             className={
@@ -2480,7 +2497,7 @@ export function EventForm({
                         </div>
                       </SortableContext>
                     </DndContext>
-                  </div>
+                  </FieldSet>
                 )}
 
                 {/* ─────────────────────────────────────────────────────────
@@ -2488,7 +2505,7 @@ export function EventForm({
                   Toggle chips — selected = filled teal pill
               ───────────────────────────────────────────────────────── */}
                 {activeSection === "categories" && (
-                  <div className="space-y-4">
+                  <FieldSet className="">
                     <SectionHeader
                       description="Tags that appear on the event page and in filters"
                       icon={Tag}
@@ -2525,7 +2542,7 @@ export function EventForm({
                         </p>
                       )}
                     </div>
-                  </div>
+                  </FieldSet>
                 )}
 
                 {/* ─────────────────────────────────────────────────────────
@@ -2534,7 +2551,7 @@ export function EventForm({
               ───────────────────────────────────────────────────────── */}
                 {activeSection === "registrationForm" &&
                   registrationType === "internal" && (
-                    <div className="space-y-4">
+                    <FieldSet className="">
                       <SectionHeader
                         description="Custom inputs shown to learners during sign-up"
                         icon={ClipboardList}
@@ -2575,7 +2592,7 @@ export function EventForm({
                             items={regFields.fields.map((f) => f.id)}
                             strategy={verticalListSortingStrategy}
                           >
-                            <div className="space-y-2">
+                            <FieldGroup className="">
                               {regFields.fields.map((regField, index) => {
                                 const isOpen = openFieldId === regField.id;
                                 const cur = form.getValues(
@@ -2644,155 +2661,152 @@ export function EventForm({
                                         {isOpen && (
                                           <div className="border-t border-zinc-100 px-4 pb-4 pt-4">
                                             <div className="grid grid-cols-2 gap-4">
-                                              <FormField
-                                                control={form.control}
-                                                name={`registrationFields.${index}.type`}
-                                                render={({ field: tf }) => (
-                                                  <FormItem>
-                                                    <EnumSelect
-                                                      label="Field Type"
-                                                      onChange={tf.onChange}
-                                                      options={fieldTypeLabels}
-                                                      value={tf.value}
-                                                    />
-                                                    <FormMessage />
-                                                  </FormItem>
-                                                )}
-                                              />
-                                              <FormField
-                                                control={form.control}
-                                                name={`registrationFields.${index}.required`}
-                                                render={({ field: rf }) => (
-                                                  <FormItem>
-                                                    <FL>Required</FL>
-                                                    <div className="flex h-9 items-center gap-2.5 rounded-md border border-zinc-200 bg-zinc-50 px-3">
-                                                      <Switch
-                                                        checked={rf.value}
-                                                        className="shrink-0 data-[state=checked]:bg-teal-600"
-                                                        onCheckedChange={
-                                                          rf.onChange
-                                                        }
-                                                      />
-                                                      <Label className="cursor-pointer text-[13px] font-medium text-zinc-700">
-                                                        Required field
-                                                      </Label>
-                                                    </div>
-                                                  </FormItem>
-                                                )}
-                                              />
-                                              <FormField
-                                                control={form.control}
-                                                name={`registrationFields.${index}.labelEn`}
-                                                render={({ field: lf }) => (
-                                                  <FormItem>
-                                                    <FL>Label (EN)</FL>
-                                                    <FormControl>
-                                                      <Input
-                                                        className={inputCls}
-                                                        {...lf}
-                                                      />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                  </FormItem>
-                                                )}
-                                              />
-                                              <FormField
-                                                control={form.control}
-                                                name={`registrationFields.${index}.labelAr`}
-                                                render={({ field: lf }) => (
-                                                  <FormItem>
-                                                    <FL>Label (AR)</FL>
-                                                    <FormControl>
-                                                      <Input
-                                                        className={inputCls}
-                                                        dir="rtl"
-                                                        {...lf}
-                                                      />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                  </FormItem>
-                                                )}
-                                              />
-                                              <FormField
-                                                control={form.control}
-                                                name={`registrationFields.${index}.placeholderEn`}
-                                                render={({ field: pf }) => (
-                                                  <FormItem>
-                                                    <FL>Placeholder (EN)</FL>
-                                                    <FormControl>
-                                                      <Input
-                                                        className={inputCls}
-                                                        {...pf}
-                                                      />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                  </FormItem>
-                                                )}
-                                              />
-                                              <FormField
-                                                control={form.control}
-                                                name={`registrationFields.${index}.placeholderAr`}
-                                                render={({ field: pf }) => (
-                                                  <FormItem>
-                                                    <FL>Placeholder (AR)</FL>
-                                                    <FormControl>
-                                                      <Input
-                                                        className={inputCls}
-                                                        dir="rtl"
-                                                        {...pf}
-                                                      />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                  </FormItem>
-                                                )}
-                                              />
+                                              <Field className="grid gap-2">
+                                                <EnumSelect
+                                                  label="Field Type"
+                                                  onChange={(value) =>
+                                                    form.setValue(
+                                                      `registrationFields.${index}.type`,
+                                                      value,
+                                                      { shouldDirty: true },
+                                                    )
+                                                  }
+                                                  options={fieldTypeLabels}
+                                                  value={
+                                                    form.watch(
+                                                      `registrationFields.${index}.type`,
+                                                    ) ?? "text"
+                                                  }
+                                                />
+                                              </Field>
+                                              <Field className="grid gap-2">
+                                                <FieldLabel>Required</FieldLabel>
+                                                <div className="flex h-9 items-center gap-2.5 rounded-md border border-zinc-200 bg-zinc-50 px-3">
+                                                  <Switch
+                                                    checked={
+                                                      form.watch(
+                                                        `registrationFields.${index}.required`,
+                                                      ) ?? false
+                                                    }
+                                                    className="shrink-0 data-[state=checked]:bg-teal-600"
+                                                    onCheckedChange={(value) =>
+                                                      form.setValue(
+                                                        `registrationFields.${index}.required`,
+                                                        value,
+                                                        { shouldDirty: true },
+                                                      )
+                                                    }
+                                                  />
+                                                  <Label className="cursor-pointer text-[13px] font-medium text-zinc-700">
+                                                    Required field
+                                                  </Label>
+                                                </div>
+                                              </Field>
+                                              <Field className="grid gap-2">
+                                                <FieldLabel htmlFor={`${idPrefix}-rf-${index}-label-en`}>Label (EN)</FieldLabel>
+                                                <FieldContent>
+                                                  <Input
+                                                    className={inputCls}
+                                                    id={`${idPrefix}-rf-${index}-label-en`}
+                                                    {...form.register(
+                                                      `registrationFields.${index}.labelEn` as const,
+                                                    )}
+                                                  />
+                                                </FieldContent>
+                                                <FieldError errors={[form.formState.errors.registrationFields?.[index]?.labelEn]} />
+                                              </Field>
+                                              <Field className="grid gap-2">
+                                                <FieldLabel htmlFor={`${idPrefix}-rf-${index}-label-ar`}>Label (AR)</FieldLabel>
+                                                <FieldContent>
+                                                  <Input
+                                                    className={inputCls}
+                                                    dir="rtl"
+                                                    id={`${idPrefix}-rf-${index}-label-ar`}
+                                                    {...form.register(
+                                                      `registrationFields.${index}.labelAr` as const,
+                                                    )}
+                                                  />
+                                                </FieldContent>
+                                                <FieldError errors={[form.formState.errors.registrationFields?.[index]?.labelAr]} />
+                                              </Field>
+                                              <Field className="grid gap-2">
+                                                <FieldLabel htmlFor={`${idPrefix}-rf-${index}-placeholder-en`}>Placeholder (EN)</FieldLabel>
+                                                <FieldContent>
+                                                  <Input
+                                                    className={inputCls}
+                                                    id={`${idPrefix}-rf-${index}-placeholder-en`}
+                                                    {...form.register(
+                                                      `registrationFields.${index}.placeholderEn` as const,
+                                                    )}
+                                                  />
+                                                </FieldContent>
+                                                <FieldError errors={[form.formState.errors.registrationFields?.[index]?.placeholderEn]} />
+                                              </Field>
+                                              <Field className="grid gap-2">
+                                                <FieldLabel htmlFor={`${idPrefix}-rf-${index}-placeholder-ar`}>Placeholder (AR)</FieldLabel>
+                                                <FieldContent>
+                                                  <Input
+                                                    className={inputCls}
+                                                    dir="rtl"
+                                                    id={`${idPrefix}-rf-${index}-placeholder-ar`}
+                                                    {...form.register(
+                                                      `registrationFields.${index}.placeholderAr` as const,
+                                                    )}
+                                                  />
+                                                </FieldContent>
+                                                <FieldError errors={[form.formState.errors.registrationFields?.[index]?.placeholderAr]} />
+                                              </Field>
                                               {cur.type === "select" && (
                                                 <>
-                                                  <FormField
-                                                    control={form.control}
-                                                    name={`registrationFields.${index}.optionsEn`}
-                                                    render={({ field: of }) => (
-                                                      <FormItem>
-                                                        <FL hint="comma-separated">
-                                                          Options (EN)
-                                                        </FL>
-                                                        <FormControl>
-                                                          <Textarea
-                                                            className={cn(
-                                                              inputCls,
-                                                              "h-auto py-2",
-                                                            )}
-                                                            rows={2}
-                                                            {...of}
-                                                          />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                      </FormItem>
-                                                    )}
-                                                  />
-                                                  <FormField
-                                                    control={form.control}
-                                                    name={`registrationFields.${index}.optionsAr`}
-                                                    render={({ field: of }) => (
-                                                      <FormItem>
-                                                        <FL hint="comma-separated">
-                                                          Options (AR)
-                                                        </FL>
-                                                        <FormControl>
-                                                          <Textarea
-                                                            className={cn(
-                                                              inputCls,
-                                                              "h-auto py-2",
-                                                            )}
-                                                            dir="rtl"
-                                                            rows={2}
-                                                            {...of}
-                                                          />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                      </FormItem>
-                                                    )}
-                                                  />
+                                                  <Field className="grid gap-2">
+                                                    <div className="mb-1.5 flex items-center justify-between">
+                                                      <FieldLabel htmlFor={`${idPrefix}-rf-${index}-options-en`}>
+                                                        Options (EN)
+                                                      </FieldLabel>
+                                                      <span className="text-[11px] text-zinc-400">
+                                                        comma-separated
+                                                      </span>
+                                                    </div>
+                                                    <FieldContent>
+                                                      <Textarea
+                                                        className={cn(
+                                                          inputCls,
+                                                          "h-auto py-2",
+                                                        )}
+                                                        id={`${idPrefix}-rf-${index}-options-en`}
+                                                        rows={2}
+                                                        {...form.register(
+                                                          `registrationFields.${index}.optionsEn` as const,
+                                                        )}
+                                                      />
+                                                    </FieldContent>
+                                                    <FieldError errors={[form.formState.errors.registrationFields?.[index]?.optionsEn]} />
+                                                  </Field>
+                                                  <Field className="grid gap-2">
+                                                    <div className="mb-1.5 flex items-center justify-between">
+                                                      <FieldLabel htmlFor={`${idPrefix}-rf-${index}-options-ar`}>
+                                                        Options (AR)
+                                                      </FieldLabel>
+                                                      <span className="text-[11px] text-zinc-400">
+                                                        comma-separated
+                                                      </span>
+                                                    </div>
+                                                    <FieldContent>
+                                                      <Textarea
+                                                        className={cn(
+                                                          inputCls,
+                                                          "h-auto py-2",
+                                                        )}
+                                                        dir="rtl"
+                                                        id={`${idPrefix}-rf-${index}-options-ar`}
+                                                        rows={2}
+                                                        {...form.register(
+                                                          `registrationFields.${index}.optionsAr` as const,
+                                                        )}
+                                                      />
+                                                    </FieldContent>
+                                                    <FieldError errors={[form.formState.errors.registrationFields?.[index]?.optionsAr]} />
+                                                  </Field>
                                                 </>
                                               )}
                                             </div>
@@ -2856,11 +2870,11 @@ export function EventForm({
                                   </SortableFieldItem>
                                 );
                               })}
-                            </div>
+                            </FieldGroup>
                           </SortableContext>
                         </DndContext>
                       )}
-                    </div>
+                    </FieldSet>
                   )}
 
                 {/* ─────────────────────────────────────────────────────────
@@ -2870,7 +2884,7 @@ export function EventForm({
                   populate the table rows. See comment inside table body.
               ───────────────────────────────────────────────────────── */}
                 {activeSection === "registrations" && (
-                  <div className="space-y-4">
+                  <FieldSet className="">
                     <SectionHeader
                       description="Attendee submissions for this event"
                       icon={ListChecks}
@@ -2997,7 +3011,7 @@ export function EventForm({
                         </div>
                       </>
                     )}
-                  </div>
+                  </FieldSet>
                 )}
               </div>
 
@@ -3051,26 +3065,26 @@ export function EventForm({
               </p>
             </div>
 
-            <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
-              <div>
-                <p className={cn(labelCls, "mb-2.5")}>
+            <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
+              <FieldSet>
+                <FieldLegend variant="label">
                   Program Type (Required)
-                </p>
-                <FormField
-                  control={form.control}
-                  name="eventKind"
-                  render={({ field }) => (
-                    <FormItem>
+                </FieldLegend>
+                <Field className="grid gap-2">
                       <div className="grid gap-2">
                         <button
                           className={cn(
                             "rounded-lg border px-3 py-2.5 text-left transition-colors",
-                            field.value === "event"
+                            form.watch("eventKind") === "event"
                               ? "border-emerald-300 bg-emerald-50"
                               : "border-zinc-200 bg-white hover:bg-zinc-50",
                           )}
                           type="button"
-                          onClick={() => field.onChange("event")}
+                          onClick={() =>
+                            form.setValue("eventKind", "event", {
+                              shouldDirty: true,
+                            })
+                          }
                         >
                           <p className="text-[12px] font-semibold text-zinc-900">
                             Event
@@ -3082,12 +3096,16 @@ export function EventForm({
                         <button
                           className={cn(
                             "rounded-lg border px-3 py-2.5 text-left transition-colors",
-                            field.value === "training_course"
+                            form.watch("eventKind") === "training_course"
                               ? "border-indigo-300 bg-indigo-50"
                               : "border-zinc-200 bg-white hover:bg-zinc-50",
                           )}
                           type="button"
-                          onClick={() => field.onChange("training_course")}
+                          onClick={() =>
+                            form.setValue("eventKind", "training_course", {
+                              shouldDirty: true,
+                            })
+                          }
                         >
                           <p className="text-[12px] font-semibold text-zinc-900">
                             Training Course
@@ -3097,32 +3115,31 @@ export function EventForm({
                           </p>
                         </button>
                       </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      <FieldError errors={[form.formState.errors.eventKind]} />
+                </Field>
+              </FieldSet>
 
-              <div className="h-px bg-zinc-100" />
+              <div className="h-px border-0 bg-zinc-100" />
 
               {/* ── Status ── */}
-              <div>
-                <p className={cn(labelCls, "mb-2.5")}>Publication Status</p>
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
+              <FieldSet>
+                <FieldLegend variant="label">Publication Status</FieldLegend>
+                <Field className="grid gap-2">
                     <button
                       className={cn(
                         "flex w-full items-start gap-3 rounded-lg border px-3.5 py-3 text-left transition-colors",
-                        field.value === "published"
+                        form.watch("status") === "published"
                           ? "border-teal-200 bg-teal-50/60"
                           : "border-zinc-200 bg-white hover:bg-zinc-50/80",
                       )}
                       type="button"
                       onClick={() =>
-                        field.onChange(
-                          field.value === "published" ? "draft" : "published",
+                        form.setValue(
+                          "status",
+                          form.watch("status") === "published"
+                            ? "draft"
+                            : "published",
+                          { shouldDirty: true },
                         )
                       }
                     >
@@ -3130,7 +3147,7 @@ export function EventForm({
                         <FileText
                           className={cn(
                             "size-4",
-                            field.value === "published"
+                            form.watch("status") === "published"
                               ? "text-teal-600"
                               : "text-zinc-400",
                           )}
@@ -3138,90 +3155,85 @@ export function EventForm({
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-semibold text-zinc-800">
-                          {field.value === "published"
+                          {form.watch("status") === "published"
                             ? statusLabels.published
                             : statusLabels.draft}
                         </p>
                         <p className="mt-0.5 text-[11.5px] leading-relaxed text-zinc-400">
-                          {field.value === "published"
+                          {form.watch("status") === "published"
                             ? "Visible to learners"
                             : "Hidden from public"}
                         </p>
                       </div>
                       <div className="mt-0.5 shrink-0">
                         <Switch
-                          checked={field.value === "published"}
+                          checked={form.watch("status") === "published"}
                           className="pointer-events-none data-[state=checked]:bg-teal-600"
                         />
                       </div>
                     </button>
-                  )}
-                />
-              </div>
+                    <FieldError errors={[form.formState.errors.status]} />
+                </Field>
+              </FieldSet>
 
-              <div className="h-px bg-zinc-100" />
+              <div className="h-px border-0 bg-zinc-100" />
 
               {/* ── Controls ── */}
-              <div>
-                <p className={cn(labelCls, "mb-2.5")}>Controls</p>
-                <div className="space-y-2">
-                  <FormField
-                    control={form.control}
-                    name="isFeatured"
-                    render={({ field }) => (
-                      <ToggleControl
-                        checked={field.value}
-                        description="Hero card on homepage · one event at a time"
-                        iconBg={field.value ? "bg-amber-50" : "bg-zinc-100"}
-                        iconEl={
-                          <Star
-                            className={cn(
-                              "size-4",
-                              field.value
-                                ? "fill-amber-400 text-amber-400"
-                                : "text-zinc-400",
-                            )}
-                          />
-                        }
-                        title="Featured event"
-                        onCheckedChange={field.onChange}
-                      />
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="registrationsOpen"
-                    render={({ field }) => (
-                      <ToggleControl
-                        checked={field.value}
-                        description="Block new sign-ups without unpublishing"
-                        iconBg="bg-teal-50"
-                        iconEl={<Users className="size-4 text-teal-600" />}
-                        title="Registrations open"
-                        onCheckedChange={field.onChange}
-                      />
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="isCertified"
-                    render={({ field }) => (
-                      <ToggleControl
-                        checked={field.value}
-                        description="Issued on completion of this event"
-                        iconBg="bg-blue-50"
-                        iconEl={<Award className="size-4 text-blue-600" />}
-                        title="Issue certificate"
-                        onCheckedChange={field.onChange}
-                      />
-                    )}
-                  />
-                </div>
-              </div>
+              <FieldSet>
+                <FieldLegend variant="label">Controls</FieldLegend>
+                <FieldGroup className="">
+                  <Field className="grid gap-2">
+                    <ToggleControl
+                      checked={form.watch("isFeatured")}
+                      description="Hero card on homepage · one event at a time"
+                      iconBg={form.watch("isFeatured") ? "bg-amber-50" : "bg-zinc-100"}
+                      iconEl={
+                        <Star
+                          className={cn(
+                            "size-4",
+                            form.watch("isFeatured")
+                              ? "fill-amber-400 text-amber-400"
+                              : "text-zinc-400",
+                          )}
+                        />
+                      }
+                      title="Featured event"
+                      onCheckedChange={(v) =>
+                        form.setValue("isFeatured", v, { shouldDirty: true })
+                      }
+                    />
+                  </Field>
+                  <Field className="grid gap-2">
+                    <ToggleControl
+                      checked={form.watch("registrationsOpen")}
+                      description="Block new sign-ups without unpublishing"
+                      iconBg="bg-teal-50"
+                      iconEl={<Users className="size-4 text-teal-600" />}
+                      title="Registrations open"
+                      onCheckedChange={(v) =>
+                        form.setValue("registrationsOpen", v, {
+                          shouldDirty: true,
+                        })
+                      }
+                    />
+                  </Field>
+                  <Field className="grid gap-2">
+                    <ToggleControl
+                      checked={form.watch("isCertified")}
+                      description="Issued on completion of this event"
+                      iconBg="bg-blue-50"
+                      iconEl={<Award className="size-4 text-blue-600" />}
+                      title="Issue certificate"
+                      onCheckedChange={(v) =>
+                        form.setValue("isCertified", v, { shouldDirty: true })
+                      }
+                    />
+                  </Field>
+                </FieldGroup>
+              </FieldSet>
             </div>
           </aside>
-        </form>
-      </Form>
+      </form>
 
       <Dialog onOpenChange={setCoverLibraryOpen} open={coverLibraryOpen}>
         <DialogContent className="max-w-2xl">
