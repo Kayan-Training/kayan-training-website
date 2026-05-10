@@ -20,6 +20,7 @@ import {
   AlignLeft,
   ArrowLeft,
   ChevronDown,
+  Copy,
   FileText,
   GripVertical,
   ImageIcon,
@@ -896,7 +897,7 @@ const BLOCK_LABELS: Record<BlockType, string> = Object.fromEntries(
 function BlockNavSidebar({ blocks }: { blocks: Block[] }) {
   if (blocks.length === 0) return null;
   return (
-    <aside className="sticky top-0 hidden w-44 shrink-0 xl:block">
+    <aside className="sticky top-24 hidden h-fit w-44 shrink-0 self-start xl:block">
       <p className="mb-2 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">
         Blocks
       </p>
@@ -982,7 +983,8 @@ const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
   mission_vision: "Three-card layout for Mission, Vision, and Method",
   process_steps: "Numbered step-by-step process with heading and description",
   values_list: "Grid of value/principle cards with title and description",
-  accreditation: "Accreditor badge section with partner logos list",
+  accreditation:
+    "Two-column accreditation block with featured organizations and logo marquee",
   service_cards:
     "Three service offering cards with image, badge, and description",
   training_domains:
@@ -1004,14 +1006,18 @@ function SortableBlock({
   children,
   id,
   label,
+  copyLabel,
+  onCopyToOtherLocale,
   onRemove,
 }: {
   children: React.ReactNode;
   id: string;
   label: string;
+  copyLabel: string;
+  onCopyToOtherLocale: () => void;
   onRemove: () => void;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const {
     attributes,
     listeners,
@@ -1065,6 +1071,15 @@ function SortableBlock({
                 collapsed && "-rotate-90",
               )}
             />
+          </button>
+          <button
+            aria-label={`Copy ${label} block to ${copyLabel}`}
+            className="text-muted-foreground hover:text-foreground"
+            title={`Copy to ${copyLabel}`}
+            type="button"
+            onClick={onCopyToOtherLocale}
+          >
+            <Copy className="size-3.5" />
           </button>
           <button
             aria-label={`Remove ${label} block`}
@@ -1121,20 +1136,35 @@ function MediaCarouselEditor({
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
     setUploading(true);
     setUploadProgress(0);
     setUploadStatus("");
     try {
-      const uploaded = await uploadMediaFile(file, {
-        onProgress: (percent) => setUploadProgress(percent),
-        onStatus: (status) => setUploadStatus(status),
-      });
-      const kind: "image" | "video" = file.type.startsWith("video/")
-        ? "video"
-        : "image";
-      onChange([...media, { id: makeId(), url: uploaded.url, kind }]);
+      const uploadedItems: HeroMedia[] = [];
+      for (const [index, file] of files.entries()) {
+        const uploaded = await uploadMediaFile(file, {
+          onProgress: (percent) =>
+            setUploadProgress(
+              Math.min(
+                100,
+                Math.round(((index + percent / 100) / files.length) * 100),
+              ),
+            ),
+          onStatus: (status) =>
+            setUploadStatus(
+              files.length > 1
+                ? `${status} (${index + 1}/${files.length})`
+                : status,
+            ),
+        });
+        const kind: "image" | "video" = file.type.startsWith("video/")
+          ? "video"
+          : "image";
+        uploadedItems.push({ id: makeId(), url: uploaded.url, kind });
+      }
+      onChange([...media, ...uploadedItems]);
     } catch {
       toast.error("Upload failed.");
     } finally {
@@ -1225,6 +1255,7 @@ function MediaCarouselEditor({
             accept="image/*,video/*"
             className="sr-only"
             disabled={uploading}
+            multiple
             type="file"
             onChange={handleUpload}
           />
@@ -1241,10 +1272,10 @@ function MediaCarouselEditor({
               No images uploaded yet.
             </p>
           ) : (
-            <div className="grid max-h-[70vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid max-h-[70vh] grid-cols-2 gap-3 overflow-y-auto pe-1 sm:grid-cols-3 lg:grid-cols-4">
               {browseItems.map((item) => (
                 <button
-                  className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-border/50 hover:border-primary"
+                  className="group relative h-36 overflow-hidden rounded-lg border border-border/50 bg-muted hover:border-primary"
                   key={item.id}
                   type="button"
                   onClick={() => addFromLibrary(item)}
@@ -1262,7 +1293,7 @@ function MediaCarouselEditor({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       alt={item.originalName}
-                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      className="absolute inset-0 h-full w-full object-contain p-2 transition-transform group-hover:scale-105"
                       src={item.url}
                     />
                   )}
@@ -1878,7 +1909,7 @@ function AccreditationFields({
   return (
     <>
       <p className="text-[10px] font-bold uppercase tracking-widest text-primary/70">
-        Accreditor
+        Featured Organizations (Left Column)
       </p>
       <FieldRow>
         <Field label="Heading">
@@ -1886,103 +1917,109 @@ function AccreditationFields({
             className={cn(inputCls, dir === "rtl" && "text-right")}
             dir={dir}
             title="Heading"
-            value={block.accredHeading}
-            onChange={(e) => onChange({ accredHeading: e.target.value })}
+            value={block.heading}
+            onChange={(e) => onChange({ heading: e.target.value })}
           />
         </Field>
-        <Field label="Body">
+        <Field label="Description">
           <input
             className={cn(inputCls, dir === "rtl" && "text-right")}
             dir={dir}
-            title="Body"
-            value={block.accredBody}
-            onChange={(e) => onChange({ accredBody: e.target.value })}
-          />
-        </Field>
-        <Field label="Badge Label">
-          <input
-            className={inputCls}
-            title="Badge Label"
-            value={block.badgeLabel}
-            onChange={(e) => onChange({ badgeLabel: e.target.value })}
-          />
-        </Field>
-        <Field label="Badge Title">
-          <input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            title="Badge Title"
-            value={block.badgeTitle}
-            onChange={(e) => onChange({ badgeTitle: e.target.value })}
-          />
-        </Field>
-        <div className="sm:col-span-2">
-          <Field label="Badge Subtitle">
-            <input
-              className={cn(inputCls, dir === "rtl" && "text-right")}
-              dir={dir}
-              title="Badge Subtitle"
-              value={block.badgeSub}
-              onChange={(e) => onChange({ badgeSub: e.target.value })}
-            />
-          </Field>
-        </div>
-      </FieldRow>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-primary/70">
-        Partners
-      </p>
-      <FieldRow>
-        <Field label="Partners Heading">
-          <input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            title="Partners Heading"
-            value={block.partnersHeading}
-            onChange={(e) => onChange({ partnersHeading: e.target.value })}
-          />
-        </Field>
-        <Field label="Partners Body">
-          <input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            title="Partners Body"
-            value={block.partnersBody}
-            onChange={(e) => onChange({ partnersBody: e.target.value })}
+            title="Description"
+            value={block.description}
+            onChange={(e) => onChange({ description: e.target.value })}
           />
         </Field>
       </FieldRow>
       <div>
-        <label className={labelCls}>Partners</label>
+        <label className={labelCls}>Featured Organizations</label>
         <div className="space-y-2">
-          {block.partners.map((p, i) => (
+          {block.featuredOrgs.map((org, i) => (
             <ArrayItemRow
               index={i}
               key={i}
               onRemove={() =>
-                onChange({ partners: block.partners.filter((_, j) => j !== i) })
+                onChange({
+                  featuredOrgs: block.featuredOrgs.filter((_, j) => j !== i),
+                })
               }
             >
               <div className="space-y-2">
                 <input
                   className={inputCls}
-                  placeholder="Partner name"
-                  value={p.name}
+                  placeholder="Organization name"
+                  value={org.name}
                   onChange={(e) =>
                     onChange({
-                      partners: block.partners.map((x, j) =>
+                      featuredOrgs: block.featuredOrgs.map((x, j) =>
                         j === i ? { ...x, name: e.target.value } : x,
                       ),
                     })
                   }
                 />
+                <input
+                  className={cn(inputCls, dir === "rtl" && "text-right")}
+                  dir={dir}
+                  placeholder="Short text"
+                  value={org.summary}
+                  onChange={(e) =>
+                    onChange({
+                      featuredOrgs: block.featuredOrgs.map((x, j) =>
+                        j === i ? { ...x, summary: e.target.value } : x,
+                      ),
+                    })
+                  }
+                />
+                <select
+                  className={inputCls}
+                  value={org.displayMode ?? "original"}
+                  onChange={(e) =>
+                    onChange({
+                      featuredOrgs: block.featuredOrgs.map((x, j) =>
+                        j === i
+                          ? {
+                              ...x,
+                              displayMode: e.target.value as
+                                | "original"
+                                | "mono",
+                            }
+                          : x,
+                      ),
+                    })
+                  }
+                >
+                  <option value="original">Original Colors</option>
+                  <option value="mono">Mono</option>
+                </select>
+                <select
+                  className={inputCls}
+                  value={org.size ?? "md"}
+                  onChange={(e) =>
+                    onChange({
+                      featuredOrgs: block.featuredOrgs.map((x, j) =>
+                        j === i
+                          ? {
+                              ...x,
+                              size: e.target.value as "sm" | "md" | "lg",
+                            }
+                          : x,
+                      ),
+                    })
+                  }
+                >
+                  <option value="sm">Small Logo</option>
+                  <option value="md">Medium Logo</option>
+                  <option value="lg">Large Logo</option>
+                </select>
                 <div>
                   <label className={labelCls}>Logo</label>
                   <ImagePickerField
                     fetchMedia={fetchMediaAction}
-                    value={p.logo ?? ""}
+                    previewFit="contain"
+                    value={org.logo ?? ""}
                     onChange={(url) =>
                       onChange({
-                        partners: block.partners.map((x, j) =>
+                        featuredOrgs: block.featuredOrgs.map((x, j) =>
                           j === i ? { ...x, logo: url } : x,
                         ),
                       })
@@ -1994,9 +2031,139 @@ function AccreditationFields({
           ))}
         </div>
         <AddItemButton
-          label="Add partner"
+          label="Add featured organization"
           onClick={() =>
-            onChange({ partners: [...block.partners, { name: "", logo: "" }] })
+            onChange({
+              featuredOrgs: [
+                ...block.featuredOrgs,
+                {
+                  name: "",
+                  summary: "",
+                  logo: "",
+                  displayMode: "original",
+                  size: "md",
+                },
+              ],
+            })
+          }
+        />
+      </div>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-primary/70">
+        Logos Marquee (Right Column)
+      </p>
+      <FieldRow>
+        <Field label="Logos Heading">
+          <input
+            className={cn(inputCls, dir === "rtl" && "text-right")}
+            dir={dir}
+            title="Logos Heading"
+            value={block.logosHeading}
+            onChange={(e) => onChange({ logosHeading: e.target.value })}
+          />
+        </Field>
+        <Field label="Logos Description">
+          <input
+            className={cn(inputCls, dir === "rtl" && "text-right")}
+            dir={dir}
+            title="Logos Description"
+            value={block.logosDescription}
+            onChange={(e) => onChange({ logosDescription: e.target.value })}
+          />
+        </Field>
+      </FieldRow>
+      <div>
+        <label className={labelCls}>Logos</label>
+        <div className="space-y-2">
+          {block.logos.map((p, i) => (
+            <ArrayItemRow
+              index={i}
+              key={i}
+              onRemove={() =>
+                onChange({ logos: block.logos.filter((_, j) => j !== i) })
+              }
+            >
+              <div className="space-y-2">
+                <input
+                  className={inputCls}
+                  placeholder="Logo name"
+                  value={p.name}
+                  onChange={(e) =>
+                    onChange({
+                      logos: block.logos.map((x, j) =>
+                        j === i ? { ...x, name: e.target.value } : x,
+                      ),
+                    })
+                  }
+                />
+                <select
+                  className={inputCls}
+                  value={p.displayMode}
+                  onChange={(e) =>
+                    onChange({
+                      logos: block.logos.map((x, j) =>
+                        j === i
+                          ? {
+                              ...x,
+                              displayMode: e.target.value as
+                                | "original"
+                                | "mono",
+                            }
+                          : x,
+                      ),
+                    })
+                  }
+                >
+                  <option value="mono">Mono</option>
+                  <option value="original">Original Colors</option>
+                </select>
+                <select
+                  className={inputCls}
+                  value={p.size ?? "md"}
+                  onChange={(e) =>
+                    onChange({
+                      logos: block.logos.map((x, j) =>
+                        j === i
+                          ? {
+                              ...x,
+                              size: e.target.value as "sm" | "md" | "lg",
+                            }
+                          : x,
+                      ),
+                    })
+                  }
+                >
+                  <option value="sm">Small Logo</option>
+                  <option value="md">Medium Logo</option>
+                  <option value="lg">Large Logo</option>
+                </select>
+                <div>
+                  <label className={labelCls}>Logo</label>
+                  <ImagePickerField
+                    fetchMedia={fetchMediaAction}
+                    previewFit="contain"
+                    value={p.logo ?? ""}
+                    onChange={(url) =>
+                      onChange({
+                        logos: block.logos.map((x, j) =>
+                          j === i ? { ...x, logo: url } : x,
+                        ),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            </ArrayItemRow>
+          ))}
+        </div>
+        <AddItemButton
+          label="Add logo"
+          onClick={() =>
+            onChange({
+              logos: [
+                ...block.logos,
+                { name: "", logo: "", displayMode: "mono", size: "md" },
+              ],
+            })
           }
         />
       </div>
@@ -3198,14 +3365,12 @@ function makeBlock(type: BlockType): Block {
       return {
         id,
         type,
-        accredHeading: "",
-        accredBody: "",
-        badgeLabel: "QABA",
-        badgeTitle: "",
-        badgeSub: "",
-        partnersHeading: "",
-        partnersBody: "",
-        partners: [],
+        heading: "",
+        description: "",
+        featuredOrgs: [],
+        logosHeading: "",
+        logosDescription: "",
+        logos: [],
       };
     case "service_cards":
       return { id, type, items: [] };
@@ -3363,6 +3528,34 @@ export function PageEditor({
 
   function addBlock(type: BlockType) {
     setBlocks((prev) => [...prev, makeBlock(type)]);
+  }
+
+  function copyBlockToOtherLocale(blockId: string) {
+    const sourceBlocks = activeLocale === "en" ? blocksEn : blocksAr;
+    const sourceBlock = sourceBlocks.find((block) => block.id === blockId);
+    if (!sourceBlock) return;
+
+    const copiedBlock = JSON.parse(JSON.stringify(sourceBlock)) as Block;
+    if (activeLocale === "en") {
+      setBlocksAr((prev) => {
+        const existingIndex = prev.findIndex((block) => block.id === copiedBlock.id);
+        if (existingIndex === -1) return [...prev, copiedBlock];
+        return prev.map((block, index) =>
+          index === existingIndex ? copiedBlock : block,
+        );
+      });
+      toast.success("Block copied to Arabic locale.");
+      return;
+    }
+
+    setBlocksEn((prev) => {
+      const existingIndex = prev.findIndex((block) => block.id === copiedBlock.id);
+      if (existingIndex === -1) return [...prev, copiedBlock];
+      return prev.map((block, index) =>
+        index === existingIndex ? copiedBlock : block,
+      );
+    });
+    toast.success("Block copied to English locale.");
   }
 
   function handleSave() {
@@ -3706,9 +3899,13 @@ export function PageEditor({
                     <div className="space-y-3">
                       {blocks.map((block) => (
                         <SortableBlock
+                          copyLabel={activeLocale === "en" ? "Arabic" : "English"}
                           id={block.id}
                           key={block.id}
                           label={BLOCK_LABELS[block.type]}
+                          onCopyToOtherLocale={() =>
+                            copyBlockToOtherLocale(block.id)
+                          }
                           onRemove={() => removeBlock(block.id)}
                         >
                           {renderBlockFields(

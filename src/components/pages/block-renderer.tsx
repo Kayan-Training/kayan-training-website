@@ -228,104 +228,149 @@ function ValuesListRenderer({ block }: { block: ValuesListBlock }) {
   );
 }
 
-function AccreditationRenderer({ block }: { block: AccreditationBlock }) {
+function AccreditationRenderer({
+  block,
+  locale,
+}: {
+  block: AccreditationBlock;
+  locale: "ar" | "en";
+}) {
+  const featuredOrgs = (block.featuredOrgs ?? []).filter(
+    (org) => (org.name ?? "").trim() || (org.summary ?? "").trim(),
+  );
+  const logos = (block.logos ?? []).filter(
+    (item) => (item.name ?? "").trim() || (item.logo ?? "").trim(),
+  );
+  const marqueeLogos = logos.length >= 5 ? [...logos, ...logos] : logos;
   return (
     <section className="bg-surface py-16 md:py-20">
-      <div className="mx-auto grid max-w-[1440px] grid-cols-1 gap-10 px-6 md:px-10 lg:grid-cols-2 lg:gap-16">
-        <div>
-          {block.accredHeading && (
-            <h2
-              className="mb-6 font-black tracking-tight text-on-surface"
-              style={{ fontSize: "clamp(1.6rem,3vw,2.5rem)" }}
-            >
-              {block.accredHeading}
-            </h2>
-          )}
-          {block.accredBody && (
-            <p className="mb-8 text-sm leading-relaxed text-on-surface-variant">
-              {block.accredBody}
-            </p>
-          )}
-          <div className="accred-highlight">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center border border-secondary/40 bg-secondary/12">
-              <svg
-                fill="none"
-                height="32"
-                viewBox="0 0 28 28"
-                width="32"
-                xmlns="http://www.w3.org/2000/svg"
+      <div className="mx-auto max-w-[1440px] px-6 md:px-10">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,0.95fr)_1px_minmax(0,1.35fr)]">
+          <div>
+            {block.heading ? (
+              <h2
+                className="mb-4 font-black tracking-tight text-on-surface"
+                style={{ fontSize: "clamp(1.4rem,2.3vw,2.1rem)" }}
               >
-                <path
-                  d="M14 2L17.5 8.5L25 9.5L19.5 15L21 22.5L14 19L7 22.5L8.5 15L3 9.5L10.5 8.5L14 2Z"
-                  fill="rgba(40,180,115,0.15)"
-                  stroke="#28b473"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                />
-                <path
-                  d="M10 14L13 17L18 11"
-                  stroke="#28b473"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.8"
-                />
-              </svg>
+                {block.heading}
+              </h2>
+            ) : null}
+            {block.description ? (
+              <p className="mb-6 text-sm leading-relaxed text-on-surface-variant">
+                {block.description}
+              </p>
+            ) : null}
+            <div className="space-y-3">
+              {featuredOrgs.map((org, index) => (
+                <article
+                  className="flex min-h-[96px] items-center gap-4 px-2 py-2"
+                  key={`${org.name}-${index}`}
+                >
+                  {org.logo ? (
+                    <Image
+                      alt={org.name || "Featured organization"}
+                      className={cn(
+                        "w-auto shrink-0 object-contain transition-all duration-300",
+                        org.size === "sm"
+                          ? "h-12 max-w-[9rem]"
+                          : org.size === "lg"
+                            ? "h-20 max-w-[18rem]"
+                            : "h-16 max-w-[14rem]",
+                        org.displayMode === "mono"
+                          ? "grayscale brightness-0 invert opacity-85"
+                          : "opacity-95",
+                      )}
+                      height={64}
+                      src={org.logo}
+                      width={220}
+                    />
+                  ) : (
+                    <span className="w-10 shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                  )}
+                  <div className="min-w-0">
+                    {org.name ? (
+                      <p className="truncate text-sm font-semibold text-on-surface">
+                        {org.name}
+                      </p>
+                    ) : null}
+                    {org.summary ? (
+                      <p className="text-xs leading-relaxed text-on-surface-variant">
+                        {org.summary}
+                      </p>
+                    ) : null}
+                  </div>
+                </article>
+              ))}
             </div>
-            <div>
-              {block.badgeLabel && (
-                <span className="accred-highlight-label">
-                  {block.badgeLabel}
-                </span>
-              )}
-              {block.badgeTitle && (
-                <div className="accred-highlight-title">{block.badgeTitle}</div>
-              )}
-              {block.badgeSub && (
-                <div className="accred-highlight-sub">{block.badgeSub}</div>
-              )}
-            </div>
-          </div>
-        </div>
-        <div>
-          {block.partnersHeading && (
-            <h2
-              className="mb-6 font-black tracking-tight text-on-surface"
-              style={{ fontSize: "clamp(1.6rem,3vw,2.5rem)" }}
-            >
-              {block.partnersHeading}
-            </h2>
-          )}
-          {block.partnersBody && (
-            <p className="mb-8 text-sm leading-relaxed text-on-surface-variant">
-              {block.partnersBody}
-            </p>
-          )}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {block.partners.map((p, i) => (
-              <div
-                className="ghost-border flex min-h-20 flex-col items-center justify-center gap-2 p-5"
-                key={i}
-              >
-                {p.logo ? (
-                  <Image
-                    alt={p.name}
-                    className="max-h-10 w-auto object-contain opacity-70 grayscale transition-all duration-300 hover:opacity-100 hover:grayscale-0"
-                    height={40}
-                    src={p.logo}
-                    width={120}
+            {featuredOrgs.length > 1 ? (
+              <div className="mt-4 flex items-center justify-center gap-2">
+                {featuredOrgs.slice(0, Math.min(5, featuredOrgs.length)).map((org, index) => (
+                  <span
+                    className="h-2.5 w-2.5 rounded-full bg-on-surface-variant/35"
+                    key={`${org.name}-dot-${index}`}
                   />
-                ) : (
-                  <span className="font-display text-sm font-black uppercase tracking-widest text-on-surface-variant">
-                    {p.name}
-                  </span>
-                )}
-                {p.logo && p.name && (
-                  <span className="text-[10px] text-on-surface-variant/50 tracking-widest uppercase">
-                    {p.name}
-                  </span>
-                )}
+                ))}
               </div>
-            ))}
+            ) : null}
+          </div>
+          <div className="hidden w-px bg-outline-variant/25 lg:block" />
+          <div>
+            {block.logosHeading ? (
+              <h3 className="mb-3 text-2xl font-black tracking-tight text-on-surface">
+                {block.logosHeading}
+              </h3>
+            ) : null}
+            {block.logosDescription ? (
+              <p className="mb-6 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
+                {block.logosDescription}
+              </p>
+            ) : null}
+            {logos.length ? (
+              <div
+                className="accreditation-logo-marquee"
+                dir={locale === "ar" ? "rtl" : "ltr"}
+              >
+                <div
+                  className="accreditation-logo-track"
+                  style={{
+                    animationName:
+                      locale === "ar"
+                        ? "accreditation-logo-slide-rtl"
+                        : "accreditation-logo-slide",
+                  }}
+                >
+                  {marqueeLogos.map((item, index) => (
+                    <div
+                      aria-hidden={index >= logos.length}
+                      className="inline-flex items-center"
+                      key={`${item.name}-${index}`}
+                    >
+                      {item.logo ? (
+                        <Image
+                          alt={item.name || "Organization logo"}
+                          className={cn(
+                            "w-auto object-contain transition-all duration-300",
+                            item.size === "sm"
+                              ? "h-8 max-w-[6rem]"
+                              : item.size === "lg"
+                                ? "h-16 max-w-[14rem]"
+                                : "h-11 max-w-[9rem]",
+                            item.displayMode === "original"
+                              ? "opacity-90"
+                              : "grayscale brightness-0 invert opacity-80",
+                          )}
+                          height={40}
+                          src={item.logo}
+                          width={160}
+                        />
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -709,7 +754,15 @@ async function AccreditationBarRenderer({
               className="accreditation-logo-marquee"
               dir={locale === "ar" ? "rtl" : "ltr"}
             >
-              <div className="accreditation-logo-track">
+              <div
+                className="accreditation-logo-track"
+                style={{
+                  animationName:
+                    locale === "ar"
+                      ? "accreditation-logo-slide-rtl"
+                      : "accreditation-logo-slide",
+                }}
+              >
                 {marqueeClients.map((client, index) => (
                   <div
                     aria-hidden={index >= clients.length}
@@ -1003,7 +1056,13 @@ export function BlockRenderer({
           case "values_list":
             return <ValuesListRenderer block={block} key={block.id} />;
           case "accreditation":
-            return <AccreditationRenderer block={block} key={block.id} />;
+            return (
+              <AccreditationRenderer
+                block={block}
+                key={block.id}
+                locale={locale}
+              />
+            );
           case "service_cards":
             return <ServiceCardsRenderer block={block} key={block.id} />;
           case "training_domains":

@@ -4,6 +4,17 @@ import { CategoriesManager, type CategoryItem } from "./categories-manager";
 
 export const metadata = { title: "Categories" };
 
+function normalizeOrderedIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const deduped = new Set<string>();
+  for (const id of value) {
+    if (typeof id === "string" && id.length > 0) {
+      deduped.add(id);
+    }
+  }
+  return Array.from(deduped);
+}
+
 export default async function CategoriesDashboardPage({
   params,
 }: {
@@ -20,10 +31,7 @@ export default async function CategoriesDashboardPage({
     db.setting.findUnique({ where: { key: "categories.order" } }),
   ]);
   const orderedRaw = (() => {
-    const orderedIds =
-      Array.isArray(orderSetting?.value)
-        ? (orderSetting?.value as unknown[]).filter((id): id is string => typeof id === "string")
-        : [];
+    const orderedIds = normalizeOrderedIds(orderSetting?.value);
     if (orderedIds.length === 0) return raw;
     const byId = new Map(raw.map((c) => [c.id, c]));
     const head = orderedIds.map((id) => byId.get(id)).filter((c): c is (typeof raw)[number] => Boolean(c));

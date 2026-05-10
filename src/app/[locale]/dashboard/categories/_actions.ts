@@ -98,13 +98,19 @@ export async function saveCategoryOrder(
 ): Promise<{ error?: string }> {
   if (!Array.isArray(ids) || ids.length === 0) return { error: "No categories to reorder." };
   try {
+    const normalizedIds = Array.from(
+      new Set(ids.filter((id): id is string => typeof id === "string" && id.length > 0)),
+    );
+    if (normalizedIds.length === 0) return { error: "No valid category IDs to save." };
+
     await db.setting.upsert({
       where: { key: "categories.order" },
-      create: { key: "categories.order", value: ids },
-      update: { value: ids },
+      create: { key: "categories.order", value: normalizedIds },
+      update: { value: normalizedIds },
     });
     revalidatePath(`/${locale}/dashboard/categories`);
-    revalidatePath(`/${locale}`);
+    revalidatePath("/ar");
+    revalidatePath("/en");
     return {};
   } catch {
     return { error: "Failed to save category order." };

@@ -513,7 +513,7 @@ body {
     align-items: center;
     gap: clamp(2.4rem, 5vw, 4.8rem);
     padding: 0.8rem 0;
-    animation: accreditation-logo-slide 22s linear infinite;
+    animation: accreditation-logo-slide 32s linear infinite;
   }
 
   @keyframes accreditation-logo-slide {
@@ -525,8 +525,13 @@ body {
     }
   }
 
-  html[dir="rtl"] .accreditation-logo-track {
-    animation-direction: reverse;
+  @keyframes accreditation-logo-slide-rtl {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(50%);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

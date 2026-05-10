@@ -22,6 +22,17 @@ const domains = [
   { accent: "#8787de", ar: "الترفيه", en: "Entertainment", img: "https://images.unsplash.com/photo-1542653700088-680c3095396c?w=700&q=75", icon: "kayan_profile_Entertainment.svg" },
 ];
 
+function normalizeOrderedIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const deduped = new Set<string>();
+  for (const id of value) {
+    if (typeof id === "string" && id.length > 0) {
+      deduped.add(id);
+    }
+  }
+  return Array.from(deduped);
+}
+
 function formatDate(date: Date, locale: "ar" | "en") {
   return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-GB", {
     day: "2-digit",
@@ -56,10 +67,7 @@ export default async function LocaleHomePage({
         }),
         db.setting.findUnique({ where: { key: "categories.order" } }),
       ]);
-      const orderedIds =
-        Array.isArray(orderSetting?.value)
-          ? (orderSetting?.value as unknown[]).filter((id): id is string => typeof id === "string")
-          : [];
+      const orderedIds = normalizeOrderedIds(orderSetting?.value);
       const byId = new Map(cats.map((cat) => [cat.id, cat]));
       const orderedCats = orderedIds.length > 0
         ? [

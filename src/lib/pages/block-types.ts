@@ -69,14 +69,23 @@ export type ValuesListBlock = {
 
 export type AccreditationBlock = {
   type: "accreditation";
-  accredHeading: string;
-  accredBody: string;
-  badgeLabel: string;
-  badgeTitle: string;
-  badgeSub: string;
-  partnersHeading: string;
-  partnersBody: string;
-  partners: Array<{ name: string; logo?: string }>;
+  heading: string;
+  description: string;
+  featuredOrgs: Array<{
+    name: string;
+    summary: string;
+    logo?: string;
+    displayMode: "original" | "mono";
+    size: "sm" | "md" | "lg";
+  }>;
+  logosHeading: string;
+  logosDescription: string;
+  logos: Array<{
+    name: string;
+    logo?: string;
+    displayMode: "original" | "mono";
+    size: "sm" | "md" | "lg";
+  }>;
 };
 
 export type ServiceCardsBlock = {

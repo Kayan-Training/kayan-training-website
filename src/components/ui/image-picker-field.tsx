@@ -1,7 +1,8 @@
 "use client";
 
-import { ImageIcon, Loader2, Video, X } from "lucide-react";
-import { useState } from "react";
+import { ImageIcon, Loader2, Upload, Video, X } from "lucide-react";
+import { useRef, useState, type ChangeEvent } from "react";
+import { toast } from "sonner";
 
 import {
   Dialog,
@@ -9,6 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { UploadProgress } from "@/components/ui/upload-progress";
+import { uploadMediaFile } from "@/lib/client/media-upload";
 import { cn } from "@/lib/utils";
 
 type MediaItem = { id: string; originalName: string; url: string; mimeType?: string };
@@ -25,15 +28,22 @@ export function ImagePickerField({
   onChange,
   fetchMedia,
   dir,
+  previewFit = "cover",
 }: {
   value: string;
   onChange: (url: string) => void;
   fetchMedia: FetchMediaFn;
   dir?: "ltr" | "rtl";
+  previewFit?: "cover" | "contain";
 }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function openPicker() {
     setLoading(true);
@@ -46,13 +56,74 @@ export function ImagePickerField({
     setOpen(true);
   }
 
+  async function uploadAndSelect(file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Only image files are supported in this field.");
+      return;
+    }
+    setUploading(true);
+    setUploadProgress(0);
+    setUploadStatus("");
+    try {
+      const uploaded = await uploadMediaFile(file, {
+        onProgress: (percent) => setUploadProgress(percent),
+        onStatus: (status) => setUploadStatus(status),
+      });
+      onChange(uploaded.url);
+      toast.success("Image uploaded.");
+    } catch {
+      toast.error("Upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleFileInputChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadAndSelect(file);
+    e.target.value = "";
+  }
+
   return (
     <>
-      <div className="overflow-hidden rounded-lg border border-border/70 bg-card">
+      <div
+        className={cn(
+          "overflow-hidden rounded-lg border border-border/70 bg-card transition-colors",
+          dragOver && "border-primary ring-2 ring-primary/20",
+        )}
+        onDragEnter={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+        }}
+        onDrop={async (e) => {
+          e.preventDefault();
+          setDragOver(false);
+          const file = e.dataTransfer.files?.[0];
+          if (file) {
+            await uploadAndSelect(file);
+          }
+        }}
+      >
         {value && (
           <div className="relative h-32 w-full bg-muted">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img alt="Preview" className="h-full w-full object-cover" src={value} />
+            <img
+              alt="Preview"
+              className={cn(
+                "h-full w-full",
+                previewFit === "contain" ? "object-contain p-2" : "object-cover",
+              )}
+              src={value}
+            />
             <button
               aria-label="Remove image"
               className="absolute right-2 top-2 rounded-md bg-black/60 p-1 text-white hover:bg-black/80"
@@ -81,6 +152,36 @@ export function ImagePickerField({
             {loading ? <Loader2 className="size-3 animate-spin" /> : <ImageIcon className="size-3" />}
             Browse
           </button>
+          <button
+            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-border/70 bg-muted/30 px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+            disabled={uploading}
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {uploading ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : (
+              <Upload className="size-3" />
+            )}
+            Upload
+          </button>
+        </div>
+        <input
+          accept="image/*"
+          className="sr-only"
+          ref={fileInputRef}
+          type="file"
+          onChange={handleFileInputChange}
+        />
+        <p className="px-3 pb-2 text-[10px] text-muted-foreground">
+          Drag and drop an image here, or use Upload.
+        </p>
+        <div className="px-2 pb-2">
+          <UploadProgress
+            isActive={uploading}
+            percent={uploadProgress}
+            status={uploadStatus}
+          />
         </div>
       </div>
 
@@ -94,14 +195,14 @@ export function ImagePickerField({
               No images uploaded yet. Upload via the Media section.
             </p>
           ) : (
-            <div className="grid max-h-[70vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid max-h-[70vh] grid-cols-2 gap-3 overflow-y-auto pe-1 sm:grid-cols-3 lg:grid-cols-4">
               {items.map((item) => {
                 const isVideo = item.mimeType?.startsWith("video/") ?? false;
                 const isSelectable = !isVideo;
                 return (
                 <button
                   className={cn(
-                    "group relative aspect-[4/3] overflow-hidden rounded-lg border border-border/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
+                    "group relative h-36 overflow-hidden rounded-lg border border-border/50 bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
                     isSelectable ? "hover:border-primary" : "cursor-not-allowed opacity-70",
                   )}
                   disabled={!isSelectable}
@@ -121,7 +222,7 @@ export function ImagePickerField({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       alt={item.originalName}
-                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      className="absolute inset-0 h-full w-full object-contain p-2 transition-transform group-hover:scale-105"
                       src={item.url}
                     />
                   )}

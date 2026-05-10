@@ -157,10 +157,87 @@ function migrateTrainingDomainsBlock(raw: RawBlock): Block {
   } as Block;
 }
 
+function migrateAccreditationBlock(raw: RawBlock): Block {
+  const legacyPartners = Array.isArray(raw.partners) ? raw.partners : [];
+  const logos = legacyPartners.map((item) => {
+    if (item && typeof item === "object") {
+      const partner = item as Record<string, unknown>;
+      return {
+        name: typeof partner.name === "string" ? partner.name : "",
+        logo: typeof partner.logo === "string" ? partner.logo : "",
+        displayMode: "mono" as const,
+        size: "md" as const,
+      };
+    }
+    return { name: "", logo: "", displayMode: "mono" as const, size: "md" as const };
+  });
+
+  return {
+    ...(raw as unknown as Block),
+    type: "accreditation",
+    heading:
+      typeof raw.heading === "string"
+        ? raw.heading
+        : typeof raw.accredHeading === "string"
+          ? raw.accredHeading
+          : "",
+    description:
+      typeof raw.description === "string"
+        ? raw.description
+        : typeof raw.accredBody === "string"
+          ? raw.accredBody
+          : "",
+    featuredOrgs: Array.isArray(raw.featuredOrgs)
+      ? (
+          raw.featuredOrgs as Array<{
+            name: string;
+            summary: string;
+            logo?: string;
+            displayMode?: "original" | "mono";
+            size?: "sm" | "md" | "lg";
+          }>
+        ).map((item) => ({
+          ...item,
+          displayMode:
+            item.displayMode === "mono" || item.displayMode === "original"
+              ? item.displayMode
+              : "original",
+          size:
+            item.size === "sm" || item.size === "md" || item.size === "lg"
+              ? item.size
+              : "md",
+        }))
+      : [],
+    logosHeading:
+      typeof raw.logosHeading === "string"
+        ? raw.logosHeading
+        : typeof raw.partnersHeading === "string"
+          ? raw.partnersHeading
+          : "",
+    logosDescription:
+      typeof raw.logosDescription === "string"
+        ? raw.logosDescription
+        : typeof raw.partnersBody === "string"
+          ? raw.partnersBody
+          : "",
+    logos:
+      Array.isArray(raw.logos) && raw.logos.length > 0
+        ? (raw.logos as Array<{ name: string; logo?: string; displayMode: "original" | "mono"; size?: "sm" | "md" | "lg" }>).map((item) => ({
+            ...item,
+            size:
+              item.size === "sm" || item.size === "md" || item.size === "lg"
+                ? item.size
+                : "md",
+          }))
+        : logos,
+  } as Block;
+}
+
 export function migrateBlocks(raw: unknown[]): Block[] {
   return (raw as RawBlock[]).map((b) => {
     if (b.type === "hero") return migrateHeroBlock(b);
     if (b.type === "page_hero") return migratePageHeroBlock(b);
+    if (b.type === "accreditation") return migrateAccreditationBlock(b);
     if (b.type === "accreditation_bar") return migrateAccreditationBarBlock(b);
     if (b.type === "training_domains") return migrateTrainingDomainsBlock(b);
     return b as Block;

@@ -4,7 +4,6 @@ type Locale = "en" | "ar";
 
 const requiredHomeBlockTypes: Block["type"][] = [
   "hero",
-  "accreditation_bar",
   "training_domains",
   "home_events_carousel",
   "home_posts_grid",

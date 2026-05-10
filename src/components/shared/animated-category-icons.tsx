@@ -36,11 +36,14 @@ function AnimatedIcon({
     >
       <div
         className={cn(
-          "absolute inset-0 will-change-transform motion-reduce:animate-none",
-          isVertical ? "flex h-[200%] flex-col" : "flex h-full w-[200%]",
+          "absolute will-change-transform motion-reduce:animate-none",
+          isVertical
+            ? "inset-0 flex h-[200%] flex-col"
+            : "left-0 top-0 flex h-full w-[96px]",
           animationClass,
         )}
         style={{
+          direction: "ltr",
           animationDuration: duration ?? "5.5s",
           animationDelay: offset ?? "0s",
           animationIterationCount: "infinite",
