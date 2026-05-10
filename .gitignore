@@ -39,6 +39,7 @@ tmp-*
 .vscode
 TODO*
 ISSUES*
+tmp*
 
 # debug
 npm-debug.log*

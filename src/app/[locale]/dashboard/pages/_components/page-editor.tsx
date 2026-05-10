@@ -25,6 +25,7 @@ import {
   FileText,
   GripVertical,
   ImageIcon,
+  Languages,
   Loader2,
   Plus,
   Search,
@@ -71,7 +72,11 @@ import { uploadMediaFile } from "@/lib/client/media-upload";
 import type { Block, HeroMedia } from "@/lib/pages/block-types";
 import { migrateBlocks } from "@/lib/pages/migrate-blocks";
 import { cn } from "@/lib/utils";
-import { fetchMediaAction, updatePageAction } from "../_actions";
+import {
+  fetchMediaAction,
+  translateBlockAction,
+  updatePageAction,
+} from "../_actions";
 
 export type { Block };
 
@@ -1002,6 +1007,8 @@ const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
 };
 
 const BLOCK_CLIPBOARD_KEY = "kayan.pageEditor.blockClipboard.v1";
+const ENABLE_BLOCK_TRANSLATION =
+  process.env.NEXT_PUBLIC_ENABLE_BLOCK_TRANSLATION === "1";
 
 // ─── Sortable block wrapper ───────────────────────────────────────────────────
 
@@ -1010,8 +1017,11 @@ function SortableBlock({
   id,
   label,
   copyLabel,
+  translateLabel,
   isSelected,
   onSelect,
+  onTranslateToOtherLocale,
+  isTranslating,
   onCopyToOtherLocale,
   onRemove,
 }: {
@@ -1019,8 +1029,11 @@ function SortableBlock({
   id: string;
   label: string;
   copyLabel: string;
+  translateLabel: string;
   isSelected: boolean;
   onSelect: () => void;
+  onTranslateToOtherLocale: () => void;
+  isTranslating: boolean;
   onCopyToOtherLocale: () => void;
   onRemove: () => void;
 }) {
@@ -1081,6 +1094,22 @@ function SortableBlock({
               )}
             />
           </button>
+          {ENABLE_BLOCK_TRANSLATION ? (
+            <button
+              aria-label={`Translate ${label} block to ${translateLabel}`}
+              className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+              disabled={isTranslating}
+              title={`Translate to ${translateLabel}`}
+              type="button"
+              onClick={onTranslateToOtherLocale}
+            >
+              {isTranslating ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Languages className="size-3.5" />
+              )}
+            </button>
+          ) : null}
           <button
             aria-label={`Copy ${label} block to ${copyLabel}`}
             className="text-muted-foreground hover:text-foreground"
@@ -3509,6 +3538,10 @@ export function PageEditor({
   const [viewMode, setViewMode] = useState<"editor" | "preview">("editor");
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [hasClipboardBlock, setHasClipboardBlock] = useState(false);
+  const [translatingBlockId, setTranslatingBlockId] = useState<string | null>(
+    null,
+  );
+  const [isBulkTranslating, setIsBulkTranslating] = useState(false);
   const [previewNonce, setPreviewNonce] = useState(() => Date.now());
   const [isPreviewSyncing, setIsPreviewSyncing] = useState(false);
   const [previewAutoSync, setPreviewAutoSync] = useState(true);
@@ -3625,6 +3658,92 @@ export function PageEditor({
       );
     });
     toast.success("Block copied to English locale.");
+  }
+
+  async function translateBlockToOtherLocale(blockId: string) {
+    if (!ENABLE_BLOCK_TRANSLATION) {
+      toast.error("Block translation is disabled.");
+      return;
+    }
+    const sourceLocale = activeLocale;
+    const targetLocale: "en" | "ar" = sourceLocale === "en" ? "ar" : "en";
+    const sourceBlocks = sourceLocale === "en" ? blocksEn : blocksAr;
+    const sourceBlock = sourceBlocks.find((block) => block.id === blockId);
+    if (!sourceBlock) return;
+    setTranslatingBlockId(blockId);
+    const result = await translateBlockAction(
+      sourceBlock,
+      sourceLocale,
+      targetLocale,
+    );
+    setTranslatingBlockId(null);
+    if (result.error || !result.block) {
+      toast.error(result.error ?? "Failed to translate block.");
+      return;
+    }
+    const translated = result.block as Block;
+    if (targetLocale === "ar") {
+      setBlocksAr((prev) => {
+        const existingIndex = prev.findIndex((block) => block.id === translated.id);
+        if (existingIndex === -1) return [...prev, translated];
+        return prev.map((block, index) =>
+          index === existingIndex ? translated : block,
+        );
+      });
+    } else {
+      setBlocksEn((prev) => {
+        const existingIndex = prev.findIndex((block) => block.id === translated.id);
+        if (existingIndex === -1) return [...prev, translated];
+        return prev.map((block, index) =>
+          index === existingIndex ? translated : block,
+        );
+      });
+    }
+    toast.success(
+      targetLocale === "ar"
+        ? "Block translated to Arabic."
+        : "Block translated to English.",
+    );
+  }
+
+  async function translateMissingBlocksToOtherLocale() {
+    if (!ENABLE_BLOCK_TRANSLATION) {
+      toast.error("Block translation is disabled.");
+      return;
+    }
+    const sourceLocale = activeLocale;
+    const targetLocale: "en" | "ar" = sourceLocale === "en" ? "ar" : "en";
+    const sourceBlocks = sourceLocale === "en" ? blocksEn : blocksAr;
+    const targetBlocks = targetLocale === "en" ? blocksEn : blocksAr;
+    const targetIds = new Set(targetBlocks.map((block) => block.id));
+    const missing = sourceBlocks.filter((block) => !targetIds.has(block.id));
+    if (missing.length === 0) {
+      toast.message("No missing blocks to translate.");
+      return;
+    }
+    setIsBulkTranslating(true);
+    const translatedBlocks: Block[] = [];
+    for (const block of missing) {
+      const result = await translateBlockAction(block, sourceLocale, targetLocale);
+      if (result.block) {
+        translatedBlocks.push(result.block as Block);
+      }
+    }
+    setIsBulkTranslating(false);
+    if (translatedBlocks.length === 0) {
+      toast.error("Failed to translate missing blocks.");
+      return;
+    }
+    if (targetLocale === "ar") {
+      setBlocksAr((prev) => [...prev, ...translatedBlocks]);
+    } else {
+      setBlocksEn((prev) => [...prev, ...translatedBlocks]);
+    }
+    toast.success(
+      targetLocale === "ar"
+        ? `${translatedBlocks.length} block(s) translated to Arabic.`
+        : `${translatedBlocks.length} block(s) translated to English.`,
+    );
   }
 
   function handleSave() {
@@ -3983,6 +4102,23 @@ export function PageEditor({
                       <ClipboardPaste className="size-3.5" />
                       Paste Block
                     </button>
+                    {ENABLE_BLOCK_TRANSLATION ? (
+                      <button
+                        className="inline-flex h-9 items-center gap-2 rounded-md border border-border/70 bg-card px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+                        disabled={isBulkTranslating}
+                        type="button"
+                        onClick={translateMissingBlocksToOtherLocale}
+                      >
+                        {isBulkTranslating ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <Languages className="size-3.5" />
+                        )}
+                        {activeLocale === "en"
+                          ? "Translate Missing to AR"
+                          : "Translate Missing to EN"}
+                      </button>
+                    ) : null}
                     <AddBlockMenu onAdd={addBlock} />
                   </div>
                 </div>
@@ -4018,6 +4154,13 @@ export function PageEditor({
                           key={block.id}
                           label={BLOCK_LABELS[block.type]}
                           onSelect={() => setSelectedBlockId(block.id)}
+                          isTranslating={translatingBlockId === block.id}
+                          onTranslateToOtherLocale={() =>
+                            translateBlockToOtherLocale(block.id)
+                          }
+                          translateLabel={
+                            activeLocale === "en" ? "Arabic" : "English"
+                          }
                           onCopyToOtherLocale={() =>
                             copyBlockToOtherLocale(block.id)
                           }

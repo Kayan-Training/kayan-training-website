@@ -25,6 +25,7 @@ import type {
 import { cn } from "@/lib/utils";
 import { type FeaturedEventCard, HeroSlider } from "./hero-slider";
 import { HomeEventsCarouselRail } from "./home-events-carousel-rail";
+import { HomePostsCarouselRail } from "./home-posts-carousel-rail";
 
 type Category = {
   slug: string;
@@ -972,42 +973,16 @@ async function HomePostsGridRenderer({
             {locale === "ar" ? "لا توجد مقالات." : "No posts."}
           </p>
         ) : (
-          <div className="grid gap-4 md:grid-cols-3">
-            {posts.map((post) => (
-              <Link
-                className="group relative block min-h-[420px] overflow-hidden ghost-border transition-all duration-300 hover:-translate-y-1 hover:border-secondary/40"
-                href={`/${locale}/blog/${post.slug}`}
-                key={post.slug}
-              >
-                {post.image ? (
-                  <Image
-                    alt={post.title}
-                    className="object-cover grayscale transition-[filter] duration-500 group-hover:grayscale-0"
-                    fill
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    src={post.image}
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-[linear-gradient(145deg,#151818_0%,#1b2a25_60%,#0f1212_100%)]" />
-                )}
-                <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(13,15,15,0.97)_0%,rgba(13,15,15,0.58)_56%,rgba(13,15,15,0.12)_100%)]" />
-                <div className="relative z-10 flex h-full flex-col justify-end p-5">
-                  <span className="badge-teal mb-3 w-fit font-body">
-                    {locale === "ar" ? "معرفة" : "Knowledge"}
-                  </span>
-                  <h3 className="mb-3 line-clamp-3 text-xl font-semibold leading-snug transition-colors group-hover:text-secondary">
-                    {post.title}
-                  </h3>
-                  <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-on-surface-variant">
-                    {post.excerpt || (locale === "ar" ? "..." : "...")}
-                  </p>
-                  <div className="text-xs text-on-surface-variant">
-                    {formatDate(post.publishedAt)}
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <HomePostsCarouselRail
+            items={posts.map((post) => ({
+              excerpt: post.excerpt || (locale === "ar" ? "..." : "..."),
+              image: post.image,
+              publishedLabel: formatDate(post.publishedAt),
+              slug: post.slug,
+              title: post.title,
+            }))}
+            locale={locale}
+          />
         )}
       </div>
     </section>
