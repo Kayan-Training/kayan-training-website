@@ -1,9 +1,7 @@
 import { Add01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
-import {
-  type EventRow,
-} from "@/app/[locale]/dashboard/events/events-table";
+import { type EventRow } from "@/app/[locale]/dashboard/events/events-table";
 import { buttonVariants } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
@@ -37,7 +35,8 @@ export default async function DashboardProgramsPage({
   const rows: EventRow[] = events.map((event) => ({
     coverImage: event.coverImage,
     endDate: event.endDate,
-    eventKind: ((event as { eventKind?: string }).eventKind ?? "event") as EventRow["eventKind"],
+    eventKind: ((event as { eventKind?: string }).eventKind ??
+      "event") as EventRow["eventKind"],
     slug: event.slug,
     id: event.id,
     isFeatured: event.isFeatured,
@@ -50,7 +49,7 @@ export default async function DashboardProgramsPage({
   }));
 
   return (
-    <section className="space-y-5 max-w-6xl mx-auto">
+    <section className="space-y-5 max-w-6xl mx-auto p-3 md:p-6">
       <div className="">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -66,7 +65,7 @@ export default async function DashboardProgramsPage({
           <Link
             className={cn(
               buttonVariants(),
-              "inline-flex h-10 items-center bg-primary/80 text-xs font-semibold uppercase tracking-widest text-primary-container! transition-colors hover:bg-secondary cursor-pointer rounded-[4px] bg-linear-to-t from-black/10 from-20% via-black/5 via-40% to-transparent border-primary border",
+              "inline-flex h-10 items-center text-xs font-semibold transition-colors  cursor-pointer rounded-[4px] bg-linear-to-t from-black/10 from-20% via-black/5 via-40% to-transparent border-primary border",
             )}
             href={`/${activeLocale}/dashboard/programs/new`}
           >

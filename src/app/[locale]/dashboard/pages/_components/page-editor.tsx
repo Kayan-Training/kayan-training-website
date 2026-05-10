@@ -36,17 +36,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   cloneElement,
-  useEffect,
-  useRef,
   isValidElement,
+  useEffect,
   useId,
+  useRef,
   useState,
   useTransition,
 } from "react";
 import { toast } from "sonner";
-
-import { RichTextEditor } from "@/components/dashboard/rich-text-editor";
 import { DashboardSectionHeading } from "@/components/dashboard/editor-primitives";
+import { RichTextEditor } from "@/components/dashboard/rich-text-editor";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -61,13 +60,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ImagePickerField } from "@/components/ui/image-picker-field";
 import { Input } from "@/components/ui/input";
-import { UploadProgress } from "@/components/ui/upload-progress";
 import {
   type LinkPickerEntities,
   LinkPickerInput,
 } from "@/components/ui/link-picker-input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { UploadProgress } from "@/components/ui/upload-progress";
 import { uploadMediaFile } from "@/lib/client/media-upload";
 import type { Block, HeroMedia } from "@/lib/pages/block-types";
 import { migrateBlocks } from "@/lib/pages/migrate-blocks";
@@ -206,8 +205,23 @@ function BlockWireframe({ type }: { type: BlockType }) {
       <>
         <rect width="120" height="68" fill={bg} />
         <rect x="0" y="0" width="120" height="68" fill="url(#heroGrad)" />
-        <rect x="0" y="38" width="120" height="30" fill="#090d0d" opacity="0.75" />
-        <rect x="14" y="16" width="92" height="7" rx="2" fill="#f4f4f5" opacity="0.85" />
+        <rect
+          x="0"
+          y="38"
+          width="120"
+          height="30"
+          fill="#090d0d"
+          opacity="0.75"
+        />
+        <rect
+          x="14"
+          y="16"
+          width="92"
+          height="7"
+          rx="2"
+          fill="#f4f4f5"
+          opacity="0.85"
+        />
         <rect
           x="25"
           y="27"
@@ -689,8 +703,23 @@ function BlockWireframe({ type }: { type: BlockType }) {
       <>
         <rect width="120" height="68" fill="#222a2b" />
         <rect width="120" height="68" fill="url(#heroGrad2)" />
-        <rect x="0" y="0" width="120" height="68" fill="#0a0e0e" opacity="0.55" />
-        <rect x="8" y="9" width="52" height="3.5" rx="1.5" fill={accentLight} opacity="0.85" />
+        <rect
+          x="0"
+          y="0"
+          width="120"
+          height="68"
+          fill="#0a0e0e"
+          opacity="0.55"
+        />
+        <rect
+          x="8"
+          y="9"
+          width="52"
+          height="3.5"
+          rx="1.5"
+          fill={accentLight}
+          opacity="0.85"
+        />
         <rect
           x="20"
           y="20"
@@ -709,7 +738,16 @@ function BlockWireframe({ type }: { type: BlockType }) {
           fill="white"
           opacity="0.4"
         />
-        <rect x="42" y="46" width="36" height="10" rx="3" fill={accent} stroke={accentLight} strokeWidth="0.8" />
+        <rect
+          x="42"
+          y="46"
+          width="36"
+          height="10"
+          rx="3"
+          fill={accent}
+          stroke={accentLight}
+          strokeWidth="0.8"
+        />
         <defs>
           <linearGradient id="heroGrad2" x1="0" y1="1" x2="0" y2="0">
             <stop offset="0%" stopColor="#18181b" stopOpacity="0.9" />
@@ -810,27 +848,108 @@ function BlockWireframe({ type }: { type: BlockType }) {
     accreditation_bar: (
       <>
         <rect width="120" height="68" fill={bg} />
-        <rect x="8" y="10" width="30" height="6" rx="2" fill={accent} opacity="0.8" />
+        <rect
+          x="8"
+          y="10"
+          width="30"
+          height="6"
+          rx="2"
+          fill={accent}
+          opacity="0.8"
+        />
         <rect x="8" y="20" width="50" height="4" rx="1.5" fill={el} />
         {[0, 1, 2, 3].map((i) => (
-          <rect key={i} x={8 + i * 29} y="32" width="24" height="22" rx="2" fill={el} opacity="0.5" />
+          <rect
+            key={i}
+            x={8 + i * 29}
+            y="32"
+            width="24"
+            height="22"
+            rx="2"
+            fill={el}
+            opacity="0.5"
+          />
         ))}
       </>
     ),
     home_events_carousel: (
       <>
         <rect width="120" height="68" fill={bg} />
-        <rect x="8" y="7" width="34" height="4" rx="1.5" fill={accentLight} opacity="0.9" />
-        <rect x="8" y="14" width="58" height="3" rx="1.5" fill={elLight} opacity="0.5" />
+        <rect
+          x="8"
+          y="7"
+          width="34"
+          height="4"
+          rx="1.5"
+          fill={accentLight}
+          opacity="0.9"
+        />
+        <rect
+          x="8"
+          y="14"
+          width="58"
+          height="3"
+          rx="1.5"
+          fill={elLight}
+          opacity="0.5"
+        />
         <rect x="12" y="22" width="30" height="40" rx="2.5" fill="#212829" />
-        <rect x="12" y="22" width="30" height="40" rx="2.5" fill="url(#cardA)" opacity="0.65" />
+        <rect
+          x="12"
+          y="22"
+          width="30"
+          height="40"
+          rx="2.5"
+          fill="url(#cardA)"
+          opacity="0.65"
+        />
         <rect x="45" y="22" width="30" height="40" rx="2.5" fill="#1d2324" />
-        <rect x="45" y="22" width="30" height="40" rx="2.5" fill="url(#cardB)" opacity="0.58" />
+        <rect
+          x="45"
+          y="22"
+          width="30"
+          height="40"
+          rx="2.5"
+          fill="url(#cardB)"
+          opacity="0.58"
+        />
         <rect x="78" y="22" width="30" height="40" rx="2.5" fill="#212829" />
-        <rect x="78" y="22" width="30" height="40" rx="2.5" fill="url(#cardC)" opacity="0.62" />
-        <rect x="16" y="51" width="13" height="2" rx="1" fill="#2bb673" opacity="0.8" />
-        <rect x="49" y="51" width="13" height="2" rx="1" fill="#2bb673" opacity="0.8" />
-        <rect x="82" y="51" width="13" height="2" rx="1" fill="#2bb673" opacity="0.8" />
+        <rect
+          x="78"
+          y="22"
+          width="30"
+          height="40"
+          rx="2.5"
+          fill="url(#cardC)"
+          opacity="0.62"
+        />
+        <rect
+          x="16"
+          y="51"
+          width="13"
+          height="2"
+          rx="1"
+          fill="#2bb673"
+          opacity="0.8"
+        />
+        <rect
+          x="49"
+          y="51"
+          width="13"
+          height="2"
+          rx="1"
+          fill="#2bb673"
+          opacity="0.8"
+        />
+        <rect
+          x="82"
+          y="51"
+          width="13"
+          height="2"
+          rx="1"
+          fill="#2bb673"
+          opacity="0.8"
+        />
         <defs>
           <linearGradient id="cardA" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#718096" />
@@ -850,15 +969,70 @@ function BlockWireframe({ type }: { type: BlockType }) {
     home_posts_grid: (
       <>
         <rect width="120" height="68" fill={bg} />
-        <rect x="8" y="7" width="30" height="4" rx="1.5" fill={accentLight} opacity="0.9" />
-        <rect x="8" y="14" width="52" height="3" rx="1.5" fill={elLight} opacity="0.5" />
+        <rect
+          x="8"
+          y="7"
+          width="30"
+          height="4"
+          rx="1.5"
+          fill={accentLight}
+          opacity="0.9"
+        />
+        <rect
+          x="8"
+          y="14"
+          width="52"
+          height="3"
+          rx="1.5"
+          fill={elLight}
+          opacity="0.5"
+        />
         {[0, 1, 2].map((i) => (
           <g key={i}>
-            <rect x={8 + i * 38} y="24" width="34" height="36" rx="3" fill="#1e2020" />
-            <rect x={10 + i * 38} y="27" width="30" height="12" rx="2" fill={elLight} opacity="0.35" />
-            <rect x={10 + i * 38} y="42" width="24" height="2.6" rx="1" fill={accentLight} opacity="0.75" />
-            <rect x={10 + i * 38} y="47" width="27" height="2" rx="1" fill={elLight} opacity="0.5" />
-            <rect x={10 + i * 38} y="51" width="20" height="2" rx="1" fill={elLight} opacity="0.4" />
+            <rect
+              x={8 + i * 38}
+              y="24"
+              width="34"
+              height="36"
+              rx="3"
+              fill="#1e2020"
+            />
+            <rect
+              x={10 + i * 38}
+              y="27"
+              width="30"
+              height="12"
+              rx="2"
+              fill={elLight}
+              opacity="0.35"
+            />
+            <rect
+              x={10 + i * 38}
+              y="42"
+              width="24"
+              height="2.6"
+              rx="1"
+              fill={accentLight}
+              opacity="0.75"
+            />
+            <rect
+              x={10 + i * 38}
+              y="47"
+              width="27"
+              height="2"
+              rx="1"
+              fill={elLight}
+              opacity="0.5"
+            />
+            <rect
+              x={10 + i * 38}
+              y="51"
+              width="20"
+              height="2"
+              rx="1"
+              fill={elLight}
+              opacity="0.4"
+            />
           </g>
         ))}
       </>
@@ -903,7 +1077,7 @@ const BLOCK_LABELS: Record<BlockType, string> = Object.fromEntries(
 function BlockNavSidebar({ blocks }: { blocks: Block[] }) {
   if (blocks.length === 0) return null;
   return (
-    <aside className="sticky top-24 hidden h-fit w-44 shrink-0 self-start xl:block">
+    <aside className="sticky top-24 hidden h-fit w-full px-3 shrink-0 self-start xl:block">
       <p className="mb-2 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">
         Blocks
       </p>
@@ -1168,7 +1342,9 @@ function MediaCarouselEditor({
   }
 
   function addFromLibrary(item: { url: string; mimeType: string }) {
-    const kind: "image" | "video" = item.mimeType.startsWith("video/") ? "video" : "image";
+    const kind: "image" | "video" = item.mimeType.startsWith("video/")
+      ? "video"
+      : "image";
     onChange([...media, { id: makeId(), url: item.url, kind }]);
     setBrowseOpen(false);
   }
@@ -1299,7 +1475,11 @@ function MediaCarouselEditor({
           />
         </label>
       </div>
-      <UploadProgress isActive={uploading} percent={uploadProgress} status={uploadStatus} />
+      <UploadProgress
+        isActive={uploading}
+        percent={uploadProgress}
+        status={uploadStatus}
+      />
       <Dialog onOpenChange={setBrowseOpen} open={browseOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -1338,7 +1518,9 @@ function MediaCarouselEditor({
                   <span
                     className={cn(
                       "absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white",
-                      item.mimeType.startsWith("video/") ? "bg-blue-600/80" : "bg-black/60",
+                      item.mimeType.startsWith("video/")
+                        ? "bg-blue-600/80"
+                        : "bg-black/60",
                     )}
                   >
                     {item.mimeType.startsWith("video/") ? "video" : "image"}
@@ -3082,10 +3264,7 @@ function AccreditationBarFields({
           label="Add organization"
           onClick={() =>
             onChange({
-              clients: [
-                ...block.clients,
-                { id: makeId(), name: "", logo: "" },
-              ],
+              clients: [...block.clients, { id: makeId(), name: "", logo: "" }],
             })
           }
         />
@@ -3480,7 +3659,15 @@ function makeBlock(type: BlockType): Block {
         clients: [],
       };
     case "home_events_carousel":
-      return { id, type, eyebrow: "", heading: "", limit: 6, source: "mixed", showViewMore: false };
+      return {
+        id,
+        type,
+        eyebrow: "",
+        heading: "",
+        limit: 6,
+        source: "mixed",
+        showViewMore: false,
+      };
     case "home_posts_grid":
       return { id, type, eyebrow: "", heading: "", limit: 6 };
   }
@@ -3505,7 +3692,10 @@ function cloneBlockWithFreshIds(block: Block): Block {
   }
 
   if (cloned.type === "accreditation_bar") {
-    cloned.clients = (cloned.clients ?? []).map((c) => ({ ...c, id: makeId() }));
+    cloned.clients = (cloned.clients ?? []).map((c) => ({
+      ...c,
+      id: makeId(),
+    }));
   }
 
   return cloned;
@@ -3640,7 +3830,9 @@ export function PageEditor({
     const copiedBlock = JSON.parse(JSON.stringify(sourceBlock)) as Block;
     if (activeLocale === "en") {
       setBlocksAr((prev) => {
-        const existingIndex = prev.findIndex((block) => block.id === copiedBlock.id);
+        const existingIndex = prev.findIndex(
+          (block) => block.id === copiedBlock.id,
+        );
         if (existingIndex === -1) return [...prev, copiedBlock];
         return prev.map((block, index) =>
           index === existingIndex ? copiedBlock : block,
@@ -3651,7 +3843,9 @@ export function PageEditor({
     }
 
     setBlocksEn((prev) => {
-      const existingIndex = prev.findIndex((block) => block.id === copiedBlock.id);
+      const existingIndex = prev.findIndex(
+        (block) => block.id === copiedBlock.id,
+      );
       if (existingIndex === -1) return [...prev, copiedBlock];
       return prev.map((block, index) =>
         index === existingIndex ? copiedBlock : block,
@@ -3684,7 +3878,9 @@ export function PageEditor({
     const translated = result.block as Block;
     if (targetLocale === "ar") {
       setBlocksAr((prev) => {
-        const existingIndex = prev.findIndex((block) => block.id === translated.id);
+        const existingIndex = prev.findIndex(
+          (block) => block.id === translated.id,
+        );
         if (existingIndex === -1) return [...prev, translated];
         return prev.map((block, index) =>
           index === existingIndex ? translated : block,
@@ -3692,7 +3888,9 @@ export function PageEditor({
       });
     } else {
       setBlocksEn((prev) => {
-        const existingIndex = prev.findIndex((block) => block.id === translated.id);
+        const existingIndex = prev.findIndex(
+          (block) => block.id === translated.id,
+        );
         if (existingIndex === -1) return [...prev, translated];
         return prev.map((block, index) =>
           index === existingIndex ? translated : block,
@@ -3724,7 +3922,11 @@ export function PageEditor({
     setIsBulkTranslating(true);
     const translatedBlocks: Block[] = [];
     for (const block of missing) {
-      const result = await translateBlockAction(block, sourceLocale, targetLocale);
+      const result = await translateBlockAction(
+        block,
+        sourceLocale,
+        targetLocale,
+      );
       if (result.block) {
         translatedBlocks.push(result.block as Block);
       }
@@ -3861,10 +4063,13 @@ export function PageEditor({
   }, [activeSection, selectedBlockId, viewMode, blocks]);
 
   const dir = activeLocale === "ar" ? "rtl" : "ltr";
-  const previewPath = pageData.slug === "home" ? `/${activeLocale}` : `/${activeLocale}/${pageData.slug}`;
+  const previewPath =
+    pageData.slug === "home"
+      ? `/${activeLocale}`
+      : `/${activeLocale}/${pageData.slug}`;
 
   return (
-    <div className="event-editor -m-6 relative">
+    <div className="event-editor relative grid-cols-[220px_minmax(0,1fr)_220px]!">
       {/* Left rail */}
       <nav className="event-editor__rail_ flex-col flex gap-2 h-[calc(100vh-4rem)] p-0 sticky top-14">
         <div className="px-4 py-5">
@@ -3873,7 +4078,7 @@ export function PageEditor({
             render={<Link href={`/${locale}/dashboard/pages`} />}
             size="sm"
             type="button"
-            variant="outline"
+            variant="ghost"
           >
             <ArrowLeft className="size-3.5" />
             All Pages
@@ -3923,7 +4128,7 @@ export function PageEditor({
       </nav>
 
       {/* Main panel */}
-      <div className="flex min-h-0 flex-col">
+      <div className="flex min-h-0 flex-col max-w-6xl">
         {/* Toolbar */}
         <div className="flex items-center justify-between border-b border-border/50 bg-card/80 px-6 py-3 backdrop-blur-sm sticky top-14 z-10">
           <div className="flex items-center gap-3">
@@ -3997,7 +4202,8 @@ export function PageEditor({
             <div className="space-y-3">
               <div className="flex items-center justify-between rounded-md border border-border/50 bg-card/70 px-3 py-2 text-xs">
                 <span className="font-medium text-muted-foreground">
-                  Frontend preview: <span className="text-foreground">{previewPath}</span>
+                  Frontend preview:{" "}
+                  <span className="text-foreground">{previewPath}</span>
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -4008,7 +4214,14 @@ export function PageEditor({
                   >
                     {isPreviewSyncing ? "Updating..." : "Update Preview"}
                   </button>
-                  <span className={cn("text-[11px]", isPreviewSyncing ? "text-secondary" : "text-muted-foreground")}>
+                  <span
+                    className={cn(
+                      "text-[11px]",
+                      isPreviewSyncing
+                        ? "text-secondary"
+                        : "text-muted-foreground",
+                    )}
+                  >
                     {isPreviewSyncing ? "Syncing changes..." : "Ready"}
                   </span>
                 </div>
@@ -4025,226 +4238,244 @@ export function PageEditor({
 
           {viewMode === "editor" && (
             <>
-          {/* Identity */}
-          {activeSection === "identity" && (
-            <div className="mx-auto max-w-2xl space-y-5">
-              <DashboardSectionHeading icon={FileText} index="01" title="Identity" />
+              {/* Identity */}
+              {activeSection === "identity" && (
+                <div className="mx-auto max-w-2xl space-y-5">
+                  <DashboardSectionHeading
+                    icon={FileText}
+                    index="01"
+                    title="Identity"
+                  />
 
-              {activeLocale === "en" ? (
-                <Field label="Page Title (English)">
-                  <Input
-                    className={inputCls}
-                    placeholder="Page title"
-                    value={titleEn}
-                    onChange={(e) => setTitleEn(e.target.value)}
-                  />
-                </Field>
-              ) : (
-                <Field label="Page Title (Arabic)">
-                  <Input
-                    className={cn(inputCls, "text-right")}
-                    dir="rtl"
-                    placeholder="عنوان الصفحة"
-                    value={titleAr}
-                    onChange={(e) => setTitleAr(e.target.value)}
-                  />
-                </Field>
+                  {activeLocale === "en" ? (
+                    <Field label="Page Title (English)">
+                      <Input
+                        className={inputCls}
+                        placeholder="Page title"
+                        value={titleEn}
+                        onChange={(e) => setTitleEn(e.target.value)}
+                      />
+                    </Field>
+                  ) : (
+                    <Field label="Page Title (Arabic)">
+                      <Input
+                        className={cn(inputCls, "text-right")}
+                        dir="rtl"
+                        placeholder="عنوان الصفحة"
+                        value={titleAr}
+                        onChange={(e) => setTitleAr(e.target.value)}
+                      />
+                    </Field>
+                  )}
+
+                  <Field label="Status">
+                    <button
+                      className={cn(
+                        "inline-flex h-9 w-56 items-center justify-between rounded-md border px-3 text-sm transition-colors",
+                        status === "published"
+                          ? "border-green-500/40 bg-green-500/10 text-green-700"
+                          : "border-input bg-input/20 text-muted-foreground",
+                      )}
+                      type="button"
+                      onClick={() =>
+                        setStatus(
+                          status === "published" ? "draft" : "published",
+                        )
+                      }
+                    >
+                      <span className="font-medium">
+                        {status === "published" ? "Published" : "Draft"}
+                      </span>
+                      <Switch
+                        checked={status === "published"}
+                        className="pointer-events-none"
+                      />
+                    </button>
+                  </Field>
+                </div>
               )}
 
-              <Field label="Status">
-                <button
-                  className={cn(
-                    "inline-flex h-9 w-56 items-center justify-between rounded-md border px-3 text-sm transition-colors",
-                    status === "published"
-                      ? "border-green-500/40 bg-green-500/10 text-green-700"
-                      : "border-input bg-input/20 text-muted-foreground",
-                  )}
-                  type="button"
-                  onClick={() =>
-                    setStatus(status === "published" ? "draft" : "published")
-                  }
-                >
-                  <span className="font-medium">
-                    {status === "published" ? "Published" : "Draft"}
-                  </span>
-                  <Switch
-                    checked={status === "published"}
-                    className="pointer-events-none"
-                  />
-                </button>
-              </Field>
-            </div>
-          )}
+              {/* Blocks */}
+              {activeSection === "blocks" && (
+                <div className="relative flex justify-between gap-6">
+                  <div className="min-w-0 max-w-6xl flex-1 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <DashboardSectionHeading
+                          icon={AlignLeft}
+                          index="02"
+                          title="Content Blocks"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-muted-foreground">
+                          {activeLocale === "en" ? "English" : "Arabic"} ·{" "}
+                          {blocks.length} block{blocks.length !== 1 ? "s" : ""}
+                        </span>
+                        <button
+                          className="inline-flex h-9 items-center gap-2 rounded-md border border-border/70 bg-card px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+                          disabled={!hasClipboardBlock}
+                          type="button"
+                          onClick={pasteBlockFromClipboard}
+                        >
+                          <ClipboardPaste className="size-3.5" />
+                          Paste Block
+                        </button>
+                        {ENABLE_BLOCK_TRANSLATION ? (
+                          <button
+                            className="inline-flex h-9 items-center gap-2 rounded-md border border-border/70 bg-card px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+                            disabled={isBulkTranslating}
+                            type="button"
+                            onClick={translateMissingBlocksToOtherLocale}
+                          >
+                            {isBulkTranslating ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <Languages className="size-3.5" />
+                            )}
+                            {activeLocale === "en"
+                              ? "Translate Missing to AR"
+                              : "Translate Missing to EN"}
+                          </button>
+                        ) : null}
+                        <AddBlockMenu onAdd={addBlock} />
+                      </div>
+                    </div>
 
-          {/* Blocks */}
-          {activeSection === "blocks" && (
-            <div className="relative flex justify-between gap-6">
-              <div className="min-w-0 max-w-5xl flex-1 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <DashboardSectionHeading
-                      icon={AlignLeft}
-                      index="02"
-                      title="Content Blocks"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-muted-foreground">
-                      {activeLocale === "en" ? "English" : "Arabic"} ·{" "}
-                      {blocks.length} block{blocks.length !== 1 ? "s" : ""}
-                    </span>
-                    <button
-                      className="inline-flex h-9 items-center gap-2 rounded-md border border-border/70 bg-card px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
-                      disabled={!hasClipboardBlock}
-                      type="button"
-                      onClick={pasteBlockFromClipboard}
+                    {blocks.length === 0 && (
+                      <div className="flex flex-col items-center rounded-xl border border-dashed border-border/50 py-14 text-center">
+                        <AlignLeft className="mb-3 size-8 text-muted-foreground/40" />
+                        <p className="text-sm font-medium text-muted-foreground">
+                          No blocks yet
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground/60">
+                          Use the Add Block button above to build this page.
+                        </p>
+                      </div>
+                    )}
+
+                    <DndContext
+                      collisionDetection={closestCenter}
+                      modifiers={[restrictToVerticalAxis]}
+                      sensors={sensors}
+                      onDragEnd={handleDragEnd}
                     >
-                      <ClipboardPaste className="size-3.5" />
-                      Paste Block
-                    </button>
-                    {ENABLE_BLOCK_TRANSLATION ? (
-                      <button
-                        className="inline-flex h-9 items-center gap-2 rounded-md border border-border/70 bg-card px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
-                        disabled={isBulkTranslating}
-                        type="button"
-                        onClick={translateMissingBlocksToOtherLocale}
+                      <SortableContext
+                        items={blocks.map((b) => b.id)}
+                        strategy={verticalListSortingStrategy}
                       >
-                        {isBulkTranslating ? (
-                          <Loader2 className="size-3.5 animate-spin" />
-                        ) : (
-                          <Languages className="size-3.5" />
-                        )}
-                        {activeLocale === "en"
-                          ? "Translate Missing to AR"
-                          : "Translate Missing to EN"}
-                      </button>
-                    ) : null}
-                    <AddBlockMenu onAdd={addBlock} />
+                        <div className="space-y-3">
+                          {blocks.map((block) => (
+                            <SortableBlock
+                              copyLabel={
+                                activeLocale === "en" ? "Arabic" : "English"
+                              }
+                              id={block.id}
+                              isSelected={selectedBlockId === block.id}
+                              key={block.id}
+                              label={BLOCK_LABELS[block.type]}
+                              onSelect={() => setSelectedBlockId(block.id)}
+                              isTranslating={translatingBlockId === block.id}
+                              onTranslateToOtherLocale={() =>
+                                translateBlockToOtherLocale(block.id)
+                              }
+                              translateLabel={
+                                activeLocale === "en" ? "Arabic" : "English"
+                              }
+                              onCopyToOtherLocale={() =>
+                                copyBlockToOtherLocale(block.id)
+                              }
+                              onRemove={() => removeBlock(block.id)}
+                            >
+                              {renderBlockFields(
+                                block,
+                                dir,
+                                (patch) => updateBlock(block.id, patch),
+                                pickerEntities,
+                              )}
+                            </SortableBlock>
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
                   </div>
                 </div>
-
-                {blocks.length === 0 && (
-                  <div className="flex flex-col items-center rounded-xl border border-dashed border-border/50 py-14 text-center">
-                    <AlignLeft className="mb-3 size-8 text-muted-foreground/40" />
-                    <p className="text-sm font-medium text-muted-foreground">
-                      No blocks yet
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground/60">
-                      Use the Add Block button above to build this page.
-                    </p>
-                  </div>
-                )}
-
-                <DndContext
-                  collisionDetection={closestCenter}
-                  modifiers={[restrictToVerticalAxis]}
-                  sensors={sensors}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={blocks.map((b) => b.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="space-y-3">
-                      {blocks.map((block) => (
-                        <SortableBlock
-                          copyLabel={activeLocale === "en" ? "Arabic" : "English"}
-                          id={block.id}
-                          isSelected={selectedBlockId === block.id}
-                          key={block.id}
-                          label={BLOCK_LABELS[block.type]}
-                          onSelect={() => setSelectedBlockId(block.id)}
-                          isTranslating={translatingBlockId === block.id}
-                          onTranslateToOtherLocale={() =>
-                            translateBlockToOtherLocale(block.id)
-                          }
-                          translateLabel={
-                            activeLocale === "en" ? "Arabic" : "English"
-                          }
-                          onCopyToOtherLocale={() =>
-                            copyBlockToOtherLocale(block.id)
-                          }
-                          onRemove={() => removeBlock(block.id)}
-                        >
-                          {renderBlockFields(
-                            block,
-                            dir,
-                            (patch) => updateBlock(block.id, patch),
-                            pickerEntities,
-                          )}
-                        </SortableBlock>
-                      ))}
-                    </div>
-                  </SortableContext>
-                </DndContext>
-              </div>
-              <div className="hidden xl:flex xl:gap-4">
-                <BlockNavSidebar blocks={blocks} />
-              </div>
-            </div>
-          )}
-
-          {/* SEO */}
-          {activeSection === "seo" && (
-            <div className="mx-auto max-w-2xl space-y-5">
-              <DashboardSectionHeading icon={Search} index="03" title="SEO" />
-              {activeLocale === "en" ? (
-                <>
-                  <Field label="SEO Title (English)">
-                    <Input
-                      className={inputCls}
-                      maxLength={60}
-                      placeholder="Overrides page title in search results"
-                      value={seoTitleEn}
-                      onChange={(e) => setSeoTitleEn(e.target.value)}
-                    />
-                  </Field>
-                  <Field label="Meta Description (English)">
-                    <Textarea
-                      className="min-h-20 w-full resize-none rounded-md border border-input bg-input/20 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                      maxLength={160}
-                      placeholder="Shown in search engine results pages…"
-                      value={seoDescEn}
-                      onChange={(e) => setSeoDescEn(e.target.value)}
-                    />
-                  </Field>
-                </>
-              ) : (
-                <>
-                  <Field label="SEO Title (Arabic)">
-                    <Input
-                      className={cn(inputCls, "text-right")}
-                      dir="rtl"
-                      maxLength={60}
-                      placeholder="عنوان SEO"
-                      value={seoTitleAr}
-                      onChange={(e) => setSeoTitleAr(e.target.value)}
-                    />
-                  </Field>
-                  <Field label="Meta Description (Arabic)">
-                    <Textarea
-                      className="min-h-20 w-full resize-none rounded-md border border-input bg-input/20 px-3 py-2.5 text-right text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                      dir="rtl"
-                      maxLength={160}
-                      placeholder="وصف محركات البحث"
-                      value={seoDescAr}
-                      onChange={(e) => setSeoDescAr(e.target.value)}
-                    />
-                  </Field>
-                </>
               )}
-              <p className="text-[11px] text-muted-foreground">
-                Title:{" "}
-                {activeLocale === "en" ? seoTitleEn.length : seoTitleAr.length}
-                /60 · Description:{" "}
-                {activeLocale === "en" ? seoDescEn.length : seoDescAr.length}
-                /160
-              </p>
-            </div>
-          )}
+
+              {/* SEO */}
+              {activeSection === "seo" && (
+                <div className="mx-auto max-w-2xl space-y-5">
+                  <DashboardSectionHeading
+                    icon={Search}
+                    index="03"
+                    title="SEO"
+                  />
+                  {activeLocale === "en" ? (
+                    <>
+                      <Field label="SEO Title (English)">
+                        <Input
+                          className={inputCls}
+                          maxLength={60}
+                          placeholder="Overrides page title in search results"
+                          value={seoTitleEn}
+                          onChange={(e) => setSeoTitleEn(e.target.value)}
+                        />
+                      </Field>
+                      <Field label="Meta Description (English)">
+                        <Textarea
+                          className="min-h-20 w-full resize-none rounded-md border border-input bg-input/20 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                          maxLength={160}
+                          placeholder="Shown in search engine results pages…"
+                          value={seoDescEn}
+                          onChange={(e) => setSeoDescEn(e.target.value)}
+                        />
+                      </Field>
+                    </>
+                  ) : (
+                    <>
+                      <Field label="SEO Title (Arabic)">
+                        <Input
+                          className={cn(inputCls, "text-right")}
+                          dir="rtl"
+                          maxLength={60}
+                          placeholder="عنوان SEO"
+                          value={seoTitleAr}
+                          onChange={(e) => setSeoTitleAr(e.target.value)}
+                        />
+                      </Field>
+                      <Field label="Meta Description (Arabic)">
+                        <Textarea
+                          className="min-h-20 w-full resize-none rounded-md border border-input bg-input/20 px-3 py-2.5 text-right text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                          dir="rtl"
+                          maxLength={160}
+                          placeholder="وصف محركات البحث"
+                          value={seoDescAr}
+                          onChange={(e) => setSeoDescAr(e.target.value)}
+                        />
+                      </Field>
+                    </>
+                  )}
+                  <p className="text-[11px] text-muted-foreground">
+                    Title:{" "}
+                    {activeLocale === "en"
+                      ? seoTitleEn.length
+                      : seoTitleAr.length}
+                    /60 · Description:{" "}
+                    {activeLocale === "en"
+                      ? seoDescEn.length
+                      : seoDescAr.length}
+                    /160
+                  </p>
+                </div>
+              )}
             </>
           )}
         </div>
+      </div>
+
+      {/* Right rail */}
+      <div className="hidden xl:flex xl:gap-4">
+        <BlockNavSidebar blocks={blocks} />
       </div>
     </div>
   );

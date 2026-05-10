@@ -123,8 +123,8 @@ export function HomePostsCarouselRail({
         className={cn(
           "pointer-events-none absolute inset-y-0 w-8 transition-opacity duration-200",
           locale === "ar"
-            ? "right-0 bg-gradient-to-l from-surface to-transparent"
-            : "left-0 bg-gradient-to-r from-surface to-transparent",
+            ? "right-0 bg-linear-to-l from-surface to-transparent"
+            : "left-0 bg-linear-to-r from-surface to-transparent",
           canPrev ? "opacity-100" : "opacity-0",
         )}
       />
@@ -133,8 +133,8 @@ export function HomePostsCarouselRail({
         className={cn(
           "pointer-events-none absolute inset-y-0 w-8 transition-opacity duration-200",
           locale === "ar"
-            ? "left-0 bg-gradient-to-r from-surface to-transparent"
-            : "right-0 bg-gradient-to-l from-surface to-transparent",
+            ? "left-0 bg-linear-to-r from-surface to-transparent"
+            : "right-0 bg-linear-to-l from-surface to-transparent",
           canNext ? "opacity-100" : "opacity-0",
         )}
       />

@@ -50,10 +50,8 @@ export default async function DashboardLayout({
               Dashboard
             </span>
           </header>
-          <main className="min-h-screen p-4 md:p-6">
-            <div className="mx-auto w-full max-w-6xl text-foreground">
-              {children}
-            </div>
+          <main className="min-h-[calc(100vh-56px)]">
+            <div className="mx-auto w-full text-foreground">{children}</div>
           </main>
         </SidebarInset>
       </SidebarProvider>
