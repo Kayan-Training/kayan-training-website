@@ -20,6 +20,7 @@ import {
   AlignLeft,
   ArrowLeft,
   ChevronDown,
+  ClipboardPaste,
   Copy,
   FileText,
   GripVertical,
@@ -1000,6 +1001,8 @@ const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
   home_posts_grid: "Auto-populated 3-column grid of recent blog posts",
 };
 
+const BLOCK_CLIPBOARD_KEY = "kayan.pageEditor.blockClipboard.v1";
+
 // ─── Sortable block wrapper ───────────────────────────────────────────────────
 
 function SortableBlock({
@@ -1007,6 +1010,8 @@ function SortableBlock({
   id,
   label,
   copyLabel,
+  isSelected,
+  onSelect,
   onCopyToOtherLocale,
   onRemove,
 }: {
@@ -1014,6 +1019,8 @@ function SortableBlock({
   id: string;
   label: string;
   copyLabel: string;
+  isSelected: boolean;
+  onSelect: () => void;
   onCopyToOtherLocale: () => void;
   onRemove: () => void;
 }) {
@@ -1038,10 +1045,12 @@ function SortableBlock({
       data-block-id={id}
       style={style}
       className={cn(isDragging && "opacity-50 z-50")}
+      onClick={onSelect}
     >
       <div
         className={cn(
           "overflow-hidden rounded-xl border border-border/70 bg-card transition-shadow",
+          isSelected && "ring-1 ring-primary/35",
           isDragging && "shadow-2xl ring-1 ring-primary/20",
         )}
       >
@@ -3448,6 +3457,31 @@ function makeBlock(type: BlockType): Block {
   }
 }
 
+function cloneBlockWithFreshIds(block: Block): Block {
+  const cloned = JSON.parse(JSON.stringify(block)) as Block;
+  cloned.id = makeId();
+
+  if (cloned.type === "hero") {
+    cloned.media = (cloned.media ?? []).map((m) => ({ ...m, id: makeId() }));
+    cloned.slides = (cloned.slides ?? []).map((s) => ({
+      ...s,
+      id: makeId(),
+      ctas: (s.ctas ?? []).map((c) => ({ ...c, id: makeId() })),
+    }));
+  }
+
+  if (cloned.type === "page_hero") {
+    cloned.media = (cloned.media ?? []).map((m) => ({ ...m, id: makeId() }));
+    cloned.slides = (cloned.slides ?? []).map((s) => ({ ...s, id: makeId() }));
+  }
+
+  if (cloned.type === "accreditation_bar") {
+    cloned.clients = (cloned.clients ?? []).map((c) => ({ ...c, id: makeId() }));
+  }
+
+  return cloned;
+}
+
 // ─── PageEditor ───────────────────────────────────────────────────────────────
 
 type SectionId = "identity" | "blocks" | "seo";
@@ -3473,6 +3507,8 @@ export function PageEditor({
   const [activeLocale, setActiveLocale] = useState<"ar" | "en">("en");
   const [activeSection, setActiveSection] = useState<SectionId>("identity");
   const [viewMode, setViewMode] = useState<"editor" | "preview">("editor");
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [hasClipboardBlock, setHasClipboardBlock] = useState(false);
   const [previewNonce, setPreviewNonce] = useState(() => Date.now());
   const [isPreviewSyncing, setIsPreviewSyncing] = useState(false);
   const [previewAutoSync, setPreviewAutoSync] = useState(true);
@@ -3528,6 +3564,39 @@ export function PageEditor({
 
   function addBlock(type: BlockType) {
     setBlocks((prev) => [...prev, makeBlock(type)]);
+  }
+
+  function copyBlockToClipboard(blockId: string) {
+    const source = blocks.find((b) => b.id === blockId);
+    if (!source) return;
+    const payload = {
+      copiedAt: Date.now(),
+      block: source,
+    };
+    localStorage.setItem(BLOCK_CLIPBOARD_KEY, JSON.stringify(payload));
+    setHasClipboardBlock(true);
+    toast.success("Block copied. Use Paste Block on any page.");
+  }
+
+  function pasteBlockFromClipboard() {
+    const raw = localStorage.getItem(BLOCK_CLIPBOARD_KEY);
+    if (!raw) {
+      toast.error("No copied block found.");
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw) as { block?: Block };
+      if (!parsed.block) {
+        toast.error("Clipboard block is invalid.");
+        return;
+      }
+      const newBlock = cloneBlockWithFreshIds(parsed.block);
+      setBlocks((prev) => [...prev, newBlock]);
+      setSelectedBlockId(newBlock.id);
+      toast.success("Block pasted.");
+    } catch {
+      toast.error("Clipboard block is invalid.");
+    }
   }
 
   function copyBlockToOtherLocale(blockId: string) {
@@ -3636,6 +3705,41 @@ export function PageEditor({
     blocksEn,
     blocksAr,
   ]);
+
+  useEffect(() => {
+    setHasClipboardBlock(Boolean(localStorage.getItem(BLOCK_CLIPBOARD_KEY)));
+  }, []);
+
+  useEffect(() => {
+    if (activeSection !== "blocks" || viewMode !== "editor") return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      const selectedText = window.getSelection()?.toString() ?? "";
+      if (selectedText.trim().length > 0) {
+        return;
+      }
+      if (!(event.metaKey || event.ctrlKey)) return;
+      if (event.key.toLowerCase() === "c" && selectedBlockId) {
+        event.preventDefault();
+        copyBlockToClipboard(selectedBlockId);
+      }
+      if (event.key.toLowerCase() === "v") {
+        event.preventDefault();
+        pasteBlockFromClipboard();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeSection, selectedBlockId, viewMode, blocks]);
 
   const dir = activeLocale === "ar" ? "rtl" : "ltr";
   const previewPath = pageData.slug === "home" ? `/${activeLocale}` : `/${activeLocale}/${pageData.slug}`;
@@ -3870,6 +3974,15 @@ export function PageEditor({
                       {activeLocale === "en" ? "English" : "Arabic"} ·{" "}
                       {blocks.length} block{blocks.length !== 1 ? "s" : ""}
                     </span>
+                    <button
+                      className="inline-flex h-9 items-center gap-2 rounded-md border border-border/70 bg-card px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+                      disabled={!hasClipboardBlock}
+                      type="button"
+                      onClick={pasteBlockFromClipboard}
+                    >
+                      <ClipboardPaste className="size-3.5" />
+                      Paste Block
+                    </button>
                     <AddBlockMenu onAdd={addBlock} />
                   </div>
                 </div>
@@ -3901,8 +4014,10 @@ export function PageEditor({
                         <SortableBlock
                           copyLabel={activeLocale === "en" ? "Arabic" : "English"}
                           id={block.id}
+                          isSelected={selectedBlockId === block.id}
                           key={block.id}
                           label={BLOCK_LABELS[block.type]}
+                          onSelect={() => setSelectedBlockId(block.id)}
                           onCopyToOtherLocale={() =>
                             copyBlockToOtherLocale(block.id)
                           }

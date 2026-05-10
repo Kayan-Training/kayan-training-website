@@ -1,9 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-
-import { getLocalizedEvents, getLocalizedPosts } from "@/lib/content/queries";
-import { getAnimatedCategoryIcons } from "@/lib/content/category-icons";
 import { resolveCategoryIconPath } from "@/lib/category-icons";
+import { getAnimatedCategoryIcons } from "@/lib/content/category-icons";
+import { getLocalizedEvents, getLocalizedPosts } from "@/lib/content/queries";
 import type {
   AboutIntroBlock,
   AccreditationBarBlock,
@@ -260,43 +259,46 @@ function AccreditationRenderer({
                 {block.description}
               </p>
             ) : null}
-            <div className="space-y-3">
+            <div className="divide-y divide-outline-variant/20">
               {featuredOrgs.map((org, index) => (
                 <article
-                  className="flex min-h-[96px] items-center gap-4 px-2 py-2"
+                  className="grid min-h-[104px] grid-cols-[minmax(140px,180px)_1px_minmax(0,1fr)] items-center gap-4 py-3"
                   key={`${org.name}-${index}`}
                 >
-                  {org.logo ? (
-                    <Image
-                      alt={org.name || "Featured organization"}
-                      className={cn(
-                        "w-auto shrink-0 object-contain transition-all duration-300",
-                        org.size === "sm"
-                          ? "h-12 max-w-[9rem]"
-                          : org.size === "lg"
-                            ? "h-20 max-w-[18rem]"
-                            : "h-16 max-w-[14rem]",
-                        org.displayMode === "mono"
-                          ? "grayscale brightness-0 invert opacity-85"
-                          : "opacity-95",
-                      )}
-                      height={64}
-                      src={org.logo}
-                      width={220}
-                    />
-                  ) : (
-                    <span className="w-10 shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                  )}
-                  <div className="min-w-0">
+                  <div className="flex items-center justify-center">
+                    {org.logo ? (
+                      <Image
+                        alt={org.name || "Featured organization"}
+                        className={cn(
+                          "w-auto object-contain transition-all duration-300",
+                          org.size === "sm"
+                            ? "h-12 max-w-[8.5rem]"
+                            : org.size === "lg"
+                              ? "h-20 max-w-[11rem]"
+                              : "h-16 max-w-[9.5rem]",
+                          org.displayMode === "mono"
+                            ? "grayscale brightness-0 invert opacity-85"
+                            : "opacity-95",
+                        )}
+                        height={64}
+                        src={org.logo}
+                        width={176}
+                      />
+                    ) : (
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                    )}
+                  </div>
+                  <div className="h-14 w-px bg-outline-variant/35" />
+                  <div className="min-w-0 ps-1">
                     {org.name ? (
-                      <p className="truncate text-sm font-semibold text-on-surface">
+                      <p className="truncate text-lg font-semibold text-on-surface">
                         {org.name}
                       </p>
                     ) : null}
                     {org.summary ? (
-                      <p className="text-xs leading-relaxed text-on-surface-variant">
+                      <p className="text-sm leading-relaxed text-on-surface-variant">
                         {org.summary}
                       </p>
                     ) : null}
@@ -304,16 +306,6 @@ function AccreditationRenderer({
                 </article>
               ))}
             </div>
-            {featuredOrgs.length > 1 ? (
-              <div className="mt-4 flex items-center justify-center gap-2">
-                {featuredOrgs.slice(0, Math.min(5, featuredOrgs.length)).map((org, index) => (
-                  <span
-                    className="h-2.5 w-2.5 rounded-full bg-on-surface-variant/35"
-                    key={`${org.name}-dot-${index}`}
-                  />
-                ))}
-              </div>
-            ) : null}
           </div>
           <div className="hidden w-px bg-outline-variant/25 lg:block" />
           <div>
@@ -848,8 +840,14 @@ async function HomeEventsCarouselRenderer({
 }) {
   const source = block.source ?? "mixed";
   const [eventOnly, trainingOnly] = await Promise.all([
-    source === "training_courses" ? Promise.resolve([]) : getLocalizedEvents(locale, block.limit ?? 5, { kind: "event" }),
-    source === "events" ? Promise.resolve([]) : getLocalizedEvents(locale, block.limit ?? 5, { kind: "training_course" }),
+    source === "training_courses"
+      ? Promise.resolve([])
+      : getLocalizedEvents(locale, block.limit ?? 5, { kind: "event" }),
+    source === "events"
+      ? Promise.resolve([])
+      : getLocalizedEvents(locale, block.limit ?? 5, {
+          kind: "training_course",
+        }),
   ]);
   const events = [...eventOnly, ...trainingOnly]
     .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())
@@ -890,8 +888,12 @@ async function HomeEventsCarouselRenderer({
               }
             >
               {source === "training_courses"
-                ? locale === "ar" ? "كل الدورات" : "All Courses"
-                : locale === "ar" ? "كل الفعاليات" : "All Events"}
+                ? locale === "ar"
+                  ? "كل الدورات"
+                  : "All Courses"
+                : locale === "ar"
+                  ? "كل الفعاليات"
+                  : "All Events"}
             </Link>
           ) : null}
         </div>
@@ -905,7 +907,10 @@ async function HomeEventsCarouselRenderer({
               coverImage: event.coverImage,
               dateLabel: formatDate(event.startDate),
               slug: event.slug,
-              pathBase: event.eventKind === "training_course" ? "training-courses" : "events",
+              pathBase:
+                event.eventKind === "training_course"
+                  ? "training-courses"
+                  : "events",
               tag: event.isFeatured
                 ? locale === "ar"
                   ? "مميّز"
