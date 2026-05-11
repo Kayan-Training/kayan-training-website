@@ -65,7 +65,7 @@ export function LocaleShell({
 
   return (
     <div
-      className="frontend-shell bg-background text-on-surface"
+      className="frontend-shell overflow-x-clip bg-background text-on-surface"
       style={
         siteSettings?.frontendTheme
           ? ({
@@ -93,7 +93,7 @@ export function LocaleShell({
       }
     >
       <SiteNav locale={locale} menuItems={menuItems} cta={siteSettings?.headerCta} />
-      <div className="">{children}</div>
+      <div className="min-w-0">{children}</div>
       <SiteFooter
         locale={locale}
         settings={siteSettings}

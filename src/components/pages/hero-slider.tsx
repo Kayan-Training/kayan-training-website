@@ -1,14 +1,14 @@
 "use client";
 
+import { AnimatedCategoryIcons } from "@/components/shared/animated-category-icons";
+import type { AnimatedCategoryIconItem } from "@/lib/content/category-icons";
+import type { HeroBlock, HeroCta, HeroMedia } from "@/lib/pages/block-types";
+import { cn } from "@/lib/utils";
 import { ArrowRight02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { AnimatedCategoryIcons } from "@/components/shared/animated-category-icons";
-import type { AnimatedCategoryIconItem } from "@/lib/content/category-icons";
-import type { HeroBlock, HeroCta, HeroMedia } from "@/lib/pages/block-types";
-import { cn } from "@/lib/utils";
 
 export type FeaturedEventCard = {
   slug: string;
@@ -16,6 +16,7 @@ export type FeaturedEventCard = {
   location: string;
   startDate: string; // ISO string
   coverImage: string;
+  logo?: string;
 };
 
 const SLIDE_INTERVAL = 6000;
@@ -173,7 +174,7 @@ export function FeaturedEventCyclerCard({
       <Link
         href={`/${locale}/events/${ev.slug}`}
         className={cn(
-          "group relative block overflow-hidden ghost-border",
+          "group relative block w-full overflow-hidden ghost-border",
           "h-[420px] xl:h-[460px]",
           "transition-all ease-in-out",
           exiting
@@ -200,12 +201,15 @@ export function FeaturedEventCyclerCard({
         <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-secondary via-secondary/50 to-transparent" />
 
         {/* Top labels */}
-        <div className="absolute inset-x-4 top-4 flex items-start justify-between">
-          <div className="flex items-center gap-1.5 bg-black/50 px-2.5 py-1.5 backdrop-blur-sm">
-            <span className="text-[10px] leading-none text-secondary">★</span>
-            <span className="hero-micro-text text-[9px] font-bold uppercase tracking-[0.22em] text-on-surface-variant">
-              {isAr ? "الفعالية المميّزة" : "Featured Event"}
-            </span>
+        <div className="absolute inset-x-4 top-4 flex items-start justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex items-center gap-1.5 bg-black/50 px-2.5 py-1.5 backdrop-blur-sm">
+              <span className="text-[10px] leading-none text-secondary">★</span>
+              <span className="hero-micro-text text-[9px] font-bold uppercase tracking-[0.22em] text-on-surface-variant">
+                {isAr ? "الفعالية المميّزة" : "Featured Event"}
+              </span>
+            </div>
+            
           </div>
           <span className="badge-teal hero-badge-text font-body !text-[9px] !py-[5px] !px-[8px]">
             {ev.location || (isAr ? "مسقط" : "Muscat")}
@@ -214,6 +218,17 @@ export function FeaturedEventCyclerCard({
 
         {/* Bottom content */}
         <div className="absolute inset-x-0 bottom-0 p-5 xl:p-6">
+          {ev.logo ? (
+              <div className="relative h-20 w-48 overflow-hidden mb-4">
+                <Image
+                  alt={`${ev.title} logo`}
+                  className="object-contain"
+                  fill
+                  sizes="150px"
+                  src={ev.logo}
+                />
+              </div>
+            ) : null}
           {/* Date */}
           <div className="mb-3 flex items-end gap-2.5">
             <span className="font-mono text-[3.25rem] font-light leading-none text-secondary">
@@ -446,7 +461,7 @@ export function HeroSlider({
 
         {/* Featured event cycling card */}
         {hasEvents && (
-          <div className="col-span-12 hidden lg:col-span-5 lg:col-start-8 lg:block xl:col-span-4 xl:col-start-9">
+          <div className="col-span-12 w-full justify-self-stretch sm:max-w-[420px] sm:justify-self-center lg:col-span-5 lg:col-start-8 lg:max-w-none lg:justify-self-auto xl:col-span-4 xl:col-start-9">
             <FeaturedEventCyclerCard events={featuredEvents} locale={locale} />
           </div>
         )}

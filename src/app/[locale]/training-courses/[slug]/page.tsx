@@ -234,6 +234,14 @@ export default async function TrainingCourseDetailPage({
         {activeLocale === "ar" ? "تحرير الدورة" : "Edit Training Course"}
       </Link>
     ) : null;
+  const collaboratorLogos = event.heroCollaboratorLogos.slice(0, 6);
+  const heroTags = event.heroTags.slice(0, 8);
+  const peopleLabel =
+    event.heroPeopleLabel.trim() ||
+    (activeLocale === "ar" ? "المدربون" : "Trainers");
+  const peopleStatLabel =
+    event.heroPeopleLabel.trim() ||
+    (activeLocale === "ar" ? "متحدثاً خبيراً" : "Expert Speakers");
 
   if (event.isFeatured) {
     return (
@@ -252,7 +260,8 @@ export default async function TrainingCourseDetailPage({
           </div>
           <div className="featured-hero-bg pointer-events-none absolute inset-0 z-0" />
           <div className="relative z-10 mx-auto w-full max-w-[1440px] px-6 pb-16 md:px-10 md:pb-24">
-            <div className="stagger max-w-3xl">
+            <div className="stagger grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+              <div className="min-w-0">
               <div className="mb-6 flex items-center gap-3">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-secondary">
                   {event.location ||
@@ -263,6 +272,15 @@ export default async function TrainingCourseDetailPage({
               <h1 className="text-glow mb-8 text-[clamp(2.5rem,6vw,5rem)] font-semibold leading-tight tracking-tight text-on-surface">
                 {event.title}
               </h1>
+              {heroTags.length > 0 ? (
+                <div className="mb-8 flex flex-wrap gap-2">
+                  {heroTags.map((tag) => (
+                    <span className="rounded border border-secondary/35 bg-secondary/10 px-2.5 py-1 text-[10px] font-medium text-secondary/90" key={tag}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
               <div className="mb-10">
                 <p className="mb-4 text-xs uppercase tracking-widest text-on-surface-variant">
                   {activeLocale === "ar"
@@ -305,6 +323,35 @@ export default async function TrainingCourseDetailPage({
                 </a>
               </div>
             </div>
+            {(event.heroProgramLogo || collaboratorLogos.length > 0) ? (
+              <aside className="w-full p-4 lg:mt-18">
+                {event.heroProgramLogo ? (
+                  <div className="mb-4">
+                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-on-surface-variant">
+                      {activeLocale === "ar" ? "البرنامج" : "Program"}
+                    </p>
+                    <div className="relative h-14 w-44 max-w-full overflow-hidden">
+                      <Image alt={`${event.title} logo`} className="object-contain object-left rtl:object-right" fill sizes="176px" src={event.heroProgramLogo} />
+                    </div>
+                  </div>
+                ) : null}
+                {collaboratorLogos.length > 0 ? (
+                  <div className={event.heroProgramLogo ? "border-t border-white/15 pt-3" : ""}>
+                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-on-surface-variant/90">
+                      {activeLocale === "ar" ? "بالتعاون مع" : "In Collaboration With"}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                      {collaboratorLogos.map((logo) => (
+                        <div className="relative h-8 w-24 overflow-hidden opacity-90" key={logo}>
+                          <Image alt="Collaborator logo" className="object-contain object-left rtl:object-right" fill sizes="96px" src={logo} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </aside>
+            ) : null}
+            </div>
           </div>
         </section>
 
@@ -317,7 +364,7 @@ export default async function TrainingCourseDetailPage({
               ],
               [
                 event.trainers.length || 1,
-                activeLocale === "ar" ? "متحدثاً خبيراً" : "Expert Speakers",
+                peopleStatLabel,
               ],
               [
                 event.agenda.length || 1,
@@ -339,7 +386,7 @@ export default async function TrainingCourseDetailPage({
 
         <section
           id="details"
-          className="mx-auto grid max-w-[1440px] grid-cols-12 gap-10 px-6 py-16 md:px-10 md:py-24"
+          className="mx-auto grid max-w-[1440px] grid-cols-12 gap-10 px-6 py-16 md:px-10 md:py-24 [&>*]:min-w-0"
         >
           <div className="col-span-12 lg:col-span-7">
             <span className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.35em] text-primary">
@@ -352,11 +399,11 @@ export default async function TrainingCourseDetailPage({
             </h2>
             <div className="mb-10 flex flex-col gap-4 text-sm leading-relaxed text-on-surface-variant">
               <div
-                className="prose prose-invert prose-img:rounded-[12px] prose-img:border prose-sm max-w-none prose-a:text-primary"
+                className="prose prose-invert prose-img:rounded-[12px] prose-img:border prose-sm max-w-none break-words prose-a:text-primary [&_img]:max-w-full [&_table]:w-full"
                 dangerouslySetInnerHTML={{ __html: descriptionHtml }}
               />
             </div>
-            <AgendaAndTrainers event={event} locale={activeLocale} />
+            <AgendaAndTrainers event={event} locale={activeLocale} peopleLabel={peopleLabel} />
             {showGallery && event.gallery.length > 0 ? (
               <ProgramGallery items={event.gallery} locale={activeLocale} />
             ) : null}
@@ -397,8 +444,8 @@ export default async function TrainingCourseDetailPage({
           {adminEdit}
         </div>
       </div>
-      <div className="mx-auto grid max-w-[1440px] grid-cols-12 gap-10 px-6 py-10 md:px-10 md:py-16">
-        <article className="col-span-12 lg:col-span-8">
+      <div className="mx-auto grid max-w-[1440px] grid-cols-12 md:gap-10 gap-y-10 px-6 py-10 md:px-10 md:py-16 [&>*]:min-w-0">
+        <article className="col-span-full lg:col-span-8">
           <div className="mb-6 flex items-center gap-2 text-xs text-on-surface-variant">
             <Link className="hover:text-on-surface" href={`/${activeLocale}`}>
               {activeLocale === "ar" ? "الرئيسية" : "Home"}
@@ -440,10 +487,10 @@ export default async function TrainingCourseDetailPage({
             ) : null}
           </div>
           <div
-            className="prose prose-invert prose-img:rounded-[12px] prose-img:border prose-sm max-w-none mb-10 text-sm prose-a:text-primary"
+            className="prose prose-invert prose-img:rounded-[12px] prose-img:border prose-sm max-w-none mb-10 break-words text-sm prose-a:text-primary [&_img]:max-w-full [&_table]:w-full"
             dangerouslySetInnerHTML={{ __html: descriptionHtml }}
           />
-          <AgendaAndTrainers event={event} locale={activeLocale} />
+          <AgendaAndTrainers event={event} locale={activeLocale} peopleLabel={peopleLabel} />
           {showGallery && event.gallery.length > 0 ? (
             <ProgramGallery items={event.gallery} locale={activeLocale} />
           ) : null}
@@ -561,9 +608,11 @@ function EventMetaCard({
 function AgendaAndTrainers({
   event,
   locale,
+  peopleLabel,
 }: {
   event: NonNullable<Awaited<ReturnType<typeof getEventDetailBySlug>>>;
   locale: "ar" | "en";
+  peopleLabel: string;
 }) {
   return (
     <>
@@ -584,10 +633,10 @@ function AgendaAndTrainers({
                 >
                   {item.time}
                 </span>
-                <div>
-                  <div className="text-sm font-semibold">{item.title}</div>
+                <div className="min-w-0">
+                  <div className="break-words text-sm font-semibold">{item.title}</div>
                   {item.trainerName ? (
-                    <div className="mt-1 text-xs text-on-surface-variant">
+                    <div className="mt-1 break-words text-xs text-on-surface-variant">
                       {item.trainerName}
                     </div>
                   ) : null}
@@ -600,7 +649,7 @@ function AgendaAndTrainers({
       {event.trainers.length ? (
         <div className="mb-10">
           <h2 className="mb-6 border-b border-outline-variant/20 pb-3 text-xl font-semibold">
-            {locale === "ar" ? "المدربون" : "Trainers"}
+            {peopleLabel}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {event.trainers.map((trainer) => (
@@ -645,5 +694,3 @@ function AgendaAndTrainers({
     </>
   );
 }
-
-

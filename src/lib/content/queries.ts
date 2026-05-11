@@ -41,7 +41,16 @@ export async function getLocalizedEvents(
     },
   });
 
-  return events.map((event) => ({
+  return events.map((event) => {
+    const heroConfig =
+      event.bankTransferDetails && typeof event.bankTransferDetails === "object"
+        ? (event.bankTransferDetails as {
+            hero?: {
+              programLogo?: string;
+            };
+          }).hero
+        : undefined;
+    return {
     id: event.id,
     categories: event.categories.map((entry) => {
       const translation = entry.category.translations.find((item) => item.locale === locale);
@@ -66,7 +75,10 @@ export async function getLocalizedEvents(
     title: event.translations[0]?.title ?? event.slug,
     type: event.type,
     excerpt: event.translations[0]?.shortDescription ?? "",
-  }));
+    heroProgramLogo:
+      typeof heroConfig?.programLogo === "string" ? heroConfig.programLogo : "",
+    };
+  });
 }
 
 export async function getEventDetailBySlug(
@@ -146,7 +158,24 @@ export async function getEventDetailBySlug(
             mode?: "always" | "after_passed" | "hidden";
             mediaIds?: string[];
           };
+          hero?: {
+            programLogo?: string;
+            collaboratorLogos?: string[];
+            tags?: { ar?: string[]; en?: string[] };
+            peopleLabel?: { ar?: string | null; en?: string | null };
+          };
         }).gallery
+      : undefined;
+  const heroConfig =
+    event.bankTransferDetails && typeof event.bankTransferDetails === "object"
+      ? (event.bankTransferDetails as {
+          hero?: {
+            programLogo?: string;
+            collaboratorLogos?: string[];
+            tags?: { ar?: string[]; en?: string[] };
+            peopleLabel?: { ar?: string | null; en?: string | null };
+          };
+        }).hero
       : undefined;
   const galleryIds = Array.isArray(galleryConfig?.mediaIds)
     ? (galleryConfig?.mediaIds ?? []).filter((id): id is string => typeof id === "string" && id.length > 0)
@@ -301,6 +330,22 @@ export async function getEventDetailBySlug(
     excerpt: event.translations[0]?.shortDescription ?? "",
     galleryMode: (galleryConfig?.mode ?? "hidden") as "always" | "after_passed" | "hidden",
     gallery,
+    heroProgramLogo:
+      typeof heroConfig?.programLogo === "string" ? heroConfig.programLogo : "",
+    heroCollaboratorLogos: Array.isArray(heroConfig?.collaboratorLogos)
+      ? heroConfig?.collaboratorLogos.filter(
+          (logo): logo is string => typeof logo === "string" && logo.trim().length > 0,
+        )
+      : [],
+    heroTags: Array.isArray(heroConfig?.tags?.[locale])
+      ? (heroConfig?.tags?.[locale] ?? []).filter(
+          (tag): tag is string => typeof tag === "string" && tag.trim().length > 0,
+        )
+      : [],
+    heroPeopleLabel:
+      typeof heroConfig?.peopleLabel?.[locale] === "string"
+        ? (heroConfig?.peopleLabel?.[locale] ?? "").trim()
+        : "",
   };
 }
 

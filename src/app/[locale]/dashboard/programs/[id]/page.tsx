@@ -66,6 +66,12 @@ export default async function EditProgramPage({
     event.bankTransferDetails && typeof event.bankTransferDetails === "object"
       ? (event.bankTransferDetails as {
           gallery?: { mode?: "always" | "after_passed" | "hidden"; mediaIds?: string[] };
+          hero?: {
+            programLogo?: string;
+            collaboratorLogos?: string[];
+            tags?: { ar?: string[]; en?: string[] };
+            peopleLabel?: { ar?: string | null; en?: string | null };
+          };
         })
       : {};
 
@@ -76,6 +82,18 @@ export default async function EditProgramPage({
     type: event.type as EventFormValues["type"],
     language: (event.language ?? "both") as EventFormValues["language"],
     coverImage: event.coverImage ?? "",
+    heroProgramLogo: galleryDetails.hero?.programLogo ?? "",
+    heroCollaboratorLogos: Array.isArray(galleryDetails.hero?.collaboratorLogos)
+      ? (galleryDetails.hero?.collaboratorLogos ?? []).join("\n")
+      : "",
+    heroTagsEn: Array.isArray(galleryDetails.hero?.tags?.en)
+      ? (galleryDetails.hero?.tags?.en ?? []).join("\n")
+      : "",
+    heroTagsAr: Array.isArray(galleryDetails.hero?.tags?.ar)
+      ? (galleryDetails.hero?.tags?.ar ?? []).join("\n")
+      : "",
+    heroPeopleLabelEn: galleryDetails.hero?.peopleLabel?.en ?? "",
+    heroPeopleLabelAr: galleryDetails.hero?.peopleLabel?.ar ?? "",
     location: event.location ?? "",
     capacity: event.capacity?.toString() ?? "",
     startDate: event.startDate.toISOString().slice(0, 10),

@@ -145,6 +145,12 @@ const eventSchema = z.object({
   contentAr: z.string(),
   contentEn: z.string(),
   coverImage: z.string(),
+  heroProgramLogo: z.string(),
+  heroCollaboratorLogos: z.string(),
+  heroPeopleLabelAr: z.string(),
+  heroPeopleLabelEn: z.string(),
+  heroTagsAr: z.string(),
+  heroTagsEn: z.string(),
   endDate: z.string().min(1),
   eventKind: z.enum(["event", "training_course"]),
   googleMapsLink: z.string(),
@@ -630,14 +636,21 @@ export function EventForm({
   const [isGalleryUploading, setIsGalleryUploading] = useState(false);
   const [galleryUploadProgress, setGalleryUploadProgress] = useState(0);
   const [galleryUploadStatus, setGalleryUploadStatus] = useState("");
+  const [heroMediaTarget, setHeroMediaTarget] = useState<
+    "cover" | "heroProgram" | "heroCollaborators"
+  >("cover");
   const idPrefix = useId();
   const coverImageInputId = `${idPrefix}-cover-image-input`;
+  const heroProgramLogoInputId = `${idPrefix}-hero-program-logo-input`;
+  const heroCollaboratorLogosInputId = `${idPrefix}-hero-collaborators-input`;
   const titleInputId = `${idPrefix}-title-input`;
   const slugInputId = `${idPrefix}-slug-input`;
   const shortDescriptionInputId = `${idPrefix}-short-description-input`;
   const seoTitleInputId = `${idPrefix}-seo-title-input`;
   const seoDescriptionInputId = `${idPrefix}-seo-description-input`;
   const [trainerCandidate, setTrainerCandidate] = useState("");
+  const heroProgramLogoInputRef = useRef<HTMLInputElement>(null);
+  const heroCollaboratorLogosInputRef = useRef<HTMLInputElement>(null);
 
   // ── Form ──────────────────────────────────────────────────────────────────
   const form = useForm<EventFormValues>({
@@ -648,6 +661,12 @@ export function EventForm({
       contentAr: "",
       contentEn: "",
       coverImage: "",
+      heroProgramLogo: "",
+      heroCollaboratorLogos: "",
+      heroPeopleLabelAr: "",
+      heroPeopleLabelEn: "",
+      heroTagsAr: "",
+      heroTagsEn: "",
       endDate: "",
       eventKind: "event",
       googleMapsLink: "",
@@ -710,6 +729,12 @@ export function EventForm({
   const selectedTrainerIds = form.watch("trainerIds");
   const selectedCategoryIds = form.watch("categories");
   const coverImage = form.watch("coverImage");
+  const heroProgramLogo = form.watch("heroProgramLogo");
+  const heroCollaboratorLogosText = form.watch("heroCollaboratorLogos");
+  const heroCollaboratorLogos = heroCollaboratorLogosText
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
   const galleryMode = form.watch("galleryMode");
   const galleryMediaIds = form.watch("galleryMediaIds");
   const shortEnLen = form.watch("shortEn").length;
@@ -879,6 +904,68 @@ export function EventForm({
     }
   }
 
+  async function uploadHeroProgramLogo(file: File | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file.");
+      return;
+    }
+    setIsCoverUploading(true);
+    setCoverUploadProgress(0);
+    setCoverUploadStatus("");
+    try {
+      const media = await uploadMediaFile(file, {
+        onProgress: (percent) => setCoverUploadProgress(percent),
+        onStatus: (status) => setCoverUploadStatus(status),
+      });
+      form.setValue("heroProgramLogo", media.url, { shouldDirty: true });
+      toast.success("Program logo uploaded.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setIsCoverUploading(false);
+    }
+  }
+
+  async function uploadHeroCollaboratorLogos(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const accepted = Array.from(files).filter((file) =>
+      file.type.startsWith("image/"),
+    );
+    if (accepted.length === 0) {
+      toast.error("Please select image files.");
+      return;
+    }
+    setIsCoverUploading(true);
+    setCoverUploadProgress(0);
+    setCoverUploadStatus("");
+    try {
+      const urls: string[] = [];
+      for (let i = 0; i < accepted.length; i++) {
+        const file = accepted[i];
+        const media = await uploadMediaFile(file, {
+          onProgress: (percent) => {
+            const overall = Math.round(
+              ((i + percent / 100) / accepted.length) * 100,
+            );
+            setCoverUploadProgress(overall);
+          },
+          onStatus: (status) => setCoverUploadStatus(status),
+        });
+        urls.push(media.url);
+      }
+      const merged = Array.from(new Set([...heroCollaboratorLogos, ...urls]));
+      form.setValue("heroCollaboratorLogos", merged.join("\n"), {
+        shouldDirty: true,
+      });
+      toast.success(`${urls.length} collaborator logo(s) uploaded.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setIsCoverUploading(false);
+    }
+  }
+
   async function loadCoverLibraryPage(page: number) {
     setCoverLibraryLoading(true);
     try {
@@ -925,7 +1012,8 @@ export function EventForm({
     }
   }
 
-  async function openCoverLibrary() {
+  async function openCoverLibrary(target: "cover" | "heroProgram" | "heroCollaborators" = "cover") {
+    setHeroMediaTarget(target);
     await loadCoverLibraryPage(1);
     setCoverLibraryOpen(true);
   }
@@ -1302,6 +1390,176 @@ export function EventForm({
                           )}
                           <input className="sr-only" type="text" {...form.register("coverImage")} />
                           <FieldError errors={[form.formState.errors.coverImage]} />
+                    </Field>
+
+                    <FieldGroup className="grid gap-3 md:grid-cols-2">
+                      <Field className="grid gap-2">
+                        <FieldLabel htmlFor={heroProgramLogoInputId}>
+                          Hero Program Logo
+                        </FieldLabel>
+                        <input
+                          ref={heroProgramLogoInputRef}
+                          accept="image/*"
+                          className="sr-only"
+                          id={heroProgramLogoInputId}
+                          type="file"
+                          onChange={(e) =>
+                            void uploadHeroProgramLogo(e.target.files?.[0])
+                          }
+                        />
+                        <div className="rounded-md border border-zinc-200 bg-white p-2">
+                          {heroProgramLogo ? (
+                            <div className="relative h-16 w-40 overflow-hidden rounded bg-zinc-50">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img alt="Hero program logo" className="h-full w-full object-contain p-2" src={heroProgramLogo} />
+                            </div>
+                          ) : (
+                            <p className="text-xs text-zinc-400">No logo selected</p>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button className="h-7 text-[11.5px]" size="sm" type="button" variant="outline" onClick={() => heroProgramLogoInputRef.current?.click()}>
+                            <Upload className="mr-1 size-3" /> Replace
+                          </Button>
+                          <Button className="h-7 text-[11.5px]" size="sm" type="button" variant="outline" onClick={() => void openCoverLibrary("heroProgram")}>
+                            <Search className="mr-1 size-3" /> Browse
+                          </Button>
+                          <Button className="h-7 text-[11.5px] text-red-500 hover:text-red-600" size="sm" type="button" variant="outline" onClick={() => form.setValue("heroProgramLogo", "", { shouldDirty: true })}>
+                            <X className="mr-1 size-3" /> Remove
+                          </Button>
+                        </div>
+                        <FieldDescription>
+                          Shown beside the featured hero title.
+                        </FieldDescription>
+                      </Field>
+                      <Field className="grid gap-2">
+                        <FieldLabel htmlFor={heroCollaboratorLogosInputId}>
+                          Collaborator Logos
+                        </FieldLabel>
+                        <input
+                          ref={heroCollaboratorLogosInputRef}
+                          accept="image/*"
+                          className="sr-only"
+                          id={heroCollaboratorLogosInputId}
+                          multiple
+                          type="file"
+                          onChange={(e) =>
+                            void uploadHeroCollaboratorLogos(e.target.files)
+                          }
+                        />
+                        <div className="rounded-md border border-zinc-200 bg-white p-2">
+                          {heroCollaboratorLogos.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {heroCollaboratorLogos.map((url) => (
+                                <div className="group relative h-12 w-24 overflow-hidden rounded border border-zinc-200 bg-zinc-50" key={url}>
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img alt="Collaborator logo" className="h-full w-full object-contain p-1" src={url} />
+                                  <button
+                                    className="absolute right-0 top-0 hidden bg-black/65 px-1 py-0.5 text-[10px] text-white group-hover:block"
+                                    type="button"
+                                    onClick={() =>
+                                      form.setValue(
+                                        "heroCollaboratorLogos",
+                                        heroCollaboratorLogos.filter((item) => item !== url).join("\n"),
+                                        { shouldDirty: true },
+                                      )
+                                    }
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-zinc-400">No collaborator logos selected</p>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button className="h-7 text-[11.5px]" size="sm" type="button" variant="outline" onClick={() => heroCollaboratorLogosInputRef.current?.click()}>
+                            <Upload className="mr-1 size-3" /> Replace
+                          </Button>
+                          <Button className="h-7 text-[11.5px]" size="sm" type="button" variant="outline" onClick={() => void openCoverLibrary("heroCollaborators")}>
+                            <Search className="mr-1 size-3" /> Browse
+                          </Button>
+                          <Button
+                            className="h-7 text-[11.5px] text-red-500 hover:text-red-600"
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                              form.setValue("heroCollaboratorLogos", "", {
+                                shouldDirty: true,
+                              })
+                            }
+                          >
+                            <X className="mr-1 size-3" /> Remove
+                          </Button>
+                        </div>
+                        <FieldDescription>
+                          These render in the featured hero as partner logos.
+                        </FieldDescription>
+                      </Field>
+                    </FieldGroup>
+                    <Field className="grid gap-2">
+                      <FieldLabel>
+                        People Label ({activeLocale.toUpperCase()})
+                      </FieldLabel>
+                      <Input
+                        className={inputCls}
+                        dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                        placeholder={
+                          activeLocale === "ar" ? "المدربون" : "Trainers"
+                        }
+                        value={form.watch(activeLocale === "en" ? "heroPeopleLabelEn" : "heroPeopleLabelAr")}
+                        onChange={(e) =>
+                          form.setValue(
+                            activeLocale === "en"
+                              ? "heroPeopleLabelEn"
+                              : "heroPeopleLabelAr",
+                            e.target.value,
+                            { shouldDirty: true },
+                          )
+                        }
+                      />
+                      <FieldDescription>
+                        If empty, default label is used automatically.
+                      </FieldDescription>
+                    </Field>
+                    <Field className="grid gap-2">
+                      <FieldLabel>
+                        Hero Tags ({activeLocale.toUpperCase()}, one per line)
+                      </FieldLabel>
+                      <Textarea
+                        className={cn(inputCls, "min-h-24 py-2")}
+                        dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                        placeholder={
+                          activeLocale === "ar"
+                            ? "القيادة\nعلم النفس"
+                            : "Leadership\nPsychology"
+                        }
+                        value={form.watch(activeLocale === "en" ? "heroTagsEn" : "heroTagsAr")}
+                        onChange={(e) =>
+                          form.setValue(
+                            activeLocale === "en" ? "heroTagsEn" : "heroTagsAr",
+                            e.target.value,
+                            { shouldDirty: true },
+                          )
+                        }
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        {(form
+                          .watch(activeLocale === "en" ? "heroTagsEn" : "heroTagsAr")
+                          .split("\n")
+                          .map((item) => item.trim())
+                          .filter(Boolean)).map((tag) => (
+                          <Badge className="border-teal-200 bg-teal-50 text-teal-700" key={tag} variant="outline">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                      <FieldDescription>
+                        Locale-aware tags. Switch EN/AR above to edit each locale.
+                      </FieldDescription>
                     </Field>
 
                     {/* Title + inline editable slug */}
@@ -3297,26 +3555,58 @@ export function EventForm({
         acceptedKinds={["image"]}
         emptyText="No images uploaded yet."
         initialSelectedIds={
-          form.watch("coverImage")
-            ? coverLibraryItems
-                .filter((item) => item.url === form.watch("coverImage"))
-                .map((item) => item.id)
-            : []
+          heroMediaTarget === "cover"
+            ? (form.watch("coverImage")
+                ? coverLibraryItems
+                    .filter((item) => item.url === form.watch("coverImage"))
+                    .map((item) => item.id)
+                : [])
+            : heroMediaTarget === "heroProgram"
+              ? (form.watch("heroProgramLogo")
+                  ? coverLibraryItems
+                      .filter(
+                        (item) => item.url === form.watch("heroProgramLogo"),
+                      )
+                      .map((item) => item.id)
+                  : [])
+              : coverLibraryItems
+                  .filter((item) => heroCollaboratorLogos.includes(item.url))
+                  .map((item) => item.id)
         }
         items={coverLibraryItems}
         loading={coverLibraryLoading}
-        multiple={false}
         open={coverLibraryOpen}
         page={coverLibraryPage}
         pageLoading={coverLibraryLoading}
         totalPages={coverLibraryTotalPages}
-        title="Media Library"
+        title={
+          heroMediaTarget === "cover"
+            ? "Media Library"
+            : heroMediaTarget === "heroProgram"
+              ? "Program Logo Library"
+              : "Collaborator Logos Library"
+        }
         onPageChange={loadCoverLibraryPage}
         onConfirm={(selected) => {
-          const first = selected[0];
-          if (!first) return;
-          form.setValue("coverImage", first.url, { shouldDirty: true });
+          if (heroMediaTarget === "cover") {
+            const first = selected[0];
+            if (!first) return;
+            form.setValue("coverImage", first.url, { shouldDirty: true });
+            return;
+          }
+          if (heroMediaTarget === "heroProgram") {
+            const first = selected[0];
+            if (!first) return;
+            form.setValue("heroProgramLogo", first.url, { shouldDirty: true });
+            return;
+          }
+          const urls = selected.map((item) => item.url);
+          const merged = Array.from(new Set([...heroCollaboratorLogos, ...urls]));
+          form.setValue("heroCollaboratorLogos", merged.join("\n"), {
+            shouldDirty: true,
+          });
         }}
+        multiple={heroMediaTarget === "heroCollaborators"}
         onOpenChange={setCoverLibraryOpen}
       />
 

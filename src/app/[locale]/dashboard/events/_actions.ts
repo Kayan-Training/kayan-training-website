@@ -132,6 +132,27 @@ export async function updateEventAction(
             mode: values.galleryMode,
             mediaIds: values.galleryMediaIds,
           },
+          hero: {
+            programLogo: values.heroProgramLogo || null,
+            collaboratorLogos: values.heroCollaboratorLogos
+              .split("\n")
+              .map((value) => value.trim())
+              .filter(Boolean),
+            tags: {
+              en: values.heroTagsEn
+                .split("\n")
+                .map((value) => value.trim())
+                .filter(Boolean),
+              ar: values.heroTagsAr
+                .split("\n")
+                .map((value) => value.trim())
+                .filter(Boolean),
+            },
+            peopleLabel: {
+              en: values.heroPeopleLabelEn.trim() || null,
+              ar: values.heroPeopleLabelAr.trim() || null,
+            },
+          },
         },
         showMapEmbed: values.showMapEmbed,
         googleMapsLink: values.googleMapsLink || null,
@@ -280,6 +301,27 @@ export async function createEventAction(
           gallery: {
             mode: values.galleryMode,
             mediaIds: values.galleryMediaIds,
+          },
+          hero: {
+            programLogo: values.heroProgramLogo || null,
+            collaboratorLogos: values.heroCollaboratorLogos
+              .split("\n")
+              .map((value) => value.trim())
+              .filter(Boolean),
+            tags: {
+              en: values.heroTagsEn
+                .split("\n")
+                .map((value) => value.trim())
+                .filter(Boolean),
+              ar: values.heroTagsAr
+                .split("\n")
+                .map((value) => value.trim())
+                .filter(Boolean),
+            },
+            peopleLabel: {
+              en: values.heroPeopleLabelEn.trim() || null,
+              ar: values.heroPeopleLabelAr.trim() || null,
+            },
           },
         },
         showMapEmbed: values.showMapEmbed,

@@ -75,7 +75,7 @@ export function ProgramGallery({
   }, [activeIndex]);
 
   return (
-    <section className="mt-10 border-t border-outline-variant/20 pt-8">
+    <section className="mt-10 min-w-0 border-t border-outline-variant/20 pt-8">
       <h2 className="mb-2 text-xl font-semibold">
         {locale === "ar" ? "معرض البرنامج" : "Program Gallery"}
       </h2>
@@ -85,10 +85,10 @@ export function ProgramGallery({
           : "Photos and videos from this program."}
       </p>
 
-      <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-4">
         {items.map((item, index) => (
           <button
-            className="group relative aspect-square cursor-pointer overflow-hidden rounded-md border border-outline-variant/30 bg-surface-container-lowest"
+            className="group relative min-w-0 aspect-square cursor-pointer overflow-hidden rounded-md border border-outline-variant/30 bg-surface-container-lowest"
             key={item.id}
             type="button"
             onClick={() => setActiveIndex(index)}

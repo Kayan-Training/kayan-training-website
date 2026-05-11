@@ -1,11 +1,11 @@
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 
-import { getPostDetailBySlug, getLocalizedPosts } from "@/lib/content/queries";
+import { getLocalizedPosts, getPostDetailBySlug } from "@/lib/content/queries";
 import { isSupportedLocale } from "@/lib/i18n/config";
 
 export async function generateMetadata({
@@ -182,9 +182,9 @@ export default async function PostDetailPage({
       </section>
 
       {/* ── Content grid ── */}
-      <div className="mx-auto grid max-w-[1200px] grid-cols-12 gap-8 px-6 py-10 md:px-10 md:py-14">
+      <div className="mx-auto grid max-w-[1200px] grid-cols-12 gap-8 px-6 py-10 md:px-10 md:py-14 [&>*]:min-w-0">
         {/* Article */}
-        <article className="col-span-12 lg:col-span-8">
+        <article className="col-span-full lg:col-span-8">
           {post.excerpt ? (
             <div className="ghost-border mb-8 bg-surface-container-lowest p-6 md:p-8">
               <h2 className="mb-4 text-xl font-bold">
@@ -206,6 +206,8 @@ export default async function PostDetailPage({
                 "prose-strong:text-on-surface",
                 "prose-li:text-on-surface-variant",
                 "prose-code:text-secondary prose-code:before:content-none prose-code:after:content-none",
+                "[&_img]:max-w-full [&_img]:h-auto",
+                "[&_table]:w-full",
               ].join(" ")}
               dangerouslySetInnerHTML={{ __html: body }}
             />

@@ -234,10 +234,10 @@ function ValuesListRenderer({ block }: { block: ValuesListBlock }) {
         ? "md:grid-cols-2"
         : "md:grid-cols-3";
   return (
-    <section className="bg-surface-container-lowest py-16 md:py-20">
+    <section className="overflow-x-hidden bg-surface-container-lowest py-16 md:py-20 grid-cols-1">
       <div className="mx-auto max-w-[1440px] px-6 md:px-10">
-        <div className="grid grid-cols-12 gap-10 md:gap-16">
-          <div className="col-span-12 lg:col-span-4">
+        <div className="grid gap-10 md:gap-16 [&>*]:min-w-0">
+          <div className="col-span-full min-w-0 lg:col-span-4">
             {block.eyebrow && (
               <span className="section-kicker">{block.eyebrow}</span>
             )}
@@ -248,7 +248,7 @@ function ValuesListRenderer({ block }: { block: ValuesListBlock }) {
               {block.heading}
             </h2>
           </div>
-          <div className="col-span-12 lg:col-span-8">
+          <div className="col-span-full min-w-0 lg:col-span-8">
             <div
               className={cn(
                 "grid grid-cols-1 gap-3 border-t border-outline-variant/25 pt-3",
@@ -257,17 +257,17 @@ function ValuesListRenderer({ block }: { block: ValuesListBlock }) {
             >
               {items.map((item, i) => (
                 <div
-                  className="group flex cursor-default items-start gap-6 border border-outline-variant/20 px-5 py-5 transition-colors hover:bg-surface-container-low"
+                  className="group flex min-w-0 cursor-default items-start gap-6 border border-outline-variant/20 px-5 py-5 transition-colors hover:bg-surface-container-low"
                   key={i}
                 >
                   <span className="mt-1 w-5 shrink-0 font-mono text-[10px] tracking-widest text-secondary">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <div>
-                    <h4 className="mb-1 text-sm font-bold text-on-surface transition-colors group-hover:text-secondary">
+                  <div className="min-w-0">
+                    <h4 className="mb-1 break-words text-sm font-bold text-on-surface transition-colors group-hover:text-secondary">
                       {item.title}
                     </h4>
-                    <p className="text-xs leading-relaxed text-on-surface-variant">
+                    <p className="break-words text-xs leading-relaxed text-on-surface-variant">
                       {item.desc}
                     </p>
                   </div>
@@ -679,7 +679,7 @@ function RichTextRenderer({ block }: { block: RichTextBlock }) {
   return (
     <section className="mx-auto max-w-[920px] px-6 py-12 md:px-10 md:py-16">
       <article
-        className="prose prose-neutral max-w-none prose-invert [&_a]:text-primary hover:[&_a]:text-secondary [&_h2]:border-b [&_h2]:border-outline-variant/20 [&_h2]:pb-2"
+        className="prose prose-neutral max-w-none break-words prose-invert [&_a]:text-primary hover:[&_a]:text-secondary [&_h2]:border-b [&_h2]:border-outline-variant/20 [&_h2]:pb-2 [&_img]:max-w-full [&_table]:w-full"
         dangerouslySetInnerHTML={{ __html: block.html }}
       />
     </section>
@@ -704,6 +704,7 @@ async function HeroBlockRenderer({
       location: ev.location,
       startDate: ev.startDate.toISOString(),
       coverImage: ev.coverImage,
+      logo: ev.heroProgramLogo,
     }));
   }
   const shouldShowCategoryIcons = (block.slides ?? []).some((slide) =>

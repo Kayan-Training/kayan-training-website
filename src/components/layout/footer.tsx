@@ -66,8 +66,8 @@ export function SiteFooter({
 
   return (
     <footer className="border-t border-white/[0.05] bg-surface-container-lowest">
-      <div className="mx-auto grid w-full max-w-[1440px] grid-cols-1 gap-12 px-6 py-16 md:grid-cols-2 md:px-10 lg:grid-cols-4 lg:py-24">
-        <div className="lg:col-span-2">
+      <div className="mx-auto grid w-full max-w-[1440px] grid-cols-1 gap-12 px-6 py-16 md:grid-cols-2 md:px-10 lg:grid-cols-4 lg:py-24 [&>*]:min-w-0">
+        <div className="min-w-0 lg:col-span-2">
           <Link className="mb-5 inline-block" href={`/${locale}`}>
             <Image alt="Kayan" className="h-12 w-auto" height={48} src="/brand/kayan-logo.svg" width={200} />
           </Link>
@@ -85,11 +85,11 @@ export function SiteFooter({
               icons={footerCategoryIcons ?? []}
             />
           ) : null}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <a className="font-mono text-xs text-primary hover:text-secondary" href={`mailto:${contactEmail}`}>{contactEmail}</a>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+            <a className="min-w-0 break-all font-mono text-xs text-primary hover:text-secondary" href={`mailto:${contactEmail}`}>{contactEmail}</a>
             <span className="hidden text-outline sm:block">·</span>
             <a
-              className="font-mono text-xs text-on-surface-variant hover:text-on-surface"
+              className="min-w-0 break-all font-mono text-xs text-on-surface-variant hover:text-on-surface"
               href={`https://api.whatsapp.com/send?phone=${whatsappPhone}`}
               rel="noreferrer"
               target="_blank"
@@ -118,7 +118,7 @@ export function SiteFooter({
             ) : null}
           </div>
         </div>
-        <div>
+        <div className="min-w-0">
           <h5 className="footer-micro-title mb-5 text-[10px] font-bold uppercase tracking-widest text-on-surface">
             {locale === "ar" ? "روابط" : "Links"}
           </h5>
@@ -130,7 +130,7 @@ export function SiteFooter({
             <Link className="block text-sm text-on-surface-variant hover:text-primary" href={`/${locale}/auth`}>{locale === "ar" ? "تسجيل الدخول" : "Login"}</Link>
           </div>
         </div>
-        <div>
+        <div className="min-w-0">
           <h5 className="footer-micro-title mb-5 text-[10px] font-bold uppercase tracking-widest text-on-surface">
             {locale === "ar" ? "العنوان" : "Address"}
           </h5>

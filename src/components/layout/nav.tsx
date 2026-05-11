@@ -94,8 +94,8 @@ export function SiteNav({
   );
 
   return (
-    <nav className="glass-nav fixed top-0 z-50 w-full border-b border-outline-variant/40">
-      <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between px-6 md:px-10">
+    <nav className="glass-nav fixed top-0 z-50 w-full overflow-x-clip border-b border-outline-variant/40">
+      <div className="mx-auto flex h-16 w-full max-w-[1440px] min-w-0 items-center justify-between px-6 md:px-10">
         <Link aria-label="Kayan Home" className="flex items-center shrink-0" href={`/${locale}`}>
           <Image alt="Kayan" className="h-10 w-auto" height={40} priority src="/brand/kayan-logo.svg" width={160} />
         </Link>
@@ -115,7 +115,7 @@ export function SiteNav({
           })}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <button
             aria-expanded={searchOpen}
             aria-label={locale === "ar" ? "بحث" : "Search"}
