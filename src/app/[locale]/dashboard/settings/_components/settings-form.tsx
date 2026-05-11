@@ -81,6 +81,13 @@ type SettingGroup = {
   fields: SettingField[];
 };
 
+type FieldSection = {
+  id: string;
+  title: string;
+  description: string;
+  fieldKeys: string[];
+};
+
 const SETTINGS_SCHEMA: SettingGroup[] = [
   {
     group: "Site",
@@ -103,6 +110,48 @@ const SETTINGS_SCHEMA: SettingGroup[] = [
       { key: "contact.phone", label: "Phone", inputType: "tel", placeholder: "+968 1234 5678" },
       { key: "contact.address.en", label: "Address (English)", inputType: "textarea", placeholder: "123 Main Street, Muscat, Oman" },
       { key: "contact.address.ar", label: "Address (Arabic)", inputType: "textarea", placeholder: "مسقط، سلطنة عُمان" },
+    ],
+  },
+  {
+    group: "Contact Page",
+    description: "Fully managed content for the Contact Us page (hero, identity panel, form labels/messages, and map/no-map panel).",
+    fields: [
+      { key: "contact.page.logoUrl", label: "Company Logo", inputType: "url", placeholder: "Browse media library or paste URL" },
+      { key: "contact.page.heroImageUrl", label: "Hero Background Image", inputType: "url", placeholder: "Browse media library or paste URL" },
+      { key: "contact.page.eyebrow.en", label: "Eyebrow (English)", inputType: "text", placeholder: "Contact Us" },
+      { key: "contact.page.eyebrow.ar", label: "Eyebrow (Arabic)", inputType: "text", placeholder: "تواصل معنا" },
+      { key: "contact.page.title.en", label: "Title (English)", inputType: "text", placeholder: "Let's Discuss Your Training Needs" },
+      { key: "contact.page.title.ar", label: "Title (Arabic)", inputType: "text", placeholder: "دعنا نناقش احتياجك التدريبي" },
+      { key: "contact.page.subtitle.en", label: "Subtitle (English)", inputType: "textarea", placeholder: "Send your inquiry and the Kayan team will get back to you shortly." },
+      { key: "contact.page.subtitle.ar", label: "Subtitle (Arabic)", inputType: "textarea", placeholder: "أرسل استفسارك وسيعود إليك فريق كيان بأسرع وقت." },
+      { key: "contact.page.form.heading.en", label: "Form Heading (English)", inputType: "text", placeholder: "Send Your Inquiry" },
+      { key: "contact.page.form.heading.ar", label: "Form Heading (Arabic)", inputType: "text", placeholder: "أرسل استفسارك" },
+      { key: "contact.page.form.nameLabel.en", label: "Name Label (English)", inputType: "text", placeholder: "Name" },
+      { key: "contact.page.form.nameLabel.ar", label: "Name Label (Arabic)", inputType: "text", placeholder: "الاسم" },
+      { key: "contact.page.form.emailLabel.en", label: "Email Label (English)", inputType: "text", placeholder: "Email" },
+      { key: "contact.page.form.emailLabel.ar", label: "Email Label (Arabic)", inputType: "text", placeholder: "البريد الإلكتروني" },
+      { key: "contact.page.form.phoneLabel.en", label: "Phone Label (English)", inputType: "text", placeholder: "Phone" },
+      { key: "contact.page.form.phoneLabel.ar", label: "Phone Label (Arabic)", inputType: "text", placeholder: "الهاتف" },
+      { key: "contact.page.form.companyLabel.en", label: "Company Label (English)", inputType: "text", placeholder: "Company" },
+      { key: "contact.page.form.companyLabel.ar", label: "Company Label (Arabic)", inputType: "text", placeholder: "الشركة" },
+      { key: "contact.page.form.queryLabel.en", label: "Query Label (English)", inputType: "text", placeholder: "How can we help you?" },
+      { key: "contact.page.form.queryLabel.ar", label: "Query Label (Arabic)", inputType: "text", placeholder: "الاستفسار" },
+      { key: "contact.page.form.submitLabel.en", label: "Submit Button Label (English)", inputType: "text", placeholder: "Send Message" },
+      { key: "contact.page.form.submitLabel.ar", label: "Submit Button Label (Arabic)", inputType: "text", placeholder: "إرسال الرسالة" },
+      { key: "contact.page.form.submittingLabel.en", label: "Submitting Label (English)", inputType: "text", placeholder: "Sending..." },
+      { key: "contact.page.form.submittingLabel.ar", label: "Submitting Label (Arabic)", inputType: "text", placeholder: "جاري الإرسال..." },
+      { key: "contact.page.form.successTitle.en", label: "Success Title (English)", inputType: "text", placeholder: "Message Sent" },
+      { key: "contact.page.form.successTitle.ar", label: "Success Title (Arabic)", inputType: "text", placeholder: "تم إرسال رسالتك" },
+      { key: "contact.page.form.successMessage.en", label: "Success Message (English)", inputType: "textarea", placeholder: "Thank you {name}. We have received your inquiry..." },
+      { key: "contact.page.form.successMessage.ar", label: "Success Message (Arabic)", inputType: "textarea", placeholder: "شكرًا {name}. استلمنا استفسارك..." },
+      { key: "contact.page.form.errorMessage.en", label: "Error Message (English)", inputType: "text", placeholder: "Failed to send message. Please try again." },
+      { key: "contact.page.form.errorMessage.ar", label: "Error Message (Arabic)", inputType: "text", placeholder: "تعذر إرسال الرسالة، حاول مرة أخرى." },
+      { key: "contact.page.mapEmbedUrl", label: "Google Map Embed URL", inputType: "url", placeholder: "https://www.google.com/maps/embed?..." },
+      { key: "contact.page.noMapImageUrl", label: "No-map Panel Image", inputType: "url", placeholder: "Browse media library or paste URL" },
+      { key: "contact.page.noMapTitle.en", label: "No-map Title (English)", inputType: "text", placeholder: "From Inquiry to Implementation" },
+      { key: "contact.page.noMapTitle.ar", label: "No-map Title (Arabic)", inputType: "text", placeholder: "ندعمك من الفكرة إلى التنفيذ" },
+      { key: "contact.page.noMapDescription.en", label: "No-map Description (English)", inputType: "textarea", placeholder: "Our team helps you design practical training programs..." },
+      { key: "contact.page.noMapDescription.ar", label: "No-map Description (Arabic)", inputType: "textarea", placeholder: "فريقنا يساعدك في بناء برامج تدريبية عملية..." },
     ],
   },
   {
@@ -185,6 +234,71 @@ const inputCls =
   "placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors";
 
 const labelCls = "mb-1.5 block text-xs font-medium text-muted-foreground";
+
+const CONTACT_PAGE_FIELD_SECTIONS: FieldSection[] = [
+  {
+    id: "contact-hero",
+    title: "Hero",
+    description: "Top section visuals and intro copy.",
+    fieldKeys: [
+      "contact.page.heroImageUrl",
+      "contact.page.eyebrow.en",
+      "contact.page.eyebrow.ar",
+      "contact.page.title.en",
+      "contact.page.title.ar",
+      "contact.page.subtitle.en",
+      "contact.page.subtitle.ar",
+    ],
+  },
+  {
+    id: "contact-branding",
+    title: "Branding Panel",
+    description: "Company logo and identity block visuals.",
+    fieldKeys: ["contact.page.logoUrl"],
+  },
+  {
+    id: "contact-form",
+    title: "Form Content",
+    description: "Form heading, labels, button states, and messages.",
+    fieldKeys: [
+      "contact.page.form.heading.en",
+      "contact.page.form.heading.ar",
+      "contact.page.form.nameLabel.en",
+      "contact.page.form.nameLabel.ar",
+      "contact.page.form.emailLabel.en",
+      "contact.page.form.emailLabel.ar",
+      "contact.page.form.phoneLabel.en",
+      "contact.page.form.phoneLabel.ar",
+      "contact.page.form.companyLabel.en",
+      "contact.page.form.companyLabel.ar",
+      "contact.page.form.queryLabel.en",
+      "contact.page.form.queryLabel.ar",
+      "contact.page.form.submitLabel.en",
+      "contact.page.form.submitLabel.ar",
+      "contact.page.form.submittingLabel.en",
+      "contact.page.form.submittingLabel.ar",
+      "contact.page.form.successTitle.en",
+      "contact.page.form.successTitle.ar",
+      "contact.page.form.successMessage.en",
+      "contact.page.form.successMessage.ar",
+      "contact.page.form.errorMessage.en",
+      "contact.page.form.errorMessage.ar",
+    ],
+  },
+  {
+    id: "contact-location",
+    title: "Map and Fallback",
+    description: "Google map and no-map panel content.",
+    fieldKeys: [
+      "contact.page.mapEmbedUrl",
+      "contact.page.noMapImageUrl",
+      "contact.page.noMapTitle.en",
+      "contact.page.noMapTitle.ar",
+      "contact.page.noMapDescription.en",
+      "contact.page.noMapDescription.ar",
+    ],
+  },
+];
 
 function ThemeLivePreview({
   locale,
@@ -337,6 +451,101 @@ function SettingGroupCard({
     else toast.success("Default preset selected. Click Save Frontend Theme to apply.");
   }
 
+  function renderField(field: SettingField) {
+    return (
+      <div key={field.key} className={cn(field.inputType === "textarea" && "sm:col-span-2")}>
+        <label className={labelCls} htmlFor={field.key}>
+          {field.label}
+        </label>
+        {field.key === "auth.side.imageUrl" || field.key === "contact.page.logoUrl" || field.key === "contact.page.heroImageUrl" || field.key === "contact.page.noMapImageUrl" ? (
+          <ImagePickerField
+            fetchMedia={fetchSettingsMediaAction}
+            value={values[field.key] ?? ""}
+            onChange={(next) => set(field.key, next)}
+          />
+        ) : field.inputType === "textarea" ? (
+          <textarea
+            className={cn(inputCls, "h-20 resize-none py-2")}
+            id={field.key}
+            name={field.key}
+            placeholder={field.placeholder}
+            title={field.label}
+            value={values[field.key] ?? ""}
+            onChange={(e) => set(field.key, e.target.value)}
+          />
+        ) : field.inputType === "color" ? (
+          <div className="flex items-center gap-2">
+            <input
+              className="h-10 w-14 cursor-pointer rounded-md border border-border/70 bg-card p-1"
+              id={field.key}
+              name={field.key}
+              title={field.label}
+              type="color"
+              value={values[field.key] || FRONTEND_THEME_DEFAULTS[field.key] || "#000000"}
+              onChange={(e) => set(field.key, e.target.value)}
+            />
+            <input
+              className={inputCls}
+              id={`${field.key}-text`}
+              name={`${field.key}-text`}
+              placeholder="#121414"
+              title={`${field.label} (hex)`}
+              value={values[field.key] ?? ""}
+              onChange={(e) => set(field.key, e.target.value)}
+            />
+          </div>
+        ) : field.inputType === "switch" ? (
+          <button
+            className={cn(
+              "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none",
+              values[field.key] === "1" ? "bg-primary" : "bg-muted",
+            )}
+            id={field.key}
+            name={field.key}
+            aria-checked={values[field.key] === "1" ? "true" : "false"}
+            role="switch"
+            title={field.label}
+            type="button"
+            onClick={() => set(field.key, values[field.key] === "1" ? "0" : "1")}
+          >
+            <span
+              className={cn(
+                "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform duration-200",
+                values[field.key] === "1" ? "translate-x-5" : "translate-x-0",
+              )}
+            />
+          </button>
+        ) : (
+          <input
+            className={inputCls}
+            id={field.key}
+            name={field.key}
+            placeholder={field.placeholder}
+            title={field.label}
+            type={field.inputType}
+            value={values[field.key] ?? ""}
+            onChange={(e) => set(field.key, e.target.value)}
+          />
+        )}
+      </div>
+    );
+  }
+
+  const isContactPageGroup = group.group === "Contact Page";
+  const fieldsByKey = useMemo(
+    () => new Map(group.fields.map((field) => [field.key, field])),
+    [group.fields],
+  );
+  const contactSections = useMemo(() => {
+    if (!isContactPageGroup) return [];
+    return CONTACT_PAGE_FIELD_SECTIONS.map((section) => ({
+      ...section,
+      fields: section.fieldKeys
+        .map((key) => fieldsByKey.get(key))
+        .filter((field): field is SettingField => Boolean(field)),
+    })).filter((section) => section.fields.length > 0);
+  }, [fieldsByKey, isContactPageGroup]);
+
   return (
     <div className="overflow-hidden rounded-xl border border-border/70 bg-card">
       <div className="border-b border-border/50 bg-muted/20 px-5 py-3">
@@ -345,6 +554,20 @@ function SettingGroupCard({
       </div>
       <div className="grid gap-4 p-5 sm:grid-cols-2">
         {isFrontendThemeGroup ? <ThemeLivePreview locale={locale} values={values} /> : null}
+        {isContactPageGroup ? (
+          <div className="sm:col-span-2 flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-muted/20 p-3">
+            <p className="mr-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Jump to</p>
+            {contactSections.map((section) => (
+              <a
+                className="inline-flex h-8 items-center rounded-md border border-border/70 bg-card px-3 text-xs font-medium hover:bg-muted"
+                href={`#${section.id}`}
+                key={section.id}
+              >
+                {section.title}
+              </a>
+            ))}
+          </div>
+        ) : null}
         {isFrontendThemeGroup ? (
           <div className="sm:col-span-2 flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-muted/20 p-3">
             <p className="mr-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Presets</p>
@@ -374,83 +597,21 @@ function SettingGroupCard({
             </button>
           </div>
         ) : null}
-        {group.fields.map((field) => (
-          <div key={field.key} className={cn(field.inputType === "textarea" && "sm:col-span-2")}>
-            <label className={labelCls} htmlFor={field.key}>
-              {field.label}
-            </label>
-            {field.key === "auth.side.imageUrl" ? (
-              <ImagePickerField
-                fetchMedia={fetchSettingsMediaAction}
-                value={values[field.key] ?? ""}
-                onChange={(next) => set(field.key, next)}
-              />
-            ) : field.inputType === "textarea" ? (
-              <textarea
-                className={cn(inputCls, "h-20 resize-none py-2")}
-                id={field.key}
-                name={field.key}
-                placeholder={field.placeholder}
-                title={field.label}
-                value={values[field.key] ?? ""}
-                onChange={(e) => set(field.key, e.target.value)}
-              />
-            ) : field.inputType === "color" ? (
-              <div className="flex items-center gap-2">
-                <input
-                  className="h-10 w-14 cursor-pointer rounded-md border border-border/70 bg-card p-1"
-                  id={field.key}
-                  name={field.key}
-                  title={field.label}
-                  type="color"
-                  value={values[field.key] || FRONTEND_THEME_DEFAULTS[field.key] || "#000000"}
-                  onChange={(e) => set(field.key, e.target.value)}
-                />
-                <input
-                  className={inputCls}
-                  id={`${field.key}-text`}
-                  name={`${field.key}-text`}
-                  placeholder="#121414"
-                  title={`${field.label} (hex)`}
-                  value={values[field.key] ?? ""}
-                  onChange={(e) => set(field.key, e.target.value)}
-                />
+        {isContactPageGroup
+          ? contactSections.map((section) => (
+            <section
+              className="sm:col-span-2 rounded-lg border border-border/60 bg-muted/10 p-4"
+              id={section.id}
+              key={section.id}
+            >
+              <h3 className="text-sm font-semibold text-foreground">{section.title}</h3>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">{section.description}</p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {section.fields.map((field) => renderField(field))}
               </div>
-            ) : field.inputType === "switch" ? (
-              <button
-                className={cn(
-                  "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none",
-                  values[field.key] === "1" ? "bg-primary" : "bg-muted",
-                )}
-                id={field.key}
-                name={field.key}
-                aria-checked={values[field.key] === "1" ? "true" : "false"}
-                role="switch"
-                title={field.label}
-                type="button"
-                onClick={() => set(field.key, values[field.key] === "1" ? "0" : "1")}
-              >
-                <span
-                  className={cn(
-                    "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform duration-200",
-                    values[field.key] === "1" ? "translate-x-5" : "translate-x-0",
-                  )}
-                />
-              </button>
-            ) : (
-              <input
-                className={inputCls}
-                id={field.key}
-                name={field.key}
-                placeholder={field.placeholder}
-                title={field.label}
-                type={field.inputType}
-                value={values[field.key] ?? ""}
-                onChange={(e) => set(field.key, e.target.value)}
-              />
-            )}
-          </div>
-        ))}
+            </section>
+          ))
+          : group.fields.map((field) => renderField(field))}
       </div>
       <div className="flex justify-end border-t border-border/50 px-5 py-3">
         {isFrontendThemeGroup ? (
@@ -615,6 +776,7 @@ export function SettingsForm({
     { id: "siteMode", label: "Site Mode" },
     { id: "Site", label: "Site" },
     { id: "Contact", label: "Contact" },
+    { id: "Contact Page", label: "Contact Page" },
     { id: "Social", label: "Social" },
     { id: "Frontend Theme", label: "Frontend Theme" },
     { id: "Auth Page", label: "Auth Page" },

@@ -10,11 +10,13 @@ const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 export async function sendEmail({
   html,
+  replyTo,
   subject,
   text,
   to,
 }: {
   html: string;
+  replyTo?: string;
   subject: string;
   text: string;
   to: string;
@@ -24,7 +26,14 @@ export async function sendEmail({
   }
 
   const from = process.env.EMAIL_FROM ?? "no-reply@kayan.om";
-  const { error } = await resend.emails.send({ from, html, subject, text, to });
+  const { error } = await resend.emails.send({
+    from,
+    html,
+    subject,
+    text,
+    to,
+    replyTo,
+  });
   if (error) {
     throw new Error(error.message);
   }

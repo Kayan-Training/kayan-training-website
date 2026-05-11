@@ -126,6 +126,7 @@ export function SiteFooter({
             <Link className="block text-sm text-on-surface-variant hover:text-primary" href={`/${locale}/events`}>{locale === "ar" ? "الفعاليات" : "Events"}</Link>
             <Link className="block text-sm text-on-surface-variant hover:text-primary" href={`/${locale}/services`}>{locale === "ar" ? "خدماتنا" : "Services"}</Link>
             <Link className="block text-sm text-on-surface-variant hover:text-primary" href={`/${locale}/about`}>{locale === "ar" ? "عن كيان" : "About"}</Link>
+            <Link className="block text-sm text-on-surface-variant hover:text-primary" href={`/${locale}/contact-us`}>{locale === "ar" ? "تواصل معنا" : "Contact Us"}</Link>
             <Link className="block text-sm text-on-surface-variant hover:text-primary" href={`/${locale}/auth`}>{locale === "ar" ? "تسجيل الدخول" : "Login"}</Link>
           </div>
         </div>

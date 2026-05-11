@@ -49,10 +49,10 @@ const copy = {
     createSub: "انضم لمجتمع كيان وابدأ رحلة التطوير",
     email: "البريد الإلكتروني",
     password: "كلمة المرور",
+    confirmPassword: "تأكيد كلمة المرور",
     forgot: "نسيت كلمة المرور؟",
     remember: "تذكّرني",
-    firstName: "الاسم الأول",
-    lastName: "اسم العائلة",
+    fullName: "الاسم الكامل",
     preferredLanguage: "اللغة المفضلة",
     arabic: "العربية",
     english: "الإنجليزية",
@@ -76,6 +76,7 @@ const copy = {
     ruleNumber: "رقم واحد على الأقل",
     ruleSymbol: "رمز خاص واحد على الأقل",
     passwordWeak: "كلمة المرور لا تستوفي جميع المتطلبات.",
+    passwordMismatch: "كلمتا المرور غير متطابقتين.",
   },
   en: {
     tabLogin: "Login",
@@ -86,10 +87,10 @@ const copy = {
     createSub: "Join the Kayan community and begin your development journey",
     email: "Email Address",
     password: "Password",
+    confirmPassword: "Confirm Password",
     forgot: "Forgot password?",
     remember: "Remember me",
-    firstName: "First Name",
-    lastName: "Last Name",
+    fullName: "Full Name",
     preferredLanguage: "Preferred Language",
     arabic: "Arabic",
     english: "English",
@@ -113,6 +114,7 @@ const copy = {
     ruleNumber: "At least 1 number",
     ruleSymbol: "At least 1 special character",
     passwordWeak: "Password does not meet all requirements.",
+    passwordMismatch: "Passwords do not match.",
   },
 } as const;
 
@@ -120,17 +122,19 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
   const router = useRouter();
   const t = copy[locale];
   const inputClass =
-    "input-underline w-full py-3 text-sm text-on-surface outline-none transition-colors placeholder:text-outline";
+    "input-underline w-full bg-white px-3 py-3 text-sm !text-black caret-black outline-none transition-colors placeholder:!text-zinc-600";
   const { data: session } = useSession();
   const [mode, setMode] = useState<Mode>("login");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
   const [preferredLocale, setPreferredLocale] = useState<"ar" | "en">(locale);
   const [agree, setAgree] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -214,13 +218,17 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
       setMessage(t.passwordWeak);
       return;
     }
+    if (password !== confirmPassword) {
+      setMessage(t.passwordMismatch);
+      return;
+    }
 
     setIsLoading(true);
     setMessage("");
     try {
       const result = await withTimeout(
         signUp.email({
-          name: `${firstName} ${lastName}`.trim(),
+          name: fullName.trim(),
           email,
           password,
         }),
@@ -405,29 +413,16 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
           <p className="mb-8 text-sm text-on-surface-variant">{t.createSub}</p>
 
           <form className="space-y-5" onSubmit={handleRegister}>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-2 block text-[11px] uppercase tracking-widest text-on-surface-variant">
-                  {t.firstName}
-                </label>
-                <input
-                  className={inputClass}
-                  onChange={(event) => setFirstName(event.target.value)}
-                  required
-                  value={firstName}
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-[11px] uppercase tracking-widest text-on-surface-variant">
-                  {t.lastName}
-                </label>
-                <input
-                  className={inputClass}
-                  onChange={(event) => setLastName(event.target.value)}
-                  required
-                  value={lastName}
-                />
-              </div>
+            <div>
+              <label className="mb-2 block text-[11px] uppercase tracking-widest text-on-surface-variant">
+                {t.fullName}
+              </label>
+              <input
+                className={inputClass}
+                onChange={(event) => setFullName(event.target.value)}
+                required
+                value={fullName}
+              />
             </div>
             <div>
               <label className="mb-2 block text-[11px] uppercase tracking-widest text-on-surface-variant">
@@ -446,15 +441,27 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
               <label className="mb-2 block text-[11px] uppercase tracking-widest text-on-surface-variant">
                 {t.password}
               </label>
-              <input
-                className={inputClass}
-                dir="ltr"
-                minLength={8}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                type="password"
-                value={password}
-              />
+              <div className="relative">
+                <input
+                  className={`${inputClass} pe-10`}
+                  dir="ltr"
+                  minLength={8}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                  type={showRegisterPassword ? "text" : "password"}
+                  value={password}
+                />
+                <button
+                  className="absolute end-0 top-1/2 -translate-y-1/2 text-outline"
+                  onClick={() => setShowRegisterPassword((value) => !value)}
+                  type="button"
+                >
+                  <HugeiconsIcon
+                    icon={showRegisterPassword ? ViewOffIcon : ViewIcon}
+                    strokeWidth={2}
+                  />
+                </button>
+              </div>
               <div className="mt-3 space-y-1">
                 <p className="text-[11px] text-on-surface-variant">
                   {t.passwordRulesTitle}
@@ -511,6 +518,32 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
                     </ul>
                   );
                 })()}
+              </div>
+            </div>
+            <div>
+              <label className="mb-2 block text-[11px] uppercase tracking-widest text-on-surface-variant">
+                {t.confirmPassword}
+              </label>
+              <div className="relative">
+                <input
+                  className={`${inputClass} pe-10`}
+                  dir="ltr"
+                  minLength={8}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  required
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                />
+                <button
+                  className="absolute end-0 top-1/2 -translate-y-1/2 text-outline"
+                  onClick={() => setShowConfirmPassword((value) => !value)}
+                  type="button"
+                >
+                  <HugeiconsIcon
+                    icon={showConfirmPassword ? ViewOffIcon : ViewIcon}
+                    strokeWidth={2}
+                  />
+                </button>
               </div>
             </div>
             <div>

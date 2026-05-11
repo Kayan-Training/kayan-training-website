@@ -1,11 +1,11 @@
 "use client";
 
+import { Menu01Icon, Search01Icon, UserIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { Menu01Icon, Search01Icon, UserIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 
 import { LocaleSwitcher } from "@/components/i18n/locale-switcher";
 import {
@@ -58,6 +58,9 @@ export function SiteNav({
   const [searchOpen, setSearchOpen] = useState(false);
   const isAdmin = session?.user?.role === "admin";
   const isLoggedIn = Boolean(session?.user);
+  const rawName = session?.user?.name?.trim() ?? "";
+  const firstName = rawName.split(/\s+/).filter(Boolean)[0] ?? "";
+  const greeting = locale === "ar" ? `مرحباً، ${firstName}` : `Hi, ${firstName}`;
 
   const links = (menuItems ?? fallbackLinks).map((item) => ({
     ...item,
@@ -135,6 +138,14 @@ export function SiteNav({
                 <HugeiconsIcon icon={UserIcon} size={16} strokeWidth={2} />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">
+                {firstName ? (
+                  <>
+                    <div className="px-2 py-1.5 text-xs font-medium ">
+                      {greeting}
+                    </div>
+                    <DropdownMenuSeparator />
+                  </>
+                ) : null}
                 <DropdownMenuItem onClick={() => router.push(isAdmin ? `/${locale}/dashboard` : `/${locale}/events`)}>
                   {isAdmin ? (locale === "ar" ? "لوحة التحكم" : "Dashboard") : locale === "ar" ? "فعالياتي" : "My Events"}
                 </DropdownMenuItem>

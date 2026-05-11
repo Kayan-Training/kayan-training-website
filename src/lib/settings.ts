@@ -29,6 +29,42 @@ const getSettingsMap = cache(async (): Promise<SettingMap> => {
           "social.instagram",
           "social.youtube",
           "social.links",
+          "contact.page.eyebrow.ar",
+          "contact.page.eyebrow.en",
+          "contact.page.title.ar",
+          "contact.page.title.en",
+          "contact.page.subtitle.ar",
+          "contact.page.subtitle.en",
+          "contact.page.logoUrl",
+          "contact.page.heroImageUrl",
+          "contact.page.mapEmbedUrl",
+          "contact.page.form.heading.ar",
+          "contact.page.form.heading.en",
+          "contact.page.form.nameLabel.ar",
+          "contact.page.form.nameLabel.en",
+          "contact.page.form.emailLabel.ar",
+          "contact.page.form.emailLabel.en",
+          "contact.page.form.phoneLabel.ar",
+          "contact.page.form.phoneLabel.en",
+          "contact.page.form.companyLabel.ar",
+          "contact.page.form.companyLabel.en",
+          "contact.page.form.queryLabel.ar",
+          "contact.page.form.queryLabel.en",
+          "contact.page.form.submitLabel.ar",
+          "contact.page.form.submitLabel.en",
+          "contact.page.form.submittingLabel.ar",
+          "contact.page.form.submittingLabel.en",
+          "contact.page.form.successTitle.ar",
+          "contact.page.form.successTitle.en",
+          "contact.page.form.successMessage.ar",
+          "contact.page.form.successMessage.en",
+          "contact.page.form.errorMessage.ar",
+          "contact.page.form.errorMessage.en",
+          "contact.page.noMapImageUrl",
+          "contact.page.noMapTitle.ar",
+          "contact.page.noMapTitle.en",
+          "contact.page.noMapDescription.ar",
+          "contact.page.noMapDescription.en",
           "frontend.theme.background",
           "frontend.theme.foreground",
           "frontend.theme.card",
@@ -131,6 +167,72 @@ export async function getLocalizedSiteSettings(locale: AppLocale) {
     url: fromMap(map, "header.cta.url") || `/${locale}/events`,
   };
   const footerShowAnimatedCategoryIcons = fromMap(map, "footer.showAnimatedCategoryIcons") === "1";
+  const contactPage = {
+    eyebrow:
+      fromMap(map, `contact.page.eyebrow.${locale}`) ||
+      (locale === "ar" ? "تواصل معنا" : "Contact Us"),
+    title:
+      fromMap(map, `contact.page.title.${locale}`) ||
+      (locale === "ar" ? "دعنا نناقش احتياجك التدريبي" : "Let's Discuss Your Training Needs"),
+    subtitle:
+      fromMap(map, `contact.page.subtitle.${locale}`) ||
+      (locale === "ar"
+        ? "أرسل استفسارك وسيعود إليك فريق كيان بأسرع وقت."
+        : "Send your inquiry and the Kayan team will get back to you shortly."),
+    logoUrl: fromMap(map, "contact.page.logoUrl") || "/brand/kayan-logo.svg",
+    heroImageUrl:
+      fromMap(map, "contact.page.heroImageUrl") ||
+      "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?w=1800&q=80",
+    mapEmbedUrl: fromMap(map, "contact.page.mapEmbedUrl"),
+    noMapImageUrl:
+      fromMap(map, "contact.page.noMapImageUrl") ||
+      "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1200&q=80",
+    noMapTitle:
+      fromMap(map, `contact.page.noMapTitle.${locale}`) ||
+      (locale === "ar" ? "ندعمك من الفكرة إلى التنفيذ" : "From Inquiry to Implementation"),
+    noMapDescription:
+      fromMap(map, `contact.page.noMapDescription.${locale}`) ||
+      (locale === "ar"
+        ? "فريقنا يساعدك في بناء برامج تدريبية عملية مصممة لأهداف مؤسستك."
+        : "Our team helps you design practical training programs aligned to your institution goals."),
+    form: {
+      heading:
+        fromMap(map, `contact.page.form.heading.${locale}`) ||
+        (locale === "ar" ? "أرسل استفسارك" : "Send Your Inquiry"),
+      nameLabel:
+        fromMap(map, `contact.page.form.nameLabel.${locale}`) ||
+        (locale === "ar" ? "الاسم" : "Name"),
+      emailLabel:
+        fromMap(map, `contact.page.form.emailLabel.${locale}`) ||
+        (locale === "ar" ? "البريد الإلكتروني" : "Email"),
+      phoneLabel:
+        fromMap(map, `contact.page.form.phoneLabel.${locale}`) ||
+        (locale === "ar" ? "الهاتف" : "Phone"),
+      companyLabel:
+        fromMap(map, `contact.page.form.companyLabel.${locale}`) ||
+        (locale === "ar" ? "الشركة" : "Company"),
+      queryLabel:
+        fromMap(map, `contact.page.form.queryLabel.${locale}`) ||
+        (locale === "ar" ? "الاستفسار" : "How can we help you?"),
+      submitLabel:
+        fromMap(map, `contact.page.form.submitLabel.${locale}`) ||
+        (locale === "ar" ? "إرسال الرسالة" : "Send Message"),
+      submittingLabel:
+        fromMap(map, `contact.page.form.submittingLabel.${locale}`) ||
+        (locale === "ar" ? "جاري الإرسال..." : "Sending..."),
+      successTitle:
+        fromMap(map, `contact.page.form.successTitle.${locale}`) ||
+        (locale === "ar" ? "تم إرسال رسالتك" : "Message Sent"),
+      successMessage:
+        fromMap(map, `contact.page.form.successMessage.${locale}`) ||
+        (locale === "ar"
+          ? "شكرًا {name}. استلمنا استفسارك وسيتواصل معك فريق كيان قريبًا عبر البريد أو الهاتف."
+          : "Thank you {name}. We have received your inquiry and the Kayan team will contact you shortly by email or phone."),
+      errorMessage:
+        fromMap(map, `contact.page.form.errorMessage.${locale}`) ||
+        (locale === "ar" ? "تعذر إرسال الرسالة، حاول مرة أخرى." : "Failed to send message. Please try again."),
+    },
+  };
 
   return {
     contactAddress,
@@ -147,5 +249,6 @@ export async function getLocalizedSiteSettings(locale: AppLocale) {
     frontendTheme,
     headerCta,
     footerShowAnimatedCategoryIcons,
+    contactPage,
   };
 }

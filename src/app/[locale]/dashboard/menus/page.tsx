@@ -85,6 +85,7 @@ export default async function MenusDashboardPage({
       { id: "static-blog", label: activeLocale === "ar" ? "المدونة" : "Blog", url: `/${activeLocale}/blog` },
       { id: "static-events", label: activeLocale === "ar" ? "الفعاليات" : "Events", url: `/${activeLocale}/events` },
       { id: "static-training-courses", label: activeLocale === "ar" ? "الدورات التدريبية" : "Training Courses", url: `/${activeLocale}/training-courses` },
+      { id: "static-contact-us", label: activeLocale === "ar" ? "تواصل معنا" : "Contact Us", url: `/${activeLocale}/contact-us` },
     ].filter((route) => !pages.some((page) => `/${activeLocale}/${page.slug}` === route.url)),
   };
 

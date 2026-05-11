@@ -5,6 +5,8 @@ type BaseTemplateInput = {
   ctaUrl?: string;
   intro: string;
   locale: Locale;
+  supportEmail?: string;
+  supportPhone?: string;
   signature: string;
   subject: string;
   title: string;
@@ -26,7 +28,7 @@ const appBaseUrl =
   process.env.NEXT_PUBLIC_APP_URL ?? process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
 const logoUrl = `${appBaseUrl.replace(/\/$/, "")}/brand/kayan-logo.png`;
-const supportEmail = process.env.EMAIL_SUPPORT ?? "support@kayan.om";
+const supportEmail = process.env.EMAIL_SUPPORT ?? "training@kayan.om";
 const supportPhone = process.env.EMAIL_SUPPORT_PHONE ?? "+968 0000 0000";
 const websiteUrl = appBaseUrl.replace(/\/$/, "");
 
@@ -35,6 +37,8 @@ function withShell({
   ctaUrl,
   intro,
   locale,
+  supportEmail: footerSupportEmail,
+  supportPhone: footerSupportPhone,
   signature,
   subject,
   title,
@@ -53,6 +57,8 @@ function withShell({
   const legalLine = isAr
     ? `© ${currentYear} كيان. جميع الحقوق محفوظة.`
     : `© ${currentYear} Kayan. All rights reserved.`;
+  const resolvedSupportEmail = footerSupportEmail?.trim() || supportEmail;
+  const resolvedSupportPhone = footerSupportPhone?.trim() || supportPhone;
   const html = `
     <div style="margin:0;padding:32px 16px;background:${brand.bg};">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:${brand.white};border:1px solid ${brand.border};border-radius:14px;overflow:hidden;">
@@ -85,8 +91,8 @@ function withShell({
             <p style="margin:0 0 10px 0;font-size:12px;line-height:1.6;color:${brand.textMuted};">${securityNote}</p>
             <p style="margin:0 0 10px 0;font-size:12px;line-height:1.6;color:${brand.textMuted};">${automatedNotice}</p>
             <p style="margin:0;font-size:12px;line-height:1.7;color:${brand.text};">
-              ${supportLabel}: <a href="mailto:${supportEmail}" style="color:${brand.primary};text-decoration:none;">${supportEmail}</a><br />
-              ${phoneLabel}: ${supportPhone}<br />
+              ${supportLabel}: <a href="mailto:${resolvedSupportEmail}" style="color:${brand.primary};text-decoration:none;">${resolvedSupportEmail}</a><br />
+              ${phoneLabel}: ${resolvedSupportPhone}<br />
               ${websiteLabel}: <a href="${websiteUrl}" style="color:${brand.primary};text-decoration:none;">${websiteUrl}</a>
             </p>
             <p style="margin:10px 0 0 0;font-size:11px;line-height:1.6;color:${brand.textMuted};">${legalLine}</p>
@@ -282,5 +288,62 @@ export function registrationStatusUpdateTemplate({
     signature: locale === "ar" ? "فريق كيان" : "Kayan Team",
     subject: locale === "ar" ? "تحديث حالة التسجيل" : "Registration status updated",
     title: locale === "ar" ? "تحديث التسجيل" : "Registration Update",
+  });
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+export function contactInquiryAdminTemplate({
+  company,
+  email,
+  locale,
+  message,
+  name,
+  phone,
+  supportEmail,
+  supportPhone,
+}: {
+  company: string;
+  email: string;
+  locale: Locale;
+  message: string;
+  name: string;
+  phone: string;
+  supportEmail?: string;
+  supportPhone?: string;
+}) {
+  const isAr = locale === "ar";
+  const safeName = escapeHtml(name);
+  const safeEmail = escapeHtml(email);
+  const safePhone = escapeHtml(phone || (isAr ? "غير متوفر" : "Not provided"));
+  const safeCompany = escapeHtml(company || (isAr ? "غير متوفر" : "Not provided"));
+  const safeMessage = escapeHtml(message).replaceAll("\n", "<br />");
+
+  const intro = isAr
+    ? "تم إرسال استفسار جديد من صفحة تواصل معنا."
+    : "A new inquiry was submitted through the Contact Us page.";
+  const title = isAr ? "استفسار جديد من الموقع" : "New Website Contact Inquiry";
+
+  return withShell({
+    intro: `${intro}
+    <br /><br />
+    <strong>${isAr ? "الاسم" : "Name"}:</strong> ${safeName}<br />
+    <strong>${isAr ? "البريد الإلكتروني" : "Email"}:</strong> ${safeEmail}<br />
+    <strong>${isAr ? "الهاتف" : "Phone"}:</strong> ${safePhone}<br />
+    <strong>${isAr ? "الشركة" : "Company"}:</strong> ${safeCompany}<br /><br />
+    <strong>${isAr ? "الاستفسار" : "Message"}:</strong><br />${safeMessage}`,
+    locale,
+    supportEmail,
+    supportPhone,
+    signature: isAr ? "نظام كيان" : "Kayan Platform",
+    subject: isAr ? "استفسار جديد من صفحة التواصل" : "New Contact Us inquiry",
+    title,
   });
 }
