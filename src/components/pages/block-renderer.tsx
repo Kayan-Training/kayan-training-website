@@ -901,6 +901,9 @@ async function HomeEventsCarouselRenderer({
         ) : (
           <HomeEventsCarouselRail
             items={events.map((event) => ({
+              categoryIcons: event.categories.map((category) =>
+                resolveCategoryIconPath(category.icon, category.slug),
+              ),
               coverImage: event.coverImage,
               dateLabel: formatDate(event.startDate),
               slug: event.slug,

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { EventsListingClient } from "@/components/events/events-listing-client";
+import { resolveCategoryIconPath } from "@/lib/category-icons";
 import { getListingConfig, getLocalizedEvents } from "@/lib/content/queries";
 import { isSupportedLocale } from "@/lib/i18n/config";
 
@@ -41,6 +42,9 @@ export default async function EventsPage({
         : "training";
 
     return {
+      categoryIcons: event.categories.map((category) =>
+        resolveCategoryIconPath(category.icon, category.slug),
+      ),
       coverImage: event.coverImage,
       dateIso: event.startDate.toISOString(),
       excerpt: event.excerpt,
@@ -60,6 +64,9 @@ export default async function EventsPage({
         heading={listingConfig?.heading}
         initialEvents={listingEvents}
         initialPastEvents={pastOnly.map((event) => ({
+          categoryIcons: event.categories.map((category) =>
+            resolveCategoryIconPath(category.icon, category.slug),
+          ),
           coverImage: event.coverImage,
           dateIso: event.startDate.toISOString(),
           excerpt: event.excerpt,

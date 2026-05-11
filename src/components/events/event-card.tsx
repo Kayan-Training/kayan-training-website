@@ -5,6 +5,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export type EventCardItem = {
+  categoryIcons?: string[];
   coverImage: string;
   dateLabel: string;
   pathBase?: "events" | "training-courses";
@@ -43,7 +44,23 @@ export function EventCard({
       />
       <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/95 via-surface-container-lowest/60 to-transparent" />
       <div className="relative z-10 flex h-full flex-col justify-end p-5">
-        <span className="badge-teal font-body mb-3 w-fit">{event.tag}</span>
+        {(event.categoryIcons?.length ?? 0) > 0 ? (
+          <div className="mb-3 flex flex-wrap items-center gap-1.5">
+            {event.categoryIcons?.map((icon, index) => (
+              <Image
+                alt=""
+                aria-hidden
+                className="h-8 w-8 object-contain opacity-100"
+                height={32}
+                key={`${icon}-${index}`}
+                src={icon}
+                width={32}
+              />
+            ))}
+          </div>
+        ) : (
+          <span className="badge-teal font-body mb-3 w-fit">{event.tag}</span>
+        )}
         <h3 className="mb-3 line-clamp-2 text-base font-semibold leading-snug text-on-surface transition-colors group-hover:text-secondary">
           {event.title}
         </h3>

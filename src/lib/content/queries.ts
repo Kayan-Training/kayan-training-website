@@ -47,6 +47,7 @@ export async function getLocalizedEvents(
       const translation = entry.category.translations.find((item) => item.locale === locale);
       const fallback = entry.category.translations.find((item) => item.locale !== locale);
       return {
+        icon: entry.category.icon,
         label: translation?.name ?? fallback?.name ?? entry.category.slug,
         slug: entry.category.slug,
       };

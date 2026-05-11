@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { EventsListingClient } from "@/components/events/events-listing-client";
+import { resolveCategoryIconPath } from "@/lib/category-icons";
 import { getListingConfig, getLocalizedEvents } from "@/lib/content/queries";
 import { isSupportedLocale } from "@/lib/i18n/config";
 
@@ -33,6 +34,9 @@ export default async function TrainingCoursesPage({
   const pastOnly = pastEvents.filter((event) => !upcomingSlugs.has(event.slug));
 
   const listingEvents = events.map((event) => ({
+    categoryIcons: event.categories.map((category) =>
+      resolveCategoryIconPath(category.icon, category.slug),
+    ),
     coverImage: event.coverImage,
     dateIso: event.startDate.toISOString(),
     excerpt: event.excerpt,
@@ -51,6 +55,9 @@ export default async function TrainingCoursesPage({
         heading={listingConfig?.heading ?? (activeLocale === "ar" ? "الدورات التدريبية" : "Training Courses")}
         initialEvents={listingEvents}
         initialPastEvents={pastOnly.map((event) => ({
+          categoryIcons: event.categories.map((category) =>
+            resolveCategoryIconPath(category.icon, category.slug),
+          ),
           coverImage: event.coverImage,
           dateIso: event.startDate.toISOString(),
           excerpt: event.excerpt,

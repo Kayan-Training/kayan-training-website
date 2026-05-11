@@ -12,6 +12,7 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import { Spinner } from "@/components/ui/spinner";
 
 type ListingEvent = {
+  categoryIcons?: string[];
   coverImage: string;
   dateIso: string;
   excerpt: string;
@@ -290,6 +291,7 @@ export function EventsListingClient({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {pageEvents.map((event) => {
             const card: EventCardItem = {
+              categoryIcons: event.categoryIcons ?? [],
               coverImage: event.coverImage,
               dateLabel: formatDate(event.dateIso, locale),
               slug: event.slug,
@@ -340,6 +342,7 @@ export function EventsListingClient({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {pastEvents.slice(0, 12).map((event) => {
               const card: EventCardItem = {
+                categoryIcons: event.categoryIcons ?? [],
                 coverImage: event.coverImage,
                 dateLabel: formatDate(event.dateIso, locale),
                 slug: event.slug,
