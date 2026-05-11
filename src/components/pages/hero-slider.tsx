@@ -23,6 +23,8 @@ const MEDIA_INTERVAL = 8000;
 const EXIT_MS = 500;
 const EVENT_INTERVAL = 5000;
 const EVENT_EXIT_MS = 400;
+const HERO_MEDIA_FOCUS_CLASS =
+  "object-cover object-[center_30%] md:object-[center_28%] lg:object-[center_24%] xl:object-[center_20%]";
 
 export function PageHeroMediaCycler({
   media,
@@ -57,7 +59,7 @@ export function PageHeroMediaCycler({
             <video
               aria-hidden
               autoPlay
-              className="h-full w-full object-cover"
+              className={cn("h-full w-full", HERO_MEDIA_FOCUS_CLASS)}
               loop
               muted
               playsInline
@@ -67,7 +69,7 @@ export function PageHeroMediaCycler({
           ) : (
             <Image
               alt=""
-              className="object-cover"
+              className={HERO_MEDIA_FOCUS_CLASS}
               fill
               priority={index === 0}
               sizes="100vw"
@@ -356,7 +358,7 @@ export function HeroSlider({
                 <video
                   aria-hidden
                   autoPlay
-                  className="h-full w-full object-cover object-[center_30%]"
+                  className={cn("h-full w-full", HERO_MEDIA_FOCUS_CLASS)}
                   loop
                   muted
                   playsInline
@@ -366,7 +368,7 @@ export function HeroSlider({
               ) : (
                 <Image
                   alt=""
-                  className="object-cover object-[center_30%]"
+                  className={HERO_MEDIA_FOCUS_CLASS}
                   fill
                   priority={i === 0}
                   sizes="100vw"
