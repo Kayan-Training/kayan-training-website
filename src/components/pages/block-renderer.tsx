@@ -23,7 +23,11 @@ import type {
   ValuesListBlock,
 } from "@/lib/pages/block-types";
 import { cn } from "@/lib/utils";
-import { type FeaturedEventCard, HeroSlider } from "./hero-slider";
+import {
+  type FeaturedEventCard,
+  HeroSlider,
+  PageHeroMediaCycler,
+} from "./hero-slider";
 import { HomeEventsCarouselRail } from "./home-events-carousel-rail";
 import { HomePostsCarouselRail } from "./home-posts-carousel-rail";
 
@@ -43,7 +47,7 @@ type BlockRendererProps = {
 };
 
 function PageHeroRenderer({ block }: { block: PageHeroBlock }) {
-  const bgUrl = (block.media ?? [])[0]?.url;
+  const media = block.media ?? [];
   const slide = (block.slides ?? [])[0];
   const overlayAlpha = (block.overlayOpacity ?? 40) / 100;
   return (
@@ -51,21 +55,13 @@ function PageHeroRenderer({ block }: { block: PageHeroBlock }) {
       className={`relative overflow-hidden bg-surface-container-lowest${block.fullViewport ? " min-h-screen" : " py-16 md:py-24"} flex items-center`}
       style={{ backgroundColor: block.backgroundColor || "#121414" }}
     >
-      {bgUrl && (
-        <>
-          <div
-            className="absolute inset-0"
-            style={{ background: `url('${bgUrl}') center/cover no-repeat` }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background: block.overlayColor ?? "#000000",
-              opacity: overlayAlpha,
-            }}
-          />
-        </>
-      )}
+      {media.length > 0 ? (
+        <PageHeroMediaCycler
+          media={media}
+          overlayAlpha={overlayAlpha}
+          overlayColor={block.overlayColor ?? "#000000"}
+        />
+      ) : null}
       <div className="relative z-10 mx-auto w-full max-w-[1440px] px-6 py-16 md:px-10 md:py-24">
         {block.eyebrow && (
           <span className="section-kicker">{block.eyebrow}</span>

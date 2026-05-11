@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatedCategoryIcons } from "@/components/shared/animated-category-icons";
 import type { AnimatedCategoryIconItem } from "@/lib/content/category-icons";
-import type { HeroBlock, HeroCta } from "@/lib/pages/block-types";
+import type { HeroBlock, HeroCta, HeroMedia } from "@/lib/pages/block-types";
 import { cn } from "@/lib/utils";
 
 export type FeaturedEventCard = {
@@ -23,6 +23,66 @@ const MEDIA_INTERVAL = 8000;
 const EXIT_MS = 500;
 const EVENT_INTERVAL = 5000;
 const EVENT_EXIT_MS = 400;
+
+export function PageHeroMediaCycler({
+  media,
+  overlayColor,
+  overlayAlpha,
+}: {
+  media: HeroMedia[];
+  overlayColor: string;
+  overlayAlpha: number;
+}) {
+  const [mediaIdx, setMediaIdx] = useState(0);
+
+  useEffect(() => {
+    if (media.length <= 1) return;
+    const id = setInterval(() => {
+      setMediaIdx((prev) => (prev + 1) % media.length);
+    }, MEDIA_INTERVAL);
+    return () => clearInterval(id);
+  }, [media.length]);
+
+  if (media.length === 0) return null;
+
+  return (
+    <>
+      {media.map((item, index) => (
+        <div
+          className="absolute inset-0 transition-opacity duration-[1400ms] ease-in-out"
+          key={item.id}
+          style={{ opacity: index === mediaIdx ? 1 : 0 }}
+        >
+          {item.kind === "video" ? (
+            <video
+              aria-hidden
+              autoPlay
+              className="h-full w-full object-cover"
+              loop
+              muted
+              playsInline
+              preload={index === 0 ? "auto" : "metadata"}
+              src={item.url}
+            />
+          ) : (
+            <Image
+              alt=""
+              className="object-cover"
+              fill
+              priority={index === 0}
+              sizes="100vw"
+              src={item.url}
+            />
+          )}
+        </div>
+      ))}
+      <div
+        className="absolute inset-0"
+        style={{ background: overlayColor, opacity: overlayAlpha }}
+      />
+    </>
+  );
+}
 
 function CtaLink({ cta, locale }: { cta: HeroCta; locale: string }) {
   const href = cta.url.startsWith("/")
