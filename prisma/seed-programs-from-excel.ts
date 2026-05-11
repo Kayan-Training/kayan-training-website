@@ -409,7 +409,9 @@ async function main() {
     throw new Error("DATABASE_URL is missing. Set it before running prisma:seed:excel.");
   }
 
-  const workbookPath = path.join(process.cwd(), ".source", "Kayan.om Programs Data.xlsx");
+  const workbookPath = process.env.SEED_WORKBOOK_PATH
+    ? path.resolve(process.cwd(), process.env.SEED_WORKBOOK_PATH)
+    : path.join(process.cwd(), ".source", "Kayan.om Programs Data.xlsx");
   if (!fs.existsSync(workbookPath)) {
     throw new Error(`Workbook not found at: ${workbookPath}`);
   }
@@ -418,12 +420,16 @@ async function main() {
   const categoryIdByArabicName = await resolveCategoryIdByArabicName();
 
   const trainingRows = readRowsFromSheet(workbook, "Training_Courses");
-  const eventRows = readRowsFromSheet(workbook, "Events");
+  const eventRows = workbook.SheetNames.includes("Events")
+    ? readRowsFromSheet(workbook, "Events")
+    : [];
 
   await importSheetPrograms(trainingRows, "training_course", categoryIdByArabicName);
   await importSheetPrograms(eventRows, "event", categoryIdByArabicName);
 
-  console.log(`Imported ${trainingRows.length} training courses and ${eventRows.length} events from Excel.`);
+  console.log(
+    `Imported ${trainingRows.length} training courses and ${eventRows.length} events from Excel: ${workbookPath}`,
+  );
 }
 
 main()
