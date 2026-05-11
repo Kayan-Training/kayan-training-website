@@ -1,4 +1,4 @@
-import { Building01Icon, Mail01Icon, PhoneOff01Icon } from "@hugeicons/core-free-icons";
+import { Building01Icon, Mail01Icon, WhatsappIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,6 +9,7 @@ import { getAnimatedCategoryIcons } from "@/lib/content/category-icons";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import { getLocalizedSiteSettings } from "@/lib/settings";
 import { SOCIAL_PLATFORM_OPTIONS, type SocialPlatformKey } from "@/lib/social-platforms";
+import { PhoneText } from "@/components/ui/phone-text";
 
 function getMapEmbedSrc(raw: string): string {
   const value = raw.trim();
@@ -109,8 +110,8 @@ export default async function ContactUsPage({
                 rel="noreferrer"
                 target="_blank"
               >
-                <HugeiconsIcon icon={PhoneOff01Icon} size={17} strokeWidth={1.8} />
-                {siteSettings.contactPhone}
+                <HugeiconsIcon icon={WhatsappIcon} size={17} strokeWidth={1.8} />
+                <PhoneText>{siteSettings.contactPhone}</PhoneText>
               </a>
             </div>
             {socialLinks.length > 0 ? (
