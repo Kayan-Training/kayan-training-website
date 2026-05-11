@@ -72,6 +72,7 @@ import { useEffect, useId, useMemo, useRef, useState, useTransition } from "reac
 import {
   useFieldArray,
   useForm,
+  useWatch,
 } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -728,8 +729,16 @@ export function EventForm({
   const startDate = form.watch("startDate");
   const capacity = form.watch("capacity");
   const isFree = form.watch("isFree");
-  const showSidebarSeatsFulfillment = form.watch("showSidebarSeatsFulfillment");
-  const showSidebarPayment = form.watch("showSidebarPayment");
+  const showSidebarSeatsFulfillment = useWatch({
+    control: form.control,
+    name: "showSidebarSeatsFulfillment",
+    defaultValue: true,
+  });
+  const showSidebarPayment = useWatch({
+    control: form.control,
+    name: "showSidebarPayment",
+    defaultValue: true,
+  });
   const paymentMethods = form.watch("paymentMethods");
   const registrationType = form.watch("registrationType");
   const selectedTrainerIds = form.watch("trainerIds");
@@ -828,6 +837,11 @@ export function EventForm({
       setActiveSection("pricing");
     }
   }, [activeSection, registrationType]);
+
+  useEffect(() => {
+    form.register("showSidebarSeatsFulfillment");
+    form.register("showSidebarPayment");
+  }, [form]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -2117,6 +2131,7 @@ export function EventForm({
                           onCheckedChange={(v) =>
                             form.setValue("showSidebarSeatsFulfillment", v, {
                               shouldDirty: true,
+                              shouldTouch: true,
                             })
                           }
                         />
@@ -2131,6 +2146,7 @@ export function EventForm({
                           onCheckedChange={(v) =>
                             form.setValue("showSidebarPayment", v, {
                               shouldDirty: true,
+                              shouldTouch: true,
                             })
                           }
                         />
