@@ -135,3 +135,24 @@ export async function createPostAction(
   }
   redirect(`/${locale}/dashboard/blog/${createdId}`);
 }
+
+export async function deletePostsAction(
+  locale: string,
+  ids: string[],
+): Promise<{ error?: string }> {
+  if (!ids.length) return { error: "No posts selected." };
+
+  try {
+    await db.$transaction([
+      db.postCategory.deleteMany({ where: { postId: { in: ids } } }),
+      db.postTranslation.deleteMany({ where: { postId: { in: ids } } }),
+      db.post.deleteMany({ where: { id: { in: ids } } }),
+    ]);
+
+    revalidatePath(`/${locale}/dashboard/posts`);
+    revalidatePath(`/${locale}/dashboard/blog`);
+    return {};
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to delete posts." };
+  }
+}

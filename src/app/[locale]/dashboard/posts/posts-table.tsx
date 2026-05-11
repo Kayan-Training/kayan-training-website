@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { FilterResetIcon, MoreHorizontalIcon, Search01Icon } from "@hugeicons/core-free-icons";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { Delete02Icon, FilterResetIcon, MoreHorizontalIcon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Eye, Pencil } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { deletePostsAction } from "./_actions";
 
 export type PostRow = {
   id: string;
@@ -36,17 +38,66 @@ const statusColors: Record<string, string> = {
 };
 
 export function PostsTable({ locale, posts }: { locale: string; posts: PostRow[] }) {
+  const [rows, setRows] = useState(posts);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isDeleting, startDeleting] = useTransition();
+
+  useEffect(() => {
+    setRows(posts);
+    setSelectedIds(new Set());
+  }, [posts]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return posts.filter((p) => {
+    return rows.filter((p) => {
       const matchesQuery = !q || p.title.toLowerCase().includes(q) || p.slug.includes(q);
       const matchesStatus = statusFilter === "all" || p.status === statusFilter;
       return matchesQuery && matchesStatus;
     });
-  }, [posts, query, statusFilter]);
+  }, [query, rows, statusFilter]);
+
+  const allVisibleSelected =
+    filtered.length > 0 && filtered.every((post) => selectedIds.has(post.id));
+
+  function toggleRow(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleVisible() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        for (const post of filtered) next.delete(post.id);
+      } else {
+        for (const post of filtered) next.add(post.id);
+      }
+      return next;
+    });
+  }
+
+  function handleDeleteSelected() {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+
+    startDeleting(async () => {
+      const result = await deletePostsAction(locale, ids);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success(`${ids.length} post${ids.length > 1 ? "s" : ""} deleted.`);
+      setRows((prev) => prev.filter((row) => !ids.includes(row.id)));
+      setSelectedIds(new Set());
+    });
+  }
 
   return (
     <div className="grid gap-4">
@@ -96,15 +147,42 @@ export function PostsTable({ locale, posts }: { locale: string; posts: PostRow[]
             Reset
           </Button>
         </div>
+        {selectedIds.size > 0 ? (
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
+            <span className="text-xs font-medium text-foreground">
+              {selectedIds.size} selected
+            </span>
+            <Button
+              className="h-8 gap-1.5 text-xs"
+              disabled={isDeleting}
+              size="sm"
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteSelected}
+            >
+              <HugeiconsIcon className="size-3.5" icon={Delete02Icon} strokeWidth={2} />
+              {isDeleting ? "Deleting..." : "Delete Selected"}
+            </Button>
+          </div>
+        ) : null}
         <p className="mt-2 text-xs text-muted-foreground">
           Showing <span className="font-medium text-foreground">{filtered.length}</span> of{" "}
-          <span className="font-medium text-foreground">{posts.length}</span> posts
+          <span className="font-medium text-foreground">{rows.length}</span> posts
         </p>
       </div>
       <div className="overflow-hidden rounded-xl border border-border/70 bg-card">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/20">
+              <TableHead className="w-[34px]">
+                <input
+                  aria-label="Select all visible rows"
+                  checked={allVisibleSelected}
+                  className="size-3.5 accent-primary"
+                  type="checkbox"
+                  onChange={toggleVisible}
+                />
+              </TableHead>
               <TableHead className="w-[55%]">Post</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Published</TableHead>
@@ -114,13 +192,22 @@ export function PostsTable({ locale, posts }: { locale: string; posts: PostRow[]
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell className="py-10 text-center text-sm text-muted-foreground" colSpan={4}>
+                <TableCell className="py-10 text-center text-sm text-muted-foreground" colSpan={5}>
                   No posts found.
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((post) => (
                 <TableRow key={post.id}>
+                  <TableCell>
+                    <input
+                      aria-label={`Select ${post.title}`}
+                      checked={selectedIds.has(post.id)}
+                      className="size-3.5 accent-primary"
+                      type="checkbox"
+                      onChange={() => toggleRow(post.id)}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Link
                       className="line-clamp-1 text-sm font-semibold hover:text-primary"
