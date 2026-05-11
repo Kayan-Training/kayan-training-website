@@ -57,6 +57,20 @@ function formatTimeRange(startDate: Date, endDate: Date, locale: "ar" | "en") {
   return `${formatter.format(startDate)} – ${formatter.format(endDate)}`;
 }
 
+function hasExplicitTime(startDate: Date, endDate: Date): boolean {
+  const hasStartTime =
+    startDate.getUTCHours() !== 0 ||
+    startDate.getUTCMinutes() !== 0 ||
+    startDate.getUTCSeconds() !== 0 ||
+    startDate.getUTCMilliseconds() !== 0;
+  const hasEndTime =
+    endDate.getUTCHours() !== 0 ||
+    endDate.getUTCMinutes() !== 0 ||
+    endDate.getUTCSeconds() !== 0 ||
+    endDate.getUTCMilliseconds() !== 0;
+  return hasStartTime || hasEndTime;
+}
+
 function renderDescription(value: unknown, fallback: string): string {
   if (typeof value === "string" && value.trim()) return value;
   if (value && typeof value === "object" && "html" in value) {
@@ -131,11 +145,13 @@ function RegisterCard({
       <div className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-primary">
         {locale === "ar" ? "سجّل الآن" : "Register Now"}
       </div>
-      <div className="mb-6 flex items-baseline gap-2">
-        <span className="font-mono text-3xl font-semibold text-on-surface">
-          {priceLabel}
-        </span>
-      </div>
+      {!isPastProgram ? (
+        <div className="mb-6 flex items-baseline gap-2">
+          <span className="font-mono text-3xl font-semibold text-on-surface">
+            {priceLabel}
+          </span>
+        </div>
+      ) : null}
       {capacity ? (
         <div className="mb-6">
           <div className="mb-2 flex justify-between text-xs">
@@ -201,6 +217,7 @@ export default async function EventDetailPage({
 
   const startDate = new Date(event.startDate);
   const endDate = new Date(event.endDate);
+  const showTime = hasExplicitTime(startDate, endDate);
   const isPastProgram = endDate.getTime() < Date.now();
   const showGallery =
     event.galleryMode === "always" ||
@@ -351,6 +368,7 @@ export default async function EventDetailPage({
               <EventMetaCard
                 event={event}
                 locale={activeLocale}
+                showTime={showTime}
                 startDate={startDate}
                 endDate={endDate}
               />
@@ -402,10 +420,12 @@ export default async function EventDetailPage({
               icon={Calendar03Icon}
               value={formatDate(startDate, activeLocale)}
             />
-            <MetaInline
-              icon={Clock01Icon}
-              value={formatTimeRange(startDate, endDate, activeLocale)}
-            />
+            {showTime ? (
+              <MetaInline
+                icon={Clock01Icon}
+                value={formatTimeRange(startDate, endDate, activeLocale)}
+              />
+            ) : null}
             {event.location ? (
               <MetaInline icon={Location01Icon} value={event.location} />
             ) : null}
@@ -431,6 +451,7 @@ export default async function EventDetailPage({
             <EventMetaCard
               event={event}
               locale={activeLocale}
+              showTime={showTime}
               startDate={startDate}
               endDate={endDate}
             />
@@ -494,11 +515,13 @@ function MetaInline({
 function EventMetaCard({
   event,
   locale,
+  showTime,
   startDate,
   endDate,
 }: {
   event: NonNullable<Awaited<ReturnType<typeof getEventDetailBySlug>>>;
   locale: "ar" | "en";
+  showTime: boolean;
   startDate: Date;
   endDate: Date;
 }) {
@@ -509,11 +532,13 @@ function EventMetaCard({
         label={locale === "ar" ? "التاريخ" : "Date"}
         value={formatDate(startDate, locale)}
       />
-      <DetailItem
-        icon={Clock01Icon}
-        label={locale === "ar" ? "الوقت" : "Time"}
-        value={formatTimeRange(startDate, endDate, locale)}
-      />
+      {showTime ? (
+        <DetailItem
+          icon={Clock01Icon}
+          label={locale === "ar" ? "الوقت" : "Time"}
+          value={formatTimeRange(startDate, endDate, locale)}
+        />
+      ) : null}
       {event.location ? (
         <DetailItem
           icon={Location01Icon}

@@ -75,6 +75,14 @@ const sortLabels: Record<SortValue, string> = {
   titleAsc: "Title (A-Z)",
 };
 
+function isSameCalendarDate(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
 export function EventsTable({
   events,
   activeLocale,
@@ -406,7 +414,9 @@ export function EventsTable({
                     )}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {formatDate(event.startDate)} - {formatDate(event.endDate)}
+                    {isSameCalendarDate(event.startDate, event.endDate)
+                      ? formatDate(event.startDate)
+                      : `${formatDate(event.startDate)} - ${formatDate(event.endDate)}`}
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="inline-flex items-center gap-1.5">
