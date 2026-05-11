@@ -29,6 +29,61 @@ export async function fetchGalleryMediaAction(): Promise<{ id: string; originalN
   return items;
 }
 
+export async function fetchMediaPageAction(
+  page = 1,
+  pageSize = 24,
+): Promise<{
+  items: { id: string; originalName: string; url: string; mimeType: string }[];
+  page: number;
+  totalPages: number;
+  total: number;
+}> {
+  const safePageSize = Math.max(1, Math.min(60, pageSize));
+  const safePage = Math.max(1, page);
+  const where = { mimeType: { startsWith: "image/" as const } };
+  const total = await db.media.count({ where });
+  const totalPages = Math.max(1, Math.ceil(total / safePageSize));
+  const currentPage = Math.min(safePage, totalPages);
+  const items = await db.media.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    select: { id: true, originalName: true, url: true, mimeType: true },
+    skip: (currentPage - 1) * safePageSize,
+    take: safePageSize,
+  });
+  return { items, page: currentPage, totalPages, total };
+}
+
+export async function fetchGalleryMediaPageAction(
+  page = 1,
+  pageSize = 24,
+): Promise<{
+  items: { id: string; originalName: string; url: string; mimeType: string }[];
+  page: number;
+  totalPages: number;
+  total: number;
+}> {
+  const safePageSize = Math.max(1, Math.min(60, pageSize));
+  const safePage = Math.max(1, page);
+  const where = {
+    OR: [
+      { mimeType: { startsWith: "image/" as const } },
+      { mimeType: { startsWith: "video/" as const } },
+    ],
+  };
+  const total = await db.media.count({ where });
+  const totalPages = Math.max(1, Math.ceil(total / safePageSize));
+  const currentPage = Math.min(safePage, totalPages);
+  const items = await db.media.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    select: { id: true, originalName: true, url: true, mimeType: true },
+    skip: (currentPage - 1) * safePageSize,
+    take: safePageSize,
+  });
+  return { items, page: currentPage, totalPages, total };
+}
+
 export async function updateEventAction(
   id: string,
   locale: string,

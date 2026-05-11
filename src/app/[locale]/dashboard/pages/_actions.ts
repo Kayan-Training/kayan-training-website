@@ -15,6 +15,29 @@ export async function fetchMediaAction(): Promise<{ id: string; originalName: st
   return items.map((m) => ({ id: m.id, originalName: m.originalName, url: m.url, mimeType: m.mimeType }));
 }
 
+export async function fetchMediaPageAction(
+  page = 1,
+  pageSize = 24,
+): Promise<{
+  items: { id: string; originalName: string; url: string; mimeType: string }[];
+  page: number;
+  totalPages: number;
+  total: number;
+}> {
+  const safePageSize = Math.max(1, Math.min(60, pageSize));
+  const safePage = Math.max(1, page);
+  const total = await db.media.count();
+  const totalPages = Math.max(1, Math.ceil(total / safePageSize));
+  const currentPage = Math.min(safePage, totalPages);
+  const items = await db.media.findMany({
+    select: { id: true, originalName: true, url: true, mimeType: true },
+    orderBy: { createdAt: "desc" },
+    skip: (currentPage - 1) * safePageSize,
+    take: safePageSize,
+  });
+  return { items, page: currentPage, totalPages, total };
+}
+
 export async function updatePageAction(
   id: string,
   locale: string,

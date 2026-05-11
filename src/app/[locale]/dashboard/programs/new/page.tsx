@@ -1,6 +1,12 @@
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
-import { createEventAction, fetchGalleryMediaAction, fetchMediaAction } from "../../events/_actions";
+import {
+  createEventAction,
+  fetchGalleryMediaAction,
+  fetchGalleryMediaPageAction,
+  fetchMediaAction,
+  fetchMediaPageAction,
+} from "../../events/_actions";
 import { EventForm } from "../../events/_components/event-form";
 
 export const metadata = { title: "New Program" };
@@ -34,7 +40,9 @@ export default async function NewProgramPage({
     <EventForm
       categoryOptions={categoryOptions}
       fetchGalleryMedia={fetchGalleryMediaAction}
+      fetchGalleryMediaPage={fetchGalleryMediaPageAction}
       fetchMedia={fetchMediaAction}
+      fetchMediaPage={fetchMediaPageAction}
       locale={activeLocale}
       onSubmit={boundAction}
       submitLabel="Create Program"

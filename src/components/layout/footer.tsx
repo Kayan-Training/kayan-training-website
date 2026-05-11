@@ -31,6 +31,7 @@ export function SiteFooter({
       : "The strategic partner for institutional development in the Sultanate of Oman. Precise training for a changing world.");
   const contactEmail = settings?.contactEmail || "training@kayan.om";
   const contactPhone = settings?.contactPhone || "+968 9538 3138";
+  const whatsappPhone = contactPhone.replace(/[^\d]/g, "");
   const contactAddress = settings?.contactAddress || (locale === "ar" ? "سلطنة عُمان، مسقط" : "Sultanate of Oman, Muscat");
   const siteName = settings?.siteName || (locale === "ar" ? "كيان للتدريب والاستشارات" : "Kayan Training & Consulting");
   const mappedPlatforms = new Map(
@@ -71,7 +72,12 @@ export function SiteFooter({
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <a className="font-mono text-xs text-primary hover:text-secondary" href={`mailto:${contactEmail}`}>{contactEmail}</a>
             <span className="hidden text-outline sm:block">·</span>
-            <a className="font-mono text-xs text-on-surface-variant hover:text-on-surface" href={`tel:${contactPhone.replace(/\s+/g, "")}`}>
+            <a
+              className="font-mono text-xs text-on-surface-variant hover:text-on-surface"
+              href={`https://api.whatsapp.com/send?phone=${whatsappPhone}`}
+              rel="noreferrer"
+              target="_blank"
+            >
               <PhoneText>{contactPhone}</PhoneText>
             </a>
             {socialLinks.length > 0 ? <span className="hidden text-outline sm:block">·</span> : null}

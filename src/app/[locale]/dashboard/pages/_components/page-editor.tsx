@@ -59,6 +59,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ImagePickerField } from "@/components/ui/image-picker-field";
+import { MediaLibraryDialog } from "@/components/ui/media-library-dialog";
 import { Input } from "@/components/ui/input";
 import {
   type LinkPickerEntities,
@@ -73,6 +74,7 @@ import { migrateBlocks } from "@/lib/pages/migrate-blocks";
 import { cn } from "@/lib/utils";
 import {
   fetchMediaAction,
+  fetchMediaPageAction,
   translateBlockAction,
   updatePageAction,
 } from "../_actions";
@@ -1322,6 +1324,8 @@ function MediaCarouselEditor({
   onChange: (media: HeroMedia[]) => void;
 }) {
   const [browseOpen, setBrowseOpen] = useState(false);
+  const [browsePage, setBrowsePage] = useState(1);
+  const [browseTotalPages, setBrowseTotalPages] = useState(1);
   const [browseItems, setBrowseItems] = useState<
     { id: string; originalName: string; url: string; mimeType: string }[]
   >([]);
@@ -1333,20 +1337,26 @@ function MediaCarouselEditor({
   async function openBrowse() {
     setBrowseLoading(true);
     try {
-      const result = await fetchMediaAction();
-      setBrowseItems(result);
+      const result = await fetchMediaPageAction(1, 24);
+      setBrowseItems(result.items);
+      setBrowsePage(result.page);
+      setBrowseTotalPages(result.totalPages);
     } finally {
       setBrowseLoading(false);
     }
     setBrowseOpen(true);
   }
 
-  function addFromLibrary(item: { url: string; mimeType: string }) {
-    const kind: "image" | "video" = item.mimeType.startsWith("video/")
-      ? "video"
-      : "image";
-    onChange([...media, { id: makeId(), url: item.url, kind }]);
-    setBrowseOpen(false);
+  async function loadBrowsePage(page: number) {
+    setBrowseLoading(true);
+    try {
+      const result = await fetchMediaPageAction(page, 24);
+      setBrowseItems(result.items);
+      setBrowsePage(result.page);
+      setBrowseTotalPages(result.totalPages);
+    } finally {
+      setBrowseLoading(false);
+    }
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -1480,58 +1490,27 @@ function MediaCarouselEditor({
         percent={uploadProgress}
         status={uploadStatus}
       />
-      <Dialog onOpenChange={setBrowseOpen} open={browseOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Media Library</DialogTitle>
-          </DialogHeader>
-          {browseItems.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">
-              No images uploaded yet.
-            </p>
-          ) : (
-            <div className="grid max-h-[70vh] grid-cols-2 gap-3 overflow-y-auto pe-1 sm:grid-cols-3 lg:grid-cols-4">
-              {browseItems.map((item) => (
-                <button
-                  className="group relative h-36 overflow-hidden rounded-lg border border-border/50 bg-muted hover:border-primary"
-                  key={item.id}
-                  type="button"
-                  onClick={() => addFromLibrary(item)}
-                >
-                  {item.mimeType.startsWith("video/") ? (
-                    <video
-                      aria-label={item.originalName}
-                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                      muted
-                      playsInline
-                      preload="metadata"
-                      src={item.url}
-                    />
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      alt={item.originalName}
-                      className="absolute inset-0 h-full w-full object-contain p-2 transition-transform group-hover:scale-105"
-                      src={item.url}
-                    />
-                  )}
-                  <span
-                    className={cn(
-                      "absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white",
-                      item.mimeType.startsWith("video/")
-                        ? "bg-blue-600/80"
-                        : "bg-black/60",
-                    )}
-                  >
-                    {item.mimeType.startsWith("video/") ? "video" : "image"}
-                  </span>
-                  <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
-                </button>
-              ))}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <MediaLibraryDialog
+        emptyText="No media uploaded yet."
+        items={browseItems}
+        loading={browseLoading}
+        multiple
+        open={browseOpen}
+        page={browsePage}
+        pageLoading={browseLoading}
+        totalPages={browseTotalPages}
+        title="Media Library"
+        onPageChange={loadBrowsePage}
+        onConfirm={(selected) => {
+          const appended: HeroMedia[] = selected.map((item) => ({
+            id: makeId(),
+            url: item.url,
+            kind: item.mimeType.startsWith("video/") ? "video" : "image",
+          }));
+          onChange([...media, ...appended]);
+        }}
+        onOpenChange={setBrowseOpen}
+      />
     </>
   );
 }

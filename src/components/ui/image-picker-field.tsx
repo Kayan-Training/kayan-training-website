@@ -1,15 +1,10 @@
 "use client";
 
-import { ImageIcon, Loader2, Upload, Video, X } from "lucide-react";
+import { ImageIcon, Loader2, Upload, X } from "lucide-react";
 import { useRef, useState, type ChangeEvent } from "react";
 import { toast } from "sonner";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { MediaLibraryDialog } from "@/components/ui/media-library-dialog";
 import { UploadProgress } from "@/components/ui/upload-progress";
 import { uploadMediaFile } from "@/lib/client/media-upload";
 import { cn } from "@/lib/utils";
@@ -185,63 +180,24 @@ export function ImagePickerField({
         </div>
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Media Library</DialogTitle>
-          </DialogHeader>
-          {items.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">
-              No images uploaded yet. Upload via the Media section.
-            </p>
-          ) : (
-            <div className="grid max-h-[70vh] grid-cols-2 gap-3 overflow-y-auto pe-1 sm:grid-cols-3 lg:grid-cols-4">
-              {items.map((item) => {
-                const isVideo = item.mimeType?.startsWith("video/") ?? false;
-                const isSelectable = !isVideo;
-                return (
-                <button
-                  className={cn(
-                    "group relative h-36 overflow-hidden rounded-lg border border-border/50 bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
-                    isSelectable ? "hover:border-primary" : "cursor-not-allowed opacity-70",
-                  )}
-                  disabled={!isSelectable}
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    if (!isSelectable) return;
-                    onChange(item.url);
-                    setOpen(false);
-                  }}
-                >
-                  {isVideo ? (
-                    <div className="flex h-full w-full items-center justify-center bg-muted">
-                      <Video className="size-6 text-muted-foreground" />
-                    </div>
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      alt={item.originalName}
-                      className="absolute inset-0 h-full w-full object-contain p-2 transition-transform group-hover:scale-105"
-                      src={item.url}
-                    />
-                  )}
-                  <span
-                    className={cn(
-                      "absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white",
-                      isVideo ? "bg-blue-600/80" : "bg-black/60",
-                    )}
-                  >
-                    {isVideo ? "video" : "image"}
-                  </span>
-                  <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
-                </button>
-                );
-              })}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <MediaLibraryDialog
+        acceptedKinds={["image"]}
+        emptyText="No images uploaded yet. Upload via the Media section."
+        initialSelectedIds={
+          value ? items.filter((item) => item.url === value).map((item) => item.id) : []
+        }
+        items={items.map((item) => ({ ...item, mimeType: item.mimeType ?? "image/*" }))}
+        loading={loading}
+        multiple={false}
+        open={open}
+        title="Media Library"
+        onConfirm={(selected) => {
+          const first = selected[0];
+          if (!first) return;
+          onChange(first.url);
+        }}
+        onOpenChange={setOpen}
+      />
     </>
   );
 }

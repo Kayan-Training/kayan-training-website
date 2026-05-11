@@ -86,12 +86,6 @@ import { RichTextEditor } from "@/components/dashboard/rich-text-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Field,
   FieldContent,
   FieldDescription,
@@ -105,6 +99,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MediaLibraryDialog } from "@/components/ui/media-library-dialog";
 import {
   Select,
   SelectContent,
@@ -554,6 +549,8 @@ export function EventForm({
   eventId,
   fetchMedia,
   fetchGalleryMedia,
+  fetchMediaPage,
+  fetchGalleryMediaPage,
   locale,
   onSubmit,
   registrations = [],
@@ -569,6 +566,24 @@ export function EventForm({
   fetchGalleryMedia: () => Promise<
     { id: string; originalName: string; url: string; mimeType: string }[]
   >;
+  fetchMediaPage?: (
+    page: number,
+    pageSize?: number,
+  ) => Promise<{
+    items: { id: string; originalName: string; url: string; mimeType: string }[];
+    page: number;
+    totalPages: number;
+    total: number;
+  }>;
+  fetchGalleryMediaPage?: (
+    page: number,
+    pageSize?: number,
+  ) => Promise<{
+    items: { id: string; originalName: string; url: string; mimeType: string }[];
+    page: number;
+    totalPages: number;
+    total: number;
+  }>;
   locale: string;
   onSubmit: (values: EventFormValues) => Promise<{ error?: string }>;
   registrations?: Array<{
@@ -599,11 +614,16 @@ export function EventForm({
   const [coverUploadStatus, setCoverUploadStatus] = useState("");
   const [coverLibraryOpen, setCoverLibraryOpen] = useState(false);
   const [coverLibraryLoading, setCoverLibraryLoading] = useState(false);
+  const [coverLibraryPage, setCoverLibraryPage] = useState(1);
+  const [coverLibraryTotalPages, setCoverLibraryTotalPages] = useState(1);
   const [coverLibraryItems, setCoverLibraryItems] = useState<
     { id: string; originalName: string; url: string; mimeType: string }[]
   >([]);
   const [galleryLibraryOpen, setGalleryLibraryOpen] = useState(false);
   const [galleryLibraryLoading, setGalleryLibraryLoading] = useState(false);
+  const [galleryLibraryPage, setGalleryLibraryPage] = useState(1);
+  const [galleryLibraryTotalPages, setGalleryLibraryTotalPages] =
+    useState(1);
   const [galleryLibraryItems, setGalleryLibraryItems] = useState<
     { id: string; originalName: string; url: string; mimeType: string }[]
   >([]);
@@ -859,35 +879,73 @@ export function EventForm({
     }
   }
 
-  async function openCoverLibrary() {
+  async function loadCoverLibraryPage(page: number) {
     setCoverLibraryLoading(true);
     try {
-      const items = await fetchMedia();
-      setCoverLibraryItems(items);
-      setCoverLibraryOpen(true);
+      if (fetchMediaPage) {
+        const result = await fetchMediaPage(page, 24);
+        setCoverLibraryItems(result.items);
+        setCoverLibraryPage(result.page);
+        setCoverLibraryTotalPages(result.totalPages);
+      } else {
+        const items = await fetchMedia();
+        const pageSize = 24;
+        const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+        const currentPage = Math.min(Math.max(1, page), totalPages);
+        const start = (currentPage - 1) * pageSize;
+        setCoverLibraryItems(items.slice(start, start + pageSize));
+        setCoverLibraryPage(currentPage);
+        setCoverLibraryTotalPages(totalPages);
+      }
     } finally {
       setCoverLibraryLoading(false);
     }
   }
 
-  async function openGalleryLibrary() {
+  async function loadGalleryLibraryPage(page: number) {
     setGalleryLibraryLoading(true);
     try {
-      const items = await fetchGalleryMedia();
-      setGalleryLibraryItems(items);
-      setGalleryLibraryOpen(true);
+      if (fetchGalleryMediaPage) {
+        const result = await fetchGalleryMediaPage(page, 24);
+        setGalleryLibraryItems(result.items);
+        setGalleryLibraryPage(result.page);
+        setGalleryLibraryTotalPages(result.totalPages);
+      } else {
+        const items = await fetchGalleryMedia();
+        const pageSize = 24;
+        const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+        const currentPage = Math.min(Math.max(1, page), totalPages);
+        const start = (currentPage - 1) * pageSize;
+        setGalleryLibraryItems(items.slice(start, start + pageSize));
+        setGalleryLibraryPage(currentPage);
+        setGalleryLibraryTotalPages(totalPages);
+      }
     } finally {
       setGalleryLibraryLoading(false);
     }
   }
 
+  async function openCoverLibrary() {
+    await loadCoverLibraryPage(1);
+    setCoverLibraryOpen(true);
+  }
+
+  async function openGalleryLibrary() {
+    await loadGalleryLibraryPage(1);
+    setGalleryLibraryOpen(true);
+  }
+
   useEffect(() => {
     if (galleryMediaIds.length === 0 || galleryLibraryItems.length > 0) return;
     void (async () => {
-      const items = await fetchGalleryMedia();
-      setGalleryLibraryItems(items);
+      await loadGalleryLibraryPage(1);
     })();
-  }, [fetchGalleryMedia, galleryLibraryItems.length, galleryMediaIds.length]);
+  }, [
+    fetchGalleryMedia,
+    fetchGalleryMediaPage,
+    galleryLibraryItems.length,
+    galleryMediaIds.length,
+  ]);
 
   async function uploadGalleryFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
@@ -3235,114 +3293,54 @@ export function EventForm({
           </aside>
       </form>
 
-      <Dialog onOpenChange={setCoverLibraryOpen} open={coverLibraryOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Media Library</DialogTitle>
-          </DialogHeader>
-          {coverLibraryItems.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">
-              No images uploaded yet.
-            </p>
-          ) : (
-            <div className="grid max-h-[70vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
-              {coverLibraryItems.map((item) => (
-                <button
-                  className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-border/50 hover:border-primary"
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    form.setValue("coverImage", item.url, {
-                      shouldDirty: true,
-                    });
-                    setCoverLibraryOpen(false);
-                  }}
-                >
-                  {item.mimeType.startsWith("image/") ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      alt={item.originalName}
-                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                      src={item.url}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-muted">
-                      <Video className="size-6 text-muted-foreground" />
-                    </div>
-                  )}
-                  <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                    {item.mimeType.startsWith("image/") ? "image" : "video"}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <MediaLibraryDialog
+        acceptedKinds={["image"]}
+        emptyText="No images uploaded yet."
+        initialSelectedIds={
+          form.watch("coverImage")
+            ? coverLibraryItems
+                .filter((item) => item.url === form.watch("coverImage"))
+                .map((item) => item.id)
+            : []
+        }
+        items={coverLibraryItems}
+        loading={coverLibraryLoading}
+        multiple={false}
+        open={coverLibraryOpen}
+        page={coverLibraryPage}
+        pageLoading={coverLibraryLoading}
+        totalPages={coverLibraryTotalPages}
+        title="Media Library"
+        onPageChange={loadCoverLibraryPage}
+        onConfirm={(selected) => {
+          const first = selected[0];
+          if (!first) return;
+          form.setValue("coverImage", first.url, { shouldDirty: true });
+        }}
+        onOpenChange={setCoverLibraryOpen}
+      />
 
-      <Dialog onOpenChange={setGalleryLibraryOpen} open={galleryLibraryOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Gallery Media Library</DialogTitle>
-          </DialogHeader>
-          {galleryLibraryItems.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">
-              No media uploaded yet.
-            </p>
-          ) : (
-            <div className="grid max-h-[70vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
-              {galleryLibraryItems.map((item) => {
-                const selected = galleryMediaIds.includes(item.id);
-                return (
-                  <button
-                    className={cn(
-                      "group relative aspect-[4/3] overflow-hidden rounded-lg border transition-colors",
-                      selected
-                        ? "border-primary ring-2 ring-primary/30"
-                        : "border-border/50 hover:border-primary",
-                    )}
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      form.setValue(
-                        "galleryMediaIds",
-                        selected
-                          ? galleryMediaIds.filter((id) => id !== item.id)
-                          : [...galleryMediaIds, item.id],
-                        { shouldDirty: true },
-                      );
-                    }}
-                  >
-                    {item.mimeType.startsWith("image/") ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        alt={item.originalName}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                        src={item.url}
-                      />
-                    ) : (
-                      <video
-                        className="h-full w-full object-cover"
-                        muted
-                        preload="metadata"
-                        src={item.url}
-                      />
-                    )}
-                    <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                      {item.mimeType.startsWith("image/") ? "image" : "video"}
-                    </span>
-                    {selected ? (
-                      <span className="absolute right-2 top-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
-                        Selected
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <MediaLibraryDialog
+        emptyText="No media uploaded yet."
+        initialSelectedIds={galleryMediaIds}
+        items={galleryLibraryItems}
+        loading={galleryLibraryLoading}
+        multiple
+        open={galleryLibraryOpen}
+        page={galleryLibraryPage}
+        pageLoading={galleryLibraryLoading}
+        totalPages={galleryLibraryTotalPages}
+        title="Gallery Media Library"
+        onPageChange={loadGalleryLibraryPage}
+        onConfirm={(selected) => {
+          form.setValue(
+            "galleryMediaIds",
+            selected.map((item) => item.id),
+            { shouldDirty: true },
+          );
+        }}
+        onOpenChange={setGalleryLibraryOpen}
+      />
     </>
   );
 }

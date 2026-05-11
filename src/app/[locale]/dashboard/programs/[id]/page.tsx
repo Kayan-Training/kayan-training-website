@@ -2,7 +2,13 @@ import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
-import { fetchGalleryMediaAction, fetchMediaAction, updateEventAction } from "../../events/_actions";
+import {
+  fetchGalleryMediaAction,
+  fetchGalleryMediaPageAction,
+  fetchMediaAction,
+  fetchMediaPageAction,
+  updateEventAction,
+} from "../../events/_actions";
 import { EventForm, type EventFormValues } from "../../events/_components/event-form";
 
 export default async function EditProgramPage({
@@ -162,7 +168,9 @@ export default async function EditProgramPage({
       defaultValues={defaultValues}
       eventId={id}
       fetchGalleryMedia={fetchGalleryMediaAction}
+      fetchGalleryMediaPage={fetchGalleryMediaPageAction}
       fetchMedia={fetchMediaAction}
+      fetchMediaPage={fetchMediaPageAction}
       locale={activeLocale}
       onSubmit={boundAction}
       registrations={eventRegistrations}
