@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { LocaleSwitcher } from "@/components/i18n/locale-switcher";
 import { SOCIAL_PLATFORM_OPTIONS, type SocialPlatformKey } from "@/lib/social-platforms";
+import { PhoneText } from "@/components/ui/phone-text";
 
 export function SiteFooter({
   locale,
@@ -70,7 +71,9 @@ export function SiteFooter({
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <a className="font-mono text-xs text-primary hover:text-secondary" href={`mailto:${contactEmail}`}>{contactEmail}</a>
             <span className="hidden text-outline sm:block">·</span>
-            <a className="font-mono text-xs text-on-surface-variant hover:text-on-surface" dir="ltr" href={`tel:${contactPhone.replace(/\s+/g, "")}`}>{contactPhone}</a>
+            <a className="font-mono text-xs text-on-surface-variant hover:text-on-surface" href={`tel:${contactPhone.replace(/\s+/g, "")}`}>
+              <PhoneText>{contactPhone}</PhoneText>
+            </a>
             {socialLinks.length > 0 ? <span className="hidden text-outline sm:block">·</span> : null}
             {socialLinks.length > 0 ? (
               <div className="flex items-center gap-2">

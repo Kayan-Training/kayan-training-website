@@ -236,6 +236,11 @@ body {
   width: 0;
 }
 
+a[href^="tel:"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
 @keyframes maintenancetape {
   0% {
     transform: translateX(0);

@@ -11,9 +11,11 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 
 import { FeaturedCountdown } from "@/components/events/featured-countdown";
 import { ProgramGallery } from "@/components/events/program-gallery";
+import { PhoneText } from "@/components/ui/phone-text";
 import {
   getEventDetailBySlug,
   getLocalizedEvents,
@@ -87,7 +89,7 @@ function DetailItem({
 }: {
   icon: typeof Calendar03Icon;
   label: string;
-  value: string;
+  value: ReactNode;
 }) {
   return (
     <div className="flex items-start gap-3">
@@ -550,7 +552,7 @@ function EventMetaCard({
       <DetailItem
         icon={TelephoneIcon}
         label={locale === "ar" ? "للاستفسار" : "Enquiries"}
-        value="+968 9538 3138"
+        value={<PhoneText>+968 9538 3138</PhoneText>}
       />
     </div>
   );
