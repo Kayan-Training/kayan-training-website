@@ -151,6 +151,8 @@ const eventSchema = z.object({
   heroPeopleLabelEn: z.string(),
   heroTagsAr: z.string(),
   heroTagsEn: z.string(),
+  showSidebarSeatsFulfillment: z.boolean(),
+  showSidebarPayment: z.boolean(),
   endDate: z.string().min(1),
   eventKind: z.enum(["event", "training_course"]),
   googleMapsLink: z.string(),
@@ -667,6 +669,8 @@ export function EventForm({
       heroPeopleLabelEn: "",
       heroTagsAr: "",
       heroTagsEn: "",
+      showSidebarSeatsFulfillment: true,
+      showSidebarPayment: true,
       endDate: "",
       eventKind: "event",
       googleMapsLink: "",
@@ -724,6 +728,8 @@ export function EventForm({
   const startDate = form.watch("startDate");
   const capacity = form.watch("capacity");
   const isFree = form.watch("isFree");
+  const showSidebarSeatsFulfillment = form.watch("showSidebarSeatsFulfillment");
+  const showSidebarPayment = form.watch("showSidebarPayment");
   const paymentMethods = form.watch("paymentMethods");
   const registrationType = form.watch("registrationType");
   const selectedTrainerIds = form.watch("trainerIds");
@@ -2100,6 +2106,36 @@ export function EventForm({
                         }
                       />
                     </Field>
+                    <FieldGroup className="grid grid-cols-2 gap-4">
+                      <Field className="grid gap-2">
+                        <ToggleControl
+                          checked={showSidebarSeatsFulfillment}
+                          description="Controls the seats progress bar on the public page sidebar"
+                          iconBg="bg-cyan-50"
+                          iconEl={<Users className="size-4 text-cyan-600" />}
+                          title="Show seats fulfillment bar"
+                          onCheckedChange={(v) =>
+                            form.setValue("showSidebarSeatsFulfillment", v, {
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                      </Field>
+                      <Field className="grid gap-2">
+                        <ToggleControl
+                          checked={showSidebarPayment}
+                          description="Controls the price/payment summary visibility in the sidebar card"
+                          iconBg="bg-emerald-50"
+                          iconEl={<CircleDollarSign className="size-4 text-emerald-600" />}
+                          title="Show payment summary"
+                          onCheckedChange={(v) =>
+                            form.setValue("showSidebarPayment", v, {
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                      </Field>
+                    </FieldGroup>
                     {isFree ? (
                       <Note>
                         This event is free — price and payment fields are hidden

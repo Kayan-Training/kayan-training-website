@@ -72,6 +72,12 @@ export default async function EditProgramPage({
             tags?: { ar?: string[]; en?: string[] };
             peopleLabel?: { ar?: string | null; en?: string | null };
           };
+          ui?: {
+            sidebar?: {
+              showSeatsFulfillment?: boolean;
+              showPayment?: boolean;
+            };
+          };
         })
       : {};
 
@@ -94,6 +100,8 @@ export default async function EditProgramPage({
       : "",
     heroPeopleLabelEn: galleryDetails.hero?.peopleLabel?.en ?? "",
     heroPeopleLabelAr: galleryDetails.hero?.peopleLabel?.ar ?? "",
+    showSidebarSeatsFulfillment: galleryDetails.ui?.sidebar?.showSeatsFulfillment ?? true,
+    showSidebarPayment: galleryDetails.ui?.sidebar?.showPayment ?? true,
     location: event.location ?? "",
     capacity: event.capacity?.toString() ?? "",
     startDate: event.startDate.toISOString().slice(0, 10),

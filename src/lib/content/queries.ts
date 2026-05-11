@@ -168,14 +168,31 @@ export async function getEventDetailBySlug(
       : undefined;
   const heroConfig =
     event.bankTransferDetails && typeof event.bankTransferDetails === "object"
-      ? (event.bankTransferDetails as {
+        ? (event.bankTransferDetails as {
           hero?: {
             programLogo?: string;
             collaboratorLogos?: string[];
             tags?: { ar?: string[]; en?: string[] };
             peopleLabel?: { ar?: string | null; en?: string | null };
           };
+          ui?: {
+            sidebar?: {
+              showSeatsFulfillment?: boolean;
+              showPayment?: boolean;
+            };
+          };
         }).hero
+      : undefined;
+  const sidebarUiConfig =
+    event.bankTransferDetails && typeof event.bankTransferDetails === "object"
+      ? (event.bankTransferDetails as {
+          ui?: {
+            sidebar?: {
+              showSeatsFulfillment?: boolean;
+              showPayment?: boolean;
+            };
+          };
+        }).ui?.sidebar
       : undefined;
   const galleryIds = Array.isArray(galleryConfig?.mediaIds)
     ? (galleryConfig?.mediaIds ?? []).filter((id): id is string => typeof id === "string" && id.length > 0)
@@ -346,6 +363,14 @@ export async function getEventDetailBySlug(
       typeof heroConfig?.peopleLabel?.[locale] === "string"
         ? (heroConfig?.peopleLabel?.[locale] ?? "").trim()
         : "",
+    showSidebarSeatsFulfillment:
+      typeof sidebarUiConfig?.showSeatsFulfillment === "boolean"
+        ? sidebarUiConfig.showSeatsFulfillment
+        : true,
+    showSidebarPayment:
+      typeof sidebarUiConfig?.showPayment === "boolean"
+        ? sidebarUiConfig.showPayment
+        : true,
   };
 }
 

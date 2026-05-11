@@ -153,6 +153,12 @@ export async function updateEventAction(
               ar: values.heroPeopleLabelAr.trim() || null,
             },
           },
+          ui: {
+            sidebar: {
+              showSeatsFulfillment: values.showSidebarSeatsFulfillment,
+              showPayment: values.showSidebarPayment,
+            },
+          },
         },
         showMapEmbed: values.showMapEmbed,
         googleMapsLink: values.googleMapsLink || null,
@@ -249,6 +255,9 @@ export async function updateEventAction(
 
     revalidatePath(`/${locale}/dashboard/programs`);
     revalidatePath(`/${locale}/events`);
+    revalidatePath(`/${locale}/training-courses`);
+    revalidatePath(`/${locale}/events/${values.slug}`);
+    revalidatePath(`/${locale}/training-courses/${values.slug}`);
     return {};
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to save event" };
@@ -323,6 +332,12 @@ export async function createEventAction(
               ar: values.heroPeopleLabelAr.trim() || null,
             },
           },
+          ui: {
+            sidebar: {
+              showSeatsFulfillment: values.showSidebarSeatsFulfillment,
+              showPayment: values.showSidebarPayment,
+            },
+          },
         },
         showMapEmbed: values.showMapEmbed,
         googleMapsLink: values.googleMapsLink || null,
@@ -371,6 +386,10 @@ export async function createEventAction(
     });
     createdId = created.id;
     revalidatePath(`/${locale}/dashboard/programs`);
+    revalidatePath(`/${locale}/events`);
+    revalidatePath(`/${locale}/training-courses`);
+    revalidatePath(`/${locale}/events/${values.slug}`);
+    revalidatePath(`/${locale}/training-courses/${values.slug}`);
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to create event" };
   }

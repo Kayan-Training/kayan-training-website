@@ -133,6 +133,8 @@ function RegisterCard({
       ? "مجاني"
       : "Free"
     : `${event.price} OMR`;
+  const showSeatsFulfillment = event.showSidebarSeatsFulfillment !== false;
+  const showPaymentSummary = event.showSidebarPayment !== false;
 
   const registrationHref =
     event.registrationType === "external" && event.externalRegistrationUrl
@@ -144,14 +146,14 @@ function RegisterCard({
       <div className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-primary">
         {locale === "ar" ? "سجّل الآن" : "Register Now"}
       </div>
-      {!isPastProgram ? (
+      {!isPastProgram && showPaymentSummary ? (
         <div className="mb-6 flex items-baseline gap-2">
           <span className="font-mono text-3xl font-semibold text-on-surface">
             {priceLabel}
           </span>
         </div>
       ) : null}
-      {capacity ? (
+      {showSeatsFulfillment && capacity ? (
         <div className="mb-6">
           <div className="mb-2 flex justify-between text-xs">
             <span className="text-on-surface-variant">
