@@ -3,14 +3,18 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { LocaleSwitcher } from "@/components/i18n/locale-switcher";
+import { AnimatedCategoryIcons } from "@/components/shared/animated-category-icons";
+import type { AnimatedCategoryIconItem } from "@/lib/content/category-icons";
 import { SOCIAL_PLATFORM_OPTIONS, type SocialPlatformKey } from "@/lib/social-platforms";
 import { PhoneText } from "@/components/ui/phone-text";
 
 export function SiteFooter({
   locale,
   settings,
+  footerCategoryIcons,
 }: {
   locale: "ar" | "en";
+  footerCategoryIcons?: AnimatedCategoryIconItem[];
   settings?: {
     contactAddress: string;
     contactEmail: string;
@@ -22,6 +26,7 @@ export function SiteFooter({
     socialLinks?: { platform: string; url: string }[];
     socialX: string;
     socialYouTube: string;
+    footerShowAnimatedCategoryIcons?: boolean;
   };
 }) {
   const siteTagline =
@@ -69,6 +74,17 @@ export function SiteFooter({
           <p className="mb-6 max-w-xs text-sm leading-relaxed text-on-surface-variant">
             {siteTagline}
           </p>
+          {settings?.footerShowAnimatedCategoryIcons && (footerCategoryIcons?.length ?? 0) > 0 ? (
+            <AnimatedCategoryIcons
+              className={
+                locale === "ar"
+                  ? "mb-6 ml-auto !flex max-w-xs !w-fit !flex-wrap !gap-0"
+                  : "mb-6 !flex max-w-xs !w-fit !flex-wrap !gap-0"
+              }
+              iconSize={36}
+              icons={footerCategoryIcons ?? []}
+            />
+          ) : null}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <a className="font-mono text-xs text-primary hover:text-secondary" href={`mailto:${contactEmail}`}>{contactEmail}</a>
             <span className="hidden text-outline sm:block">·</span>

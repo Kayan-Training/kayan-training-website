@@ -44,6 +44,7 @@ const getSettingsMap = cache(async (): Promise<SettingMap> => {
           "header.cta.label.en",
           "header.cta.label.ar",
           "header.cta.url",
+          "footer.showAnimatedCategoryIcons",
         ],
       },
     },
@@ -129,6 +130,7 @@ export async function getLocalizedSiteSettings(locale: AppLocale) {
     labelAr: fromMap(map, "header.cta.label.ar") || "الفعاليات",
     url: fromMap(map, "header.cta.url") || `/${locale}/events`,
   };
+  const footerShowAnimatedCategoryIcons = fromMap(map, "footer.showAnimatedCategoryIcons") === "1";
 
   return {
     contactAddress,
@@ -144,5 +146,6 @@ export async function getLocalizedSiteSettings(locale: AppLocale) {
     socialYouTube,
     frontendTheme,
     headerCta,
+    footerShowAnimatedCategoryIcons,
   };
 }

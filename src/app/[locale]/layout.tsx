@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { LocaleShell } from "@/components/layout/locale-shell";
 import type { NavMenuItem } from "@/components/layout/nav";
+import { getAnimatedCategoryIcons } from "@/lib/content/category-icons";
 import { db } from "@/lib/db";
 import { LOCALE_DIRECTION, isSupportedLocale, type AppLocale } from "@/lib/i18n/config";
 import { getLocalizedSiteSettings } from "@/lib/settings";
@@ -44,6 +45,9 @@ export default async function LocaleLayout({
     notFound();
   }
   const siteSettings = await getLocalizedSiteSettings(locale);
+  const footerCategoryIcons = siteSettings.footerShowAnimatedCategoryIcons
+    ? await getAnimatedCategoryIcons(locale)
+    : [];
 
   const menus = await db.menu.findMany({
     where: { location: { in: ["main", "header"] } },
@@ -108,7 +112,14 @@ export default async function LocaleLayout({
 
   return (
     <div data-locale={locale} dir={LOCALE_DIRECTION[locale]}>
-      <LocaleShell locale={locale} menuItems={menuItems} siteSettings={siteSettings}>{children}</LocaleShell>
+      <LocaleShell
+        locale={locale}
+        menuItems={menuItems}
+        siteSettings={siteSettings}
+        footerCategoryIcons={footerCategoryIcons}
+      >
+        {children}
+      </LocaleShell>
     </div>
   );
 }

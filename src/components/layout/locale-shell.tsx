@@ -10,16 +10,19 @@ import type { CSSProperties } from "react";
 
 import { SiteFooter } from "@/components/layout/footer";
 import { SiteNav, type NavMenuItem } from "@/components/layout/nav";
+import type { AnimatedCategoryIconItem } from "@/lib/content/category-icons";
 
 export function LocaleShell({
   children,
   locale,
   menuItems,
   siteSettings,
+  footerCategoryIcons,
 }: {
   children: React.ReactNode;
   locale: "ar" | "en";
   menuItems?: NavMenuItem[];
+  footerCategoryIcons?: AnimatedCategoryIconItem[];
   siteSettings?: {
     contactAddress: string;
     contactEmail: string;
@@ -36,6 +39,7 @@ export function LocaleShell({
       labelEn: string;
       url: string;
     };
+    footerShowAnimatedCategoryIcons?: boolean;
     frontendTheme?: {
       background: string;
       foreground: string;
@@ -90,7 +94,11 @@ export function LocaleShell({
     >
       <SiteNav locale={locale} menuItems={menuItems} cta={siteSettings?.headerCta} />
       <div className="">{children}</div>
-      <SiteFooter locale={locale} settings={siteSettings} />
+      <SiteFooter
+        locale={locale}
+        settings={siteSettings}
+        footerCategoryIcons={footerCategoryIcons}
+      />
     </div>
   );
 }

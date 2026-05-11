@@ -71,7 +71,7 @@ function MaintenanceModeCard({ initialOn }: { initialOn: boolean }) {
 type SettingField = {
   key: string;
   label: string;
-  inputType: "text" | "email" | "tel" | "url" | "textarea" | "color";
+  inputType: "text" | "email" | "tel" | "url" | "textarea" | "color" | "switch";
   placeholder?: string;
 };
 
@@ -92,6 +92,7 @@ const SETTINGS_SCHEMA: SettingGroup[] = [
       { key: "site.tagline.en", label: "Tagline (English)", inputType: "text", placeholder: "Build teams and accelerate impact" },
       { key: "site.description.ar", label: "Description (Arabic)", inputType: "textarea", placeholder: "وصف مختصر للموقع لتحسين الظهور في محركات البحث..." },
       { key: "site.description.en", label: "Description (English)", inputType: "textarea", placeholder: "A brief description of your organization for SEO..." },
+      { key: "footer.showAnimatedCategoryIcons", label: "Show animated category icons in footer", inputType: "switch" },
     ],
   },
   {
@@ -415,6 +416,27 @@ function SettingGroupCard({
                   onChange={(e) => set(field.key, e.target.value)}
                 />
               </div>
+            ) : field.inputType === "switch" ? (
+              <button
+                className={cn(
+                  "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none",
+                  values[field.key] === "1" ? "bg-primary" : "bg-muted",
+                )}
+                id={field.key}
+                name={field.key}
+                aria-checked={values[field.key] === "1" ? "true" : "false"}
+                role="switch"
+                title={field.label}
+                type="button"
+                onClick={() => set(field.key, values[field.key] === "1" ? "0" : "1")}
+              >
+                <span
+                  className={cn(
+                    "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform duration-200",
+                    values[field.key] === "1" ? "translate-x-5" : "translate-x-0",
+                  )}
+                />
+              </button>
             ) : (
               <input
                 className={inputCls}

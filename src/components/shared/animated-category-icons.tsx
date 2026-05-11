@@ -12,6 +12,7 @@ function AnimatedIcon({
   direction,
   duration,
   offset,
+  size = 48,
 }: {
   src: string;
   alt: string;
@@ -19,6 +20,7 @@ function AnimatedIcon({
   direction: IconDirection;
   duration?: string;
   offset?: string;
+  size?: number;
 }) {
   const isVertical = direction === "up" || direction === "down";
   const animationClass = {
@@ -30,16 +32,15 @@ function AnimatedIcon({
 
   return (
     <div
-      className="relative h-12 w-12 overflow-hidden"
+      className="relative overflow-hidden"
       title={label}
       aria-label={alt}
+      style={{ height: `${size}px`, width: `${size}px` }}
     >
       <div
         className={cn(
           "absolute will-change-transform motion-reduce:animate-none",
-          isVertical
-            ? "inset-0 flex h-[200%] flex-col"
-            : "left-0 top-0 flex h-full w-[96px]",
+          isVertical ? "inset-0 flex flex-col" : "left-0 top-0 flex h-full",
           animationClass,
         )}
         style={{
@@ -48,16 +49,19 @@ function AnimatedIcon({
           animationDelay: offset ?? "0s",
           animationIterationCount: "infinite",
           animationTimingFunction: "linear",
+          height: isVertical ? `${size * 2}px` : `${size}px`,
+          width: isVertical ? `${size}px` : `${size * 2}px`,
         }}
       >
-        <div className="grid h-12 w-12 shrink-0 place-items-center">
-          <Image src={src} width={48} height={48} alt={alt} />
+        <div className="grid shrink-0 place-items-center" style={{ height: `${size}px`, width: `${size}px` }}>
+          <Image src={src} width={size} height={size} alt={alt} />
         </div>
         <div
-          className="grid h-12 w-12 shrink-0 place-items-center"
+          className="grid shrink-0 place-items-center"
+          style={{ height: `${size}px`, width: `${size}px` }}
           aria-hidden="true"
         >
-          <Image src={src} width={48} height={48} alt="" />
+          <Image src={src} width={size} height={size} alt="" />
         </div>
       </div>
     </div>
@@ -67,9 +71,11 @@ function AnimatedIcon({
 export function AnimatedCategoryIcons({
   icons,
   className,
+  iconSize = 48,
 }: {
   icons: AnimatedCategoryIconItem[];
   className?: string;
+  iconSize?: number;
 }) {
   if (!icons.length) return null;
 
@@ -84,6 +90,7 @@ export function AnimatedCategoryIcons({
           direction={icon.direction}
           duration={icon.duration}
           offset={icon.offset}
+          size={iconSize}
         />
       ))}
     </div>
