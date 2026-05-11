@@ -57,6 +57,9 @@ export type ProcessStepsBlock = {
   type: "process_steps";
   heading: string;
   body: string;
+  mediaUrl?: string;
+  mediaKind?: "image" | "video";
+  mediaSize?: "sm" | "md" | "lg";
   steps: Array<{ title: string; desc: string }>;
 };
 

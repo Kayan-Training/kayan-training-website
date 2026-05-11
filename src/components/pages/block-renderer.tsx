@@ -1,5 +1,3 @@
-import Image from "next/image";
-import Link from "next/link";
 import { resolveCategoryIconPath } from "@/lib/category-icons";
 import { getAnimatedCategoryIcons } from "@/lib/content/category-icons";
 import { getLocalizedEvents, getLocalizedPosts } from "@/lib/content/queries";
@@ -23,6 +21,8 @@ import type {
   ValuesListBlock,
 } from "@/lib/pages/block-types";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
+import Link from "next/link";
 import {
   type FeaturedEventCard,
   HeroSlider,
@@ -136,9 +136,24 @@ function AboutIntroRenderer({
 }
 
 function MissionVisionRenderer({ block }: { block: MissionVisionBlock }) {
+  const items = (block.items ?? []).filter(
+    (item) => item.title.trim().length > 0 || item.body.trim().length > 0,
+  );
+  const itemCount = Math.min(3, Math.max(1, items.length || 1));
+  const colsClass =
+    itemCount === 1
+      ? "md:grid-cols-1"
+      : itemCount === 2
+        ? "md:grid-cols-2"
+        : "md:grid-cols-3";
   return (
-    <section className="mx-auto max-w-[1440px] grid grid-cols-1 gap-4 px-6 pb-14 md:grid-cols-3 md:px-10">
-      {block.items.map((item, i) => (
+    <section
+      className={cn(
+        "mx-auto grid max-w-[1440px] grid-cols-1 gap-4 px-6 pb-14 md:px-10",
+        colsClass,
+      )}
+    >
+      {items.map((item, i) => (
         <div className="ghost-border bg-surface-container-lowest p-6" key={i}>
           <h3 className="mb-3 text-lg font-bold">{item.title}</h3>
           <p className="text-sm leading-relaxed text-on-surface-variant">
@@ -151,8 +166,14 @@ function MissionVisionRenderer({ block }: { block: MissionVisionBlock }) {
 }
 
 function ProcessStepsRenderer({ block }: { block: ProcessStepsBlock }) {
+  const mediaSizeClass =
+    block.mediaSize === "sm"
+      ? "w-1/2 max-w-xs"
+      : block.mediaSize === "lg"
+        ? "w-full max-w-full"
+        : "w-3/4 max-w-lg";
   return (
-    <section className="mx-auto max-w-[1440px] px-6 pb-16 md:px-10">
+    <section className="mx-auto max-w-[1440px] px-6 py-16 md:px-10">
       <div className="ghost-border grid grid-cols-1 gap-8 bg-surface-container-highest p-7 md:p-10 lg:grid-cols-12">
         <div className="lg:col-span-5">
           <h2 className="mb-4 text-3xl font-black leading-tight">
@@ -163,6 +184,27 @@ function ProcessStepsRenderer({ block }: { block: ProcessStepsBlock }) {
               {block.body}
             </p>
           )}
+          {block.mediaUrl ? (
+            <div className={cn("mt-5 overflow-hidden", mediaSizeClass)}>
+              {block.mediaKind === "video" ? (
+                <video
+                  className="w-full rounded-md bg-black/20"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  src={block.mediaUrl}
+                />
+              ) : (
+                <Image
+                  alt={block.heading || "Process media"}
+                  className="h-auto w-full rounded-md object-cover"
+                  height={640}
+                  src={block.mediaUrl}
+                  width={960}
+                />
+              )}
+            </div>
+          ) : null}
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:col-span-7">
           {block.steps.map((step, i) => (
@@ -181,6 +223,16 @@ function ProcessStepsRenderer({ block }: { block: ProcessStepsBlock }) {
 }
 
 function ValuesListRenderer({ block }: { block: ValuesListBlock }) {
+  const items = (block.items ?? []).filter(
+    (item) => item.title.trim().length > 0 || item.desc.trim().length > 0,
+  );
+  const itemCount = Math.min(3, Math.max(1, items.length || 1));
+  const colsClass =
+    itemCount === 1
+      ? "md:grid-cols-1"
+      : itemCount === 2
+        ? "md:grid-cols-2"
+        : "md:grid-cols-3";
   return (
     <section className="bg-surface-container-lowest py-16 md:py-20">
       <div className="mx-auto max-w-[1440px] px-6 md:px-10">
@@ -197,10 +249,15 @@ function ValuesListRenderer({ block }: { block: ValuesListBlock }) {
             </h2>
           </div>
           <div className="col-span-12 lg:col-span-8">
-            <div className="border-t border-outline-variant/25">
-              {block.items.map((item, i) => (
+            <div
+              className={cn(
+                "grid grid-cols-1 gap-3 border-t border-outline-variant/25 pt-3",
+                colsClass,
+              )}
+            >
+              {items.map((item, i) => (
                 <div
-                  className="group flex cursor-default items-start gap-6 border-b border-outline-variant/20 px-6 py-5 transition-colors hover:bg-surface-container-low lg:px-0"
+                  className="group flex cursor-default items-start gap-6 border border-outline-variant/20 px-5 py-5 transition-colors hover:bg-surface-container-low"
                   key={i}
                 >
                   <span className="mt-1 w-5 shrink-0 font-mono text-[10px] tracking-widest text-secondary">

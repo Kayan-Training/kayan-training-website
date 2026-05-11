@@ -233,6 +233,38 @@ function migrateAccreditationBlock(raw: RawBlock): Block {
   } as Block;
 }
 
+function migrateProcessStepsBlock(raw: RawBlock): Block {
+  const mediaKind =
+    raw.mediaKind === "video" || raw.mediaKind === "image"
+      ? raw.mediaKind
+      : "image";
+  const mediaSize =
+    raw.mediaSize === "sm" || raw.mediaSize === "md" || raw.mediaSize === "lg"
+      ? raw.mediaSize
+      : "md";
+
+  return {
+    ...(raw as unknown as Block),
+    type: "process_steps",
+    heading: typeof raw.heading === "string" ? raw.heading : "",
+    body: typeof raw.body === "string" ? raw.body : "",
+    mediaUrl: typeof raw.mediaUrl === "string" ? raw.mediaUrl : "",
+    mediaKind,
+    mediaSize,
+    steps: Array.isArray(raw.steps)
+      ? (
+          raw.steps as Array<{
+            title?: unknown;
+            desc?: unknown;
+          }>
+        ).map((step) => ({
+          title: typeof step?.title === "string" ? step.title : "",
+          desc: typeof step?.desc === "string" ? step.desc : "",
+        }))
+      : [],
+  } as Block;
+}
+
 export function migrateBlocks(raw: unknown[]): Block[] {
   return (raw as RawBlock[]).map((b) => {
     if (b.type === "hero") return migrateHeroBlock(b);
@@ -240,6 +272,7 @@ export function migrateBlocks(raw: unknown[]): Block[] {
     if (b.type === "accreditation") return migrateAccreditationBlock(b);
     if (b.type === "accreditation_bar") return migrateAccreditationBarBlock(b);
     if (b.type === "training_domains") return migrateTrainingDomainsBlock(b);
+    if (b.type === "process_steps") return migrateProcessStepsBlock(b);
     return b as Block;
   });
 }

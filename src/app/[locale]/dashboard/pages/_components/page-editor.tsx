@@ -1897,18 +1897,16 @@ function MissionVisionFields({
   dir: "ltr" | "rtl";
   onChange: (patch: Partial<typeof block>) => void;
 }) {
-  const labels = ["Mission", "Vision", "Method"];
   return (
     <div className="space-y-3">
-      {[0, 1, 2].map((i) => {
-        const item = block.items[i] ?? { title: "", body: "" };
+      {block.items.map((item, i) => {
         return (
           <div
             className="rounded-lg border border-border/50 bg-muted/20 p-3"
             key={i}
           >
             <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-primary/70">
-              {labels[i]}
+              Item {String(i + 1).padStart(2, "0")}
             </p>
             <FieldRow>
               <Field label="Title">
@@ -1942,9 +1940,27 @@ function MissionVisionFields({
                 />
               </Field>
             </FieldRow>
+            <div className="mt-2 flex justify-end">
+              <button
+                className="inline-flex h-8 items-center justify-center rounded-md border border-destructive/40 px-2 text-xs text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={block.items.length <= 1}
+                type="button"
+                onClick={() =>
+                  onChange({ items: block.items.filter((_, j) => j !== i) })
+                }
+              >
+                Remove item
+              </button>
+            </div>
           </div>
         );
       })}
+      <AddItemButton
+        label="Add item"
+        onClick={() =>
+          onChange({ items: [...block.items, { title: "", body: "" }] })
+        }
+      />
     </div>
   );
 }
@@ -1958,6 +1974,16 @@ function ProcessStepsFields({
   dir: "ltr" | "rtl";
   onChange: (patch: Partial<typeof block>) => void;
 }) {
+  const mediaSelection =
+    block.mediaUrl && block.mediaUrl.trim().length > 0
+      ? [
+          {
+            id: "process-steps-media",
+            url: block.mediaUrl,
+            kind: (block.mediaKind ?? "image") as "image" | "video",
+          },
+        ]
+      : [];
   return (
     <>
       <FieldRow>
@@ -1980,6 +2006,37 @@ function ProcessStepsFields({
           />
         </Field>
       </FieldRow>
+      <FieldRow>
+        <Field label="Media Size">
+          <select
+            className={inputCls}
+            value={block.mediaSize ?? "md"}
+            onChange={(e) =>
+              onChange({ mediaSize: e.target.value as "sm" | "md" | "lg" })
+            }
+          >
+            <option value="sm">Small</option>
+            <option value="md">Medium</option>
+            <option value="lg">Large</option>
+          </select>
+        </Field>
+        <div></div>
+        <div></div>
+        <div></div>
+      </FieldRow>
+      <div>
+        <label className={labelCls}>Media (optional)</label>
+        <MediaCarouselEditor
+          media={mediaSelection}
+          onChange={(media) => {
+            const first = media[0];
+            onChange({
+              mediaUrl: first?.url ?? "",
+              mediaKind: (first?.kind ?? "image") as "image" | "video",
+            });
+          }}
+        />
+      </div>
       <div>
         <label className={labelCls}>Steps</label>
         <div className="space-y-2">
@@ -3568,14 +3625,19 @@ function makeBlock(type: BlockType): Block {
       return {
         id,
         type,
-        items: [
-          { title: "", body: "" },
-          { title: "", body: "" },
-          { title: "", body: "" },
-        ],
+        items: [{ title: "", body: "" }],
       };
     case "process_steps":
-      return { id, type, heading: "", body: "", steps: [] };
+      return {
+        id,
+        type,
+        heading: "",
+        body: "",
+        mediaUrl: "",
+        mediaKind: "image",
+        mediaSize: "md",
+        steps: [],
+      };
     case "values_list":
       return { id, type, eyebrow: "", heading: "", items: [] };
     case "accreditation":
