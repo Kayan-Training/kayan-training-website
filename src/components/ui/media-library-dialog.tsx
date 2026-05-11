@@ -57,6 +57,7 @@ export function MediaLibraryDialog({
 }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [localPage, setLocalPage] = useState(1);
+  const [didInitSelection, setDidInitSelection] = useState(false);
   const acceptedKindsKey = useMemo(
     () => [...acceptedKinds].sort().join("|"),
     [acceptedKinds],
@@ -90,7 +91,7 @@ export function MediaLibraryDialog({
     : selectableItems.slice(start, start + perPage);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || didInitSelection) return;
     const validIds = new Set(selectableItems.map((item) => item.id));
     const nextSelected = initialSelectedIds.filter((id) => validIds.has(id));
     setSelectedIds((prev) => {
@@ -102,10 +103,23 @@ export function MediaLibraryDialog({
       }
       return nextSelected;
     });
+    setDidInitSelection(true);
     if (!usesServerPagination) {
       setLocalPage((prev) => (prev === 1 ? prev : 1));
     }
-  }, [initialSelectedIds, open, selectableItems, usesServerPagination]);
+  }, [
+    didInitSelection,
+    initialSelectedIds,
+    open,
+    selectableItems,
+    usesServerPagination,
+  ]);
+
+  useEffect(() => {
+    if (open) return;
+    setDidInitSelection(false);
+    setSelectedIds([]);
+  }, [open]);
 
   function toggleSelection(itemId: string) {
     setSelectedIds((prev) => {
