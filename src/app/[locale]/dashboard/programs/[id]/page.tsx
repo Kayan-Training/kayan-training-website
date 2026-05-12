@@ -96,6 +96,8 @@ export default async function EditProgramPage({
               showSeatsFulfillment?: boolean;
               showPayment?: boolean;
             };
+            location?: { ar?: string | null; en?: string | null };
+            registrationOpenLabel?: { ar?: string | null; en?: string | null };
           };
         })
       : {};
@@ -123,7 +125,12 @@ export default async function EditProgramPage({
     featuredFullDayStat: galleryDetails.hero?.featuredStats?.fullDay ?? "",
     showSidebarSeatsFulfillment: galleryDetails.ui?.sidebar?.showSeatsFulfillment ?? true,
     showSidebarPayment: galleryDetails.ui?.sidebar?.showPayment ?? true,
-    location: event.location ?? "",
+    locationEn: galleryDetails.ui?.location?.en ?? event.location ?? "",
+    locationAr: galleryDetails.ui?.location?.ar ?? "",
+    location:
+      activeLocale === "ar"
+        ? (galleryDetails.ui?.location?.ar ?? event.location ?? "")
+        : (galleryDetails.ui?.location?.en ?? event.location ?? ""),
     capacity: event.capacity?.toString() ?? "",
     startDate: event.startDate.toISOString().slice(0, 10),
     endDate: event.endDate.toISOString().slice(0, 10),
@@ -133,6 +140,8 @@ export default async function EditProgramPage({
     isFeatured: event.isFeatured,
     isCertified: event.isCertified,
     registrationsOpen: event.registrationsOpen,
+    registrationOpenLabelEn: galleryDetails.ui?.registrationOpenLabel?.en ?? "",
+    registrationOpenLabelAr: galleryDetails.ui?.registrationOpenLabel?.ar ?? "",
     registrationType: eventRegistrationType as EventFormValues["registrationType"],
     externalRegistrationUrl: eventExternalRegistrationUrl,
     meetingLink: event.meetingLink ?? "",

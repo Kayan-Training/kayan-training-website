@@ -188,9 +188,7 @@ function RegisterCard({
             rel={event.registrationType === "external" ? "noreferrer" : undefined}
             target={event.registrationType === "external" ? "_blank" : undefined}
           >
-            {event.registrationType === "external"
-              ? (locale === "ar" ? "التسجيل عبر الرابط الخارجي" : "Register Externally")
-              : (locale === "ar" ? `التسجيل في ${contentNoun}` : `Register for ${contentNoun}`)}
+            {locale === "ar" ? `التسجيل في ${contentNoun}` : `Register for ${contentNoun}`}
           </Link>
           <p className="text-center text-[10px] text-on-surface-variant">
             {locale === "ar"
@@ -330,9 +328,7 @@ export default async function TrainingCourseDetailPage({
                     rel={event.registrationType === "external" ? "noreferrer" : undefined}
                     target={event.registrationType === "external" ? "_blank" : undefined}
                   >
-                    {event.registrationType === "external"
-                      ? (activeLocale === "ar" ? "سجّل عبر الرابط الخارجي" : "Register via External Link")
-                      : (activeLocale === "ar" ? "سجّل مكانك الآن" : "Reserve Your Seat Now")}
+                    {activeLocale === "ar" ? "سجّل مكانك" : "Reserve your seat"}
                     <HugeiconsIcon
                       className="rtl:rotate-180"
                       icon={ArrowRight01Icon}
@@ -359,7 +355,7 @@ export default async function TrainingCourseDetailPage({
             </div>
           </div>
           {collaboratorLogos.length > 0 ? (
-            <div className="pointer-events-none absolute bottom-6 end-6 z-20 flex max-w-[70%] flex-wrap items-center justify-end gap-x-3 gap-y-2 rtl:end-auto rtl:start-6 md:bottom-10 md:end-10 md:max-w-[60%] md:gap-x-4 md:rtl:start-10 lg:max-w-[52%]">
+            <div className={`pointer-events-none absolute bottom-6 z-20 flex max-w-[70%] flex-wrap items-center gap-x-3 gap-y-2 md:bottom-10 md:max-w-[60%] md:gap-x-4 lg:max-w-[52%] ${activeLocale === "ar" ? "left-6 justify-start md:left-10" : "right-6 justify-end md:right-10"}`}>
               {collaboratorLogos.map((logo) => (
                 <div className="relative h-8 w-24 overflow-hidden opacity-90 md:h-10 md:w-30 lg:h-11 lg:w-34" key={logo}>
                   <Image alt="Collaborator logo" className="object-contain object-left rtl:object-right" fill sizes="(max-width: 767px) 96px, (max-width: 1023px) 120px, 136px" src={logo} />
@@ -614,7 +610,20 @@ function EventMetaCard({
         <DetailItem
           icon={Location01Icon}
           label={locale === "ar" ? "المكان" : "Venue"}
-          value={event.location}
+          value={
+            (event.googleMapsLink || event.mapEmbedUrl) ? (
+              <a
+                className="underline-offset-4 hover:text-primary hover:underline"
+                href={event.googleMapsLink || event.mapEmbedUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                {event.location}
+              </a>
+            ) : (
+              event.location
+            )
+          }
         />
       ) : null}
       <DetailItem
@@ -659,7 +668,7 @@ function AgendaAndTrainers({
                   {item.trainerName ? (
                     <div className="mt-1 break-words text-xs text-on-surface-variant">
                       {item.trainerLink ? (
-                        <Link className="underline-offset-4 hover:text-primary hover:underline" href={item.trainerLink}>
+                        <Link className="underline-offset-4 hover:text-primary hover:underline" href={item.trainerLink} rel="noreferrer" target="_blank">
                           {item.trainerName}
                         </Link>
                       ) : (
@@ -696,7 +705,7 @@ function AgendaAndTrainers({
                 <div>
                   <h3 className="mb-1 text-sm font-semibold">
                     {trainer.link ? (
-                      <Link className="underline-offset-4 hover:text-primary hover:underline" href={trainer.link}>
+                      <Link className="underline-offset-4 hover:text-primary hover:underline" href={trainer.link} rel="noreferrer" target="_blank">
                         {trainer.name}
                       </Link>
                     ) : (

@@ -14,6 +14,7 @@ export type FeaturedEventCard = {
   slug: string;
   title: string;
   location: string;
+  registrationOpenLabel?: string;
   startDate: string; // ISO string
   coverImage: string;
   logo?: string;
@@ -255,7 +256,7 @@ export function FeaturedEventCyclerCard({
               {/* Pulsing live dot */}
               <span className="featured-event-pulse-dot inline-block h-1.5 w-1.5 rounded-full bg-secondary" />
               <span className="hero-micro-text text-[9px] uppercase tracking-[0.18em] text-secondary">
-                {isAr ? "الحجز متاح" : "Registration Open"}
+                {ev.registrationOpenLabel?.trim() || (isAr ? "الحجز متاح" : "Registration Open")}
               </span>
             </div>
             <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest text-on-surface/60 transition-colors duration-300 group-hover:text-secondary">

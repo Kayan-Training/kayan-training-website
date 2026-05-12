@@ -124,6 +124,7 @@ export default async function LocaleHomePage({
     slug: e.slug,
     title: e.title,
     location: e.location,
+    registrationOpenLabel: e.registrationOpenLabel,
     startDate: e.startDate.toISOString(),
     coverImage: e.coverImage,
   }));

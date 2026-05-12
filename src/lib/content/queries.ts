@@ -42,14 +42,21 @@ export async function getLocalizedEvents(
   });
 
   return events.map((event) => {
-    const heroConfig =
+    const detailsConfig =
       event.bankTransferDetails && typeof event.bankTransferDetails === "object"
         ? (event.bankTransferDetails as {
             hero?: {
               programLogo?: string;
             };
-          }).hero
+            ui?: {
+              location?: { ar?: string | null; en?: string | null };
+              registrationOpenLabel?: { ar?: string | null; en?: string | null };
+            };
+          })
         : undefined;
+    const heroConfig = detailsConfig?.hero;
+    const localizedLocation = detailsConfig?.ui?.location?.[locale];
+    const registrationOpenLabel = detailsConfig?.ui?.registrationOpenLabel?.[locale];
     return {
     id: event.id,
     categories: event.categories.map((entry) => {
@@ -66,7 +73,11 @@ export async function getLocalizedEvents(
       "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1400&q=80",
     endDate: event.endDate,
     isFeatured: event.isFeatured,
-    location: event.location ?? "",
+    location: (typeof localizedLocation === "string" && localizedLocation.trim().length > 0)
+      ? localizedLocation.trim()
+      : (event.location ?? ""),
+    registrationOpenLabel:
+      typeof registrationOpenLabel === "string" ? registrationOpenLabel.trim() : "",
     seoDescription: event.translations[0]?.seoDescription ?? event.translations[0]?.shortDescription ?? "",
     seoTitle: event.translations[0]?.seoTitle ?? event.translations[0]?.title ?? event.slug,
     slug: event.slug,
@@ -188,10 +199,12 @@ export async function getEventDetailBySlug(
               showSeatsFulfillment?: boolean;
               showPayment?: boolean;
             };
+            location?: { ar?: string | null; en?: string | null };
+            registrationOpenLabel?: { ar?: string | null; en?: string | null };
           };
         }).hero
       : undefined;
-  const sidebarUiConfig =
+  const uiConfig =
     event.bankTransferDetails && typeof event.bankTransferDetails === "object"
       ? (event.bankTransferDetails as {
           ui?: {
@@ -199,9 +212,12 @@ export async function getEventDetailBySlug(
               showSeatsFulfillment?: boolean;
               showPayment?: boolean;
             };
+            location?: { ar?: string | null; en?: string | null };
+            registrationOpenLabel?: { ar?: string | null; en?: string | null };
           };
-        }).ui?.sidebar
+        }).ui
       : undefined;
+  const sidebarUiConfig = uiConfig?.sidebar;
   const galleryIds = Array.isArray(galleryConfig?.mediaIds)
     ? (galleryConfig?.mediaIds ?? []).filter((id): id is string => typeof id === "string" && id.length > 0)
     : [];
@@ -251,7 +267,15 @@ export async function getEventDetailBySlug(
       paymentMethods: event.paymentMethods as "both" | "card" | "bank",
       seoDescription: event.translations[0]?.seoDescription ?? event.translations[0]?.shortDescription ?? "",
     seoTitle: event.translations[0]?.seoTitle ?? event.translations[0]?.title ?? event.slug,
-    location: event.location ?? "",
+    location:
+      (typeof uiConfig?.location?.[locale] === "string" && uiConfig.location[locale]!.trim().length > 0)
+        ? uiConfig.location[locale]!.trim()
+        : (event.location ?? ""),
+    registrationOpenLabel:
+      typeof uiConfig?.registrationOpenLabel?.[locale] === "string"
+        ? (uiConfig.registrationOpenLabel[locale] ?? "").trim()
+        : "",
+    googleMapsLink: event.googleMapsLink ?? "",
     mapEmbedUrl:
       event.bankTransferDetails &&
       typeof event.bankTransferDetails === "object" &&

@@ -164,6 +164,8 @@ const eventSchema = z.object({
   isFree: z.boolean(),
   language: z.enum(["en", "ar", "both"]),
   location: z.string(),
+  locationEn: z.string(),
+  locationAr: z.string(),
   meetingLink: z.string(),
   meetingPlatform: z.enum(["zoom", "teams", "meet", "other"]),
   galleryMode: z.enum(["always", "after_passed", "hidden"]),
@@ -181,6 +183,8 @@ const eventSchema = z.object({
   registrationDeadline: z.string(),
   registrationFields: z.array(registrationFieldSchema),
   registrationsOpen: z.boolean(),
+  registrationOpenLabelEn: z.string(),
+  registrationOpenLabelAr: z.string(),
   seoDescriptionAr: z.string(),
   seoDescriptionEn: z.string(),
   seoTitleAr: z.string(),
@@ -684,6 +688,8 @@ export function EventForm({
       isFree: false,
       language: "both",
       location: "",
+      locationEn: "",
+      locationAr: "",
       meetingLink: "",
       meetingPlatform: "zoom",
       galleryMode: "hidden",
@@ -701,6 +707,8 @@ export function EventForm({
       registrationDeadline: "",
       registrationFields: [],
       registrationsOpen: true,
+      registrationOpenLabelEn: "",
+      registrationOpenLabelAr: "",
       seoDescriptionAr: "",
       seoDescriptionEn: "",
       seoTitleAr: "",
@@ -755,6 +763,9 @@ export function EventForm({
     .map((item) => item.trim())
     .filter(Boolean);
   const galleryMode = form.watch("galleryMode");
+  const localizedVenueValue = form.watch(
+    activeLocale === "en" ? "locationEn" : "locationAr",
+  );
   const galleryMediaIds = form.watch("galleryMediaIds");
   const shortEnLen = form.watch("shortEn").length;
   const shortArLen = form.watch("shortAr").length;
@@ -766,6 +777,19 @@ export function EventForm({
           Math.round((registrationsCount / Number(capacity || 1)) * 100),
         )
       : 0;
+
+  useEffect(() => {
+    const locationEn = form.getValues("locationEn")?.trim();
+    const locationAr = form.getValues("locationAr")?.trim();
+    const legacyLocation = form.getValues("location")?.trim();
+    if (!locationEn && !locationAr && legacyLocation) {
+      form.setValue(
+        activeLocale === "en" ? "locationEn" : "locationAr",
+        legacyLocation,
+        { shouldDirty: false },
+      );
+    }
+  }, [activeLocale, form]);
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const locationLabel =
@@ -1979,19 +2003,35 @@ export function EventForm({
                     {(eventType === "onsite" || eventType === "hybrid") && (
                       <>
                         <Field className="grid gap-2">
-                          <FieldLabel htmlFor={`${idPrefix}-location`}>Venue Name / Address</FieldLabel>
+                          <FieldLabel htmlFor={`${idPrefix}-location`}>
+                            {locale === "ar" ? "اسم / عنوان المكان" : "Venue Name / Address"}
+                          </FieldLabel>
                           <FieldContent>
                             <div className="relative">
                               <MapPin className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-zinc-400" />
                               <Input
                                 className={cn(inputCls, "pl-8")}
+                                dir={activeLocale === "ar" ? "rtl" : "ltr"}
                                 id={`${idPrefix}-location`}
-                                placeholder="Grand Hyatt Muscat, Al Shati Street"
-                                {...form.register("location")}
+                                placeholder={activeLocale === "ar" ? "جراند حياة مسقط، شارع الشاطئ" : "Grand Hyatt Muscat, Al Shati Street"}
+                                value={localizedVenueValue}
+                                onChange={(event) =>
+                                  form.setValue(
+                                    activeLocale === "en" ? "locationEn" : "locationAr",
+                                    event.target.value,
+                                    { shouldDirty: true },
+                                  )
+                                }
                               />
                             </div>
                           </FieldContent>
-                          <FieldError errors={[form.formState.errors.location]} />
+                          <FieldError
+                            errors={[
+                              activeLocale === "en"
+                                ? form.formState.errors.locationEn
+                                : form.formState.errors.locationAr,
+                            ]}
+                          />
                         </Field>
                         <FieldGroup className="grid grid-cols-2 gap-4">
                           <Field className="grid gap-2">
@@ -3618,6 +3658,31 @@ export function EventForm({
                         })
                       }
                     />
+                  </Field>
+                  <Field className="grid gap-2">
+                    <FieldLabel htmlFor={`${idPrefix}-registration-open-label-en`}>Registration Open Label (English)</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        className={inputCls}
+                        id={`${idPrefix}-registration-open-label-en`}
+                        placeholder="Registration Open"
+                        {...form.register("registrationOpenLabelEn")}
+                      />
+                    </FieldContent>
+                    <FieldError errors={[form.formState.errors.registrationOpenLabelEn]} />
+                  </Field>
+                  <Field className="grid gap-2">
+                    <FieldLabel htmlFor={`${idPrefix}-registration-open-label-ar`}>Registration Open Label (Arabic)</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        className={inputCls}
+                        dir="rtl"
+                        id={`${idPrefix}-registration-open-label-ar`}
+                        placeholder="الحجز متاح"
+                        {...form.register("registrationOpenLabelAr")}
+                      />
+                    </FieldContent>
+                    <FieldError errors={[form.formState.errors.registrationOpenLabelAr]} />
                   </Field>
                   <Field className="grid gap-2">
                     <ToggleControl

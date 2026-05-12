@@ -99,7 +99,7 @@ export async function updateEventAction(
         type: values.type,
         language: values.language,
         coverImage: values.coverImage || null,
-        location: values.location || null,
+        location: values.locationEn.trim() || values.locationAr.trim() || values.location || null,
         capacity: values.capacity ? Number(values.capacity) : null,
         startDate: new Date(values.startDate),
         endDate: new Date(values.endDate),
@@ -161,6 +161,14 @@ export async function updateEventAction(
             sidebar: {
               showSeatsFulfillment: values.showSidebarSeatsFulfillment,
               showPayment: values.showSidebarPayment,
+            },
+            location: {
+              en: values.locationEn.trim() || null,
+              ar: values.locationAr.trim() || null,
+            },
+            registrationOpenLabel: {
+              en: values.registrationOpenLabelEn.trim() || null,
+              ar: values.registrationOpenLabelAr.trim() || null,
             },
           },
         },
@@ -282,7 +290,7 @@ export async function createEventAction(
         type: values.type,
         language: values.language,
         coverImage: values.coverImage || null,
-        location: values.location || null,
+        location: values.locationEn.trim() || values.locationAr.trim() || values.location || null,
         capacity: values.capacity ? Number(values.capacity) : null,
         startDate: new Date(values.startDate),
         endDate: new Date(values.endDate),
@@ -344,6 +352,14 @@ export async function createEventAction(
             sidebar: {
               showSeatsFulfillment: values.showSidebarSeatsFulfillment,
               showPayment: values.showSidebarPayment,
+            },
+            location: {
+              en: values.locationEn.trim() || null,
+              ar: values.locationAr.trim() || null,
+            },
+            registrationOpenLabel: {
+              en: values.registrationOpenLabelEn.trim() || null,
+              ar: values.registrationOpenLabelAr.trim() || null,
             },
           },
         },

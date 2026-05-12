@@ -731,6 +731,7 @@ async function HeroBlockRenderer({
       slug: ev.slug,
       title: ev.title,
       location: ev.location,
+      registrationOpenLabel: ev.registrationOpenLabel,
       startDate: ev.startDate.toISOString(),
       coverImage: ev.coverImage,
       logo: ev.heroProgramLogo,
