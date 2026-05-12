@@ -318,49 +318,75 @@ function AccreditationRenderer({
             ) : null}
             <div className="divide-y divide-outline-variant/20">
               {featuredOrgs.map((org, index) => (
-                <article
-                  className="grid min-h-[104px] grid-cols-[minmax(140px,180px)_1px_minmax(0,1fr)] items-center gap-4 py-3"
-                  key={`${org.name}-${index}`}
-                >
-                  <div className="flex items-center justify-center">
-                    {org.logo ? (
-                      <Image
-                        alt={org.name || "Featured organization"}
-                        className={cn(
-                          "w-auto object-contain transition-all duration-300",
-                          org.size === "sm"
-                            ? "h-12 max-w-[8.5rem]"
-                            : org.size === "lg"
-                              ? "h-20 max-w-[11rem]"
-                              : "h-16 max-w-[9.5rem]",
-                          org.displayMode === "mono"
-                            ? "grayscale brightness-0 invert opacity-85"
-                            : "opacity-95",
+                (() => {
+                  const hasText =
+                    (org.name ?? "").trim().length > 0 ||
+                    (org.summary ?? "").trim().length > 0;
+                  const featuredSize = org.size ?? "md";
+                  const featuredLogoClass =
+                    featuredSize === "sm"
+                      ? "h-12 max-w-[8rem]"
+                      : featuredSize === "lg"
+                        ? "h-24 max-w-[12.5rem]"
+                        : "h-16 max-w-[9.5rem]";
+                  const featuredLogoDims =
+                    featuredSize === "sm"
+                      ? { width: 128, height: 48 }
+                      : featuredSize === "lg"
+                        ? { width: 220, height: 96 }
+                        : { width: 176, height: 64 };
+
+                  return (
+                    <article
+                      className={cn(
+                        "grid min-h-[104px] items-center gap-4 py-3",
+                        hasText
+                          ? "grid-cols-[minmax(140px,180px)_1px_minmax(0,1fr)]"
+                          : "grid-cols-[minmax(140px,220px)]",
+                      )}
+                      key={`${org.name}-${index}`}
+                    >
+                      <div className="flex items-center justify-center">
+                        {org.logo ? (
+                          <Image
+                            alt={org.name || "Featured organization"}
+                            className={cn(
+                              "w-auto object-contain transition-all duration-300",
+                              featuredLogoClass,
+                              org.displayMode === "mono"
+                                ? "grayscale brightness-0 invert opacity-85"
+                                : "opacity-95",
+                            )}
+                            height={featuredLogoDims.height}
+                            src={org.logo}
+                            width={featuredLogoDims.width}
+                          />
+                        ) : (
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">
+                            {String(index + 1).padStart(2, "0")}
+                          </span>
                         )}
-                        height={64}
-                        src={org.logo}
-                        width={176}
-                      />
-                    ) : (
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                    )}
-                  </div>
-                  <div className="h-14 w-px bg-outline-variant/35" />
-                  <div className="min-w-0 ps-1">
-                    {org.name ? (
-                      <p className="truncate text-lg font-semibold text-on-surface">
-                        {org.name}
-                      </p>
-                    ) : null}
-                    {org.summary ? (
-                      <p className="text-sm leading-relaxed text-on-surface-variant">
-                        {org.summary}
-                      </p>
-                    ) : null}
-                  </div>
-                </article>
+                      </div>
+                      {hasText ? (
+                        <>
+                          <div className="h-14 w-px bg-outline-variant/35" />
+                          <div className="min-w-0 ps-1">
+                            {org.name ? (
+                              <p className="truncate text-lg font-semibold text-on-surface">
+                                {org.name}
+                              </p>
+                            ) : null}
+                            {org.summary ? (
+                              <p className="text-sm leading-relaxed text-on-surface-variant">
+                                {org.summary}
+                              </p>
+                            ) : null}
+                          </div>
+                        </>
+                      ) : null}
+                    </article>
+                  );
+                })()
               ))}
             </div>
           </div>
