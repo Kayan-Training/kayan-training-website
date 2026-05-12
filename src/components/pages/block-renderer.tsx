@@ -938,7 +938,7 @@ async function HomeEventsCarouselRenderer({
     .slice(0, block.limit ?? 5);
 
   function formatDate(date: Date) {
-    return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-GB", {
+    return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB", {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -1024,7 +1024,7 @@ async function HomePostsGridRenderer({
 }) {
   const posts = await getLocalizedPosts(locale, block.limit ?? 3);
   const formatDate = (date: Date) =>
-    new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-GB", {
+    new Intl.DateTimeFormat(locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB", {
       day: "2-digit",
       month: "short",
       year: "numeric",

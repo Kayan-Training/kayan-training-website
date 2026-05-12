@@ -110,7 +110,7 @@ function renderRichNodes(nodes: RichTextNode[]): string {
 
 function formatDate(date: Date | null, locale: "ar" | "en"): string {
   if (!date) return "";
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-GB", {
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",

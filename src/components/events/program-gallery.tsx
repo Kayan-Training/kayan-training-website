@@ -38,7 +38,7 @@ export function ProgramGallery({
   const metaDate = useMemo(
     () =>
       activeItem
-        ? new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-GB", {
+        ? new Intl.DateTimeFormat(locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB", {
             dateStyle: "medium",
           }).format(new Date(activeItem.createdAt))
         : "",

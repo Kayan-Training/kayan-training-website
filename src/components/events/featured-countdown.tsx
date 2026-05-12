@@ -21,7 +21,7 @@ export function FeaturedCountdown({
   targetIso: string;
 }) {
   const [parts, setParts] = useState(initialParts);
-  const formatter = new Intl.NumberFormat(locale === "ar" ? "ar-OM" : "en-US", {
+  const formatter = new Intl.NumberFormat(locale === "ar" ? "ar-OM-u-nu-latn" : "en-US", {
     minimumIntegerDigits: 2,
     useGrouping: false,
   });

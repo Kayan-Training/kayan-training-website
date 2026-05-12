@@ -43,14 +43,14 @@ export async function generateMetadata({
 }
 
 function formatDate(date: Date, locale: "ar" | "en") {
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-GB", {
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB", {
     dateStyle: "long",
   }).format(date);
 }
 
 function formatTimeRange(startDate: Date, endDate: Date, locale: "ar" | "en") {
   const formatter = new Intl.DateTimeFormat(
-    locale === "ar" ? "ar-OM" : "en-GB",
+    locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB",
     {
       hour: "numeric",
       minute: "2-digit",

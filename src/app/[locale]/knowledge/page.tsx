@@ -27,7 +27,7 @@ export async function generateMetadata({
 }
 
 function formatDate(date: Date, locale: "ar" | "en") {
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-US", {
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM-u-nu-latn" : "en-US", {
     day: "numeric",
     month: "long",
     year: "numeric",

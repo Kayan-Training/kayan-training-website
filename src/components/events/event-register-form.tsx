@@ -87,7 +87,7 @@ export function EventRegisterForm({
 
   const formattedDate = useMemo(
     () =>
-      new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-GB", {
+      new Intl.DateTimeFormat(locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB", {
         day: "2-digit",
         month: "long",
         year: "numeric",

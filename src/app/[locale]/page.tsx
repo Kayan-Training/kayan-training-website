@@ -34,7 +34,7 @@ function normalizeOrderedIds(value: unknown): string[] {
 }
 
 function formatDate(date: Date, locale: "ar" | "en") {
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-GB", {
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",

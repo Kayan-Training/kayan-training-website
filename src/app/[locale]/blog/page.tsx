@@ -28,7 +28,7 @@ const fallbackImages = [
 ];
 
 function formatPostDate(date: Date, locale: "ar" | "en") {
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-US", {
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM-u-nu-latn" : "en-US", {
     day: "2-digit",
     month: "short",
     year: "numeric",

@@ -39,7 +39,7 @@ const emptyResults: SearchPayload = {
 
 function formatDate(value: string | null, locale: "ar" | "en") {
   if (!value) return locale === "ar" ? "بدون تاريخ" : "No date";
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-US", {
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM-u-nu-latn" : "en-US", {
     day: "2-digit",
     month: "short",
     year: "numeric",

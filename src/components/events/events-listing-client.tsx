@@ -27,7 +27,7 @@ type ListingEvent = {
 const DEFAULT_PAGE_SIZE = 8;
 
 function formatDate(dateIso: string, locale: "ar" | "en") {
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-GB", {
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -35,7 +35,7 @@ function formatDate(dateIso: string, locale: "ar" | "en") {
 }
 
 function formatDayNumber(dateIso: string, locale: "ar" | "en") {
-  return new Intl.NumberFormat(locale === "ar" ? "ar-OM" : "en-GB", {
+  return new Intl.NumberFormat(locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB", {
     minimumIntegerDigits: 2,
     useGrouping: false,
   }).format(new Date(dateIso).getDate());
@@ -261,7 +261,7 @@ export function EventsListingClient({
                             {formatDayNumber(featuredEvent.dateIso, locale)}
                           </span>
                           <span className="text-xs uppercase tracking-widest text-on-surface-variant">
-                            {new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-GB", {
+                            {new Intl.DateTimeFormat(locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB", {
                               month: "short",
                               year: "numeric",
                             }).format(new Date(featuredEvent.dateIso))}

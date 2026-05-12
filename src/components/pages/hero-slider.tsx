@@ -144,7 +144,7 @@ export function FeaturedEventCyclerCard({
 
   const date = new Date(ev.startDate);
   const isAr = locale === "ar";
-  const numLocale = isAr ? "ar-OM" : "en-GB";
+  const numLocale = isAr ? "ar-OM-u-nu-latn" : "en-GB";
 
   const dayStr = new Intl.NumberFormat(numLocale, {
     minimumIntegerDigits: 2,
