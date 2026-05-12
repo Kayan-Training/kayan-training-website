@@ -138,6 +138,10 @@ export async function updateEventAction(
               .split("\n")
               .map((value) => value.trim())
               .filter(Boolean),
+            featuredStats: {
+              sessions: values.featuredSessionsStat.trim() || null,
+              fullDay: values.featuredFullDayStat.trim() || null,
+            },
             tags: {
               en: values.heroTagsEn
                 .split("\n")
@@ -317,6 +321,10 @@ export async function createEventAction(
               .split("\n")
               .map((value) => value.trim())
               .filter(Boolean),
+            featuredStats: {
+              sessions: values.featuredSessionsStat.trim() || null,
+              fullDay: values.featuredFullDayStat.trim() || null,
+            },
             tags: {
               en: values.heroTagsEn
                 .split("\n")

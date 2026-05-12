@@ -150,6 +150,8 @@ const eventSchema = z.object({
   heroCollaboratorLogos: z.string(),
   heroPeopleLabelAr: z.string(),
   heroPeopleLabelEn: z.string(),
+  featuredSessionsStat: z.string(),
+  featuredFullDayStat: z.string(),
   heroTagsAr: z.string(),
   heroTagsEn: z.string(),
   showSidebarSeatsFulfillment: z.boolean(),
@@ -668,6 +670,8 @@ export function EventForm({
       heroCollaboratorLogos: "",
       heroPeopleLabelAr: "",
       heroPeopleLabelEn: "",
+      featuredSessionsStat: "",
+      featuredFullDayStat: "",
       heroTagsAr: "",
       heroTagsEn: "",
       showSidebarSeatsFulfillment: true,
@@ -1545,6 +1549,36 @@ export function EventForm({
                         If empty, default label is used automatically.
                       </FieldDescription>
                     </Field>
+                    <FieldGroup className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <Field className="grid gap-2">
+                        <FieldLabel htmlFor={`${idPrefix}-featured-sessions-stat`}>
+                          Featured Sessions Stat
+                        </FieldLabel>
+                        <Input
+                          className={inputCls}
+                          id={`${idPrefix}-featured-sessions-stat`}
+                          placeholder="8+"
+                          {...form.register("featuredSessionsStat")}
+                        />
+                        <FieldDescription>
+                          Value shown for the Sessions stat on featured program pages.
+                        </FieldDescription>
+                      </Field>
+                      <Field className="grid gap-2">
+                        <FieldLabel htmlFor={`${idPrefix}-featured-full-day-stat`}>
+                          Featured Full Day Stat
+                        </FieldLabel>
+                        <Input
+                          className={inputCls}
+                          id={`${idPrefix}-featured-full-day-stat`}
+                          placeholder="2 Days"
+                          {...form.register("featuredFullDayStat")}
+                        />
+                        <FieldDescription>
+                          Value shown for the Full Day stat on featured program pages.
+                        </FieldDescription>
+                      </Field>
+                    </FieldGroup>
                     <Field className="grid gap-2">
                       <FieldLabel>
                         Hero Tags ({activeLocale.toUpperCase()}, one per line)

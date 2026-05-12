@@ -69,6 +69,10 @@ export default async function EditProgramPage({
           hero?: {
             programLogo?: string;
             collaboratorLogos?: string[];
+            featuredStats?: {
+              sessions?: string | null;
+              fullDay?: string | null;
+            };
             tags?: { ar?: string[]; en?: string[] };
             peopleLabel?: { ar?: string | null; en?: string | null };
           };
@@ -100,6 +104,8 @@ export default async function EditProgramPage({
       : "",
     heroPeopleLabelEn: galleryDetails.hero?.peopleLabel?.en ?? "",
     heroPeopleLabelAr: galleryDetails.hero?.peopleLabel?.ar ?? "",
+    featuredSessionsStat: galleryDetails.hero?.featuredStats?.sessions ?? "",
+    featuredFullDayStat: galleryDetails.hero?.featuredStats?.fullDay ?? "",
     showSidebarSeatsFulfillment: galleryDetails.ui?.sidebar?.showSeatsFulfillment ?? true,
     showSidebarPayment: galleryDetails.ui?.sidebar?.showPayment ?? true,
     location: event.location ?? "",

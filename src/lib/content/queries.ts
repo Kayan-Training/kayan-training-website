@@ -161,6 +161,10 @@ export async function getEventDetailBySlug(
           hero?: {
             programLogo?: string;
             collaboratorLogos?: string[];
+            featuredStats?: {
+              sessions?: string | null;
+              fullDay?: string | null;
+            };
             tags?: { ar?: string[]; en?: string[] };
             peopleLabel?: { ar?: string | null; en?: string | null };
           };
@@ -172,6 +176,10 @@ export async function getEventDetailBySlug(
           hero?: {
             programLogo?: string;
             collaboratorLogos?: string[];
+            featuredStats?: {
+              sessions?: string | null;
+              fullDay?: string | null;
+            };
             tags?: { ar?: string[]; en?: string[] };
             peopleLabel?: { ar?: string | null; en?: string | null };
           };
@@ -370,6 +378,14 @@ export async function getEventDetailBySlug(
     heroPeopleLabel:
       typeof heroConfig?.peopleLabel?.[locale] === "string"
         ? (heroConfig?.peopleLabel?.[locale] ?? "").trim()
+        : "",
+    featuredSessionsStat:
+      typeof heroConfig?.featuredStats?.sessions === "string"
+        ? heroConfig.featuredStats.sessions.trim()
+        : "",
+    featuredFullDayStat:
+      typeof heroConfig?.featuredStats?.fullDay === "string"
+        ? heroConfig.featuredStats.fullDay.trim()
         : "",
     showSidebarSeatsFulfillment:
       typeof sidebarUiConfig?.showSeatsFulfillment === "boolean"

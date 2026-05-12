@@ -328,36 +328,24 @@ export default async function EventDetailPage({
                 </a>
               </div>
             </div>
-            {(event.heroProgramLogo || collaboratorLogos.length > 0) ? (
+            {event.heroProgramLogo ? (
               <aside className="w-full p-4 lg:mt-18">
-                {event.heroProgramLogo ? (
-                  <div className="mb-4">
-                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-on-surface-variant">
-                      {activeLocale === "ar" ? "البرنامج" : "Program"}
-                    </p>
-                    <div className="relative h-14 w-44 max-w-full overflow-hidden">
-                      <Image alt={`${event.title} logo`} className="object-contain object-left rtl:object-right" fill sizes="176px" src={event.heroProgramLogo} />
-                    </div>
-                  </div>
-                ) : null}
-                {collaboratorLogos.length > 0 ? (
-                  <div className={event.heroProgramLogo ? "border-t border-white/15 pt-3" : ""}>
-                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-on-surface-variant/90">
-                      {activeLocale === "ar" ? "بالتعاون مع" : "In Collaboration With"}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                      {collaboratorLogos.map((logo) => (
-                        <div className="relative h-8 w-24 overflow-hidden opacity-90" key={logo}>
-                          <Image alt="Collaborator logo" className="object-contain object-left rtl:object-right" fill sizes="96px" src={logo} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
+                <div className="relative h-14 w-44 max-w-full overflow-hidden md:h-16 md:w-52 lg:h-20 lg:w-64">
+                  <Image alt={`${event.title} logo`} className="object-contain object-left rtl:object-right" fill sizes="(max-width: 767px) 176px, (max-width: 1023px) 208px, 256px" src={event.heroProgramLogo} />
+                </div>
               </aside>
             ) : null}
             </div>
           </div>
+          {collaboratorLogos.length > 0 ? (
+            <div className="pointer-events-none absolute bottom-6 end-6 z-20 flex max-w-[70%] flex-wrap items-center justify-end gap-x-3 gap-y-2 rtl:end-auto rtl:start-6 md:bottom-10 md:end-10 md:max-w-[60%] md:gap-x-4 md:rtl:start-10 lg:max-w-[52%]">
+              {collaboratorLogos.map((logo) => (
+                <div className="relative h-8 w-24 overflow-hidden opacity-90 md:h-10 md:w-30 lg:h-11 lg:w-34" key={logo}>
+                  <Image alt="Collaborator logo" className="object-contain object-left rtl:object-right" fill sizes="(max-width: 767px) 96px, (max-width: 1023px) 120px, 136px" src={logo} />
+                </div>
+              ))}
+            </div>
+          ) : null}
         </section>
 
         <div className="border-y border-primary/20 bg-primary-container">
@@ -372,10 +360,13 @@ export default async function EventDetailPage({
                 peopleStatLabel,
               ],
               [
-                event.agenda.length || 1,
+                event.featuredSessionsStat || String(event.agenda.length || 1),
                 activeLocale === "ar" ? "جلسات" : "Sessions",
               ],
-              [1, activeLocale === "ar" ? "يوم" : "Full Day"],
+              [
+                event.featuredFullDayStat || "1",
+                activeLocale === "ar" ? "يوم" : "Full Day",
+              ],
             ].map(([value, label]) => (
               <div className="text-center" key={label}>
                 <div className="mb-1 font-mono text-2xl font-semibold text-secondary">
