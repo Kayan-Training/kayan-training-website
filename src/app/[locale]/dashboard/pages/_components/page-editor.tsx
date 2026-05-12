@@ -2162,6 +2162,18 @@ function AccreditationFields({
   dir: "ltr" | "rtl";
   onChange: (patch: Partial<typeof block>) => void;
 }) {
+  const moveFeaturedOrg = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= block.featuredOrgs.length) return;
+    onChange({
+      featuredOrgs: arrayMove(block.featuredOrgs, fromIndex, toIndex),
+    });
+  };
+
+  const moveLogo = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= block.logos.length) return;
+    onChange({ logos: arrayMove(block.logos, fromIndex, toIndex) });
+  };
+
   return (
     <>
       <p className="text-[10px] font-bold uppercase tracking-widest text-primary/70">
@@ -2201,6 +2213,26 @@ function AccreditationFields({
               }
             >
               <div className="space-y-2">
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    aria-label={`Move featured organization ${i + 1} up`}
+                    className="h-7 rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground enabled:hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={i === 0}
+                    type="button"
+                    onClick={() => moveFeaturedOrg(i, i - 1)}
+                  >
+                    Move Up
+                  </button>
+                  <button
+                    aria-label={`Move featured organization ${i + 1} down`}
+                    className="h-7 rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground enabled:hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={i === block.featuredOrgs.length - 1}
+                    type="button"
+                    onClick={() => moveFeaturedOrg(i, i + 1)}
+                  >
+                    Move Down
+                  </button>
+                </div>
                 <input
                   className={inputCls}
                   placeholder="Organization name"
@@ -2339,6 +2371,26 @@ function AccreditationFields({
               }
             >
               <div className="space-y-2">
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    aria-label={`Move logo ${i + 1} up`}
+                    className="h-7 rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground enabled:hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={i === 0}
+                    type="button"
+                    onClick={() => moveLogo(i, i - 1)}
+                  >
+                    Move Up
+                  </button>
+                  <button
+                    aria-label={`Move logo ${i + 1} down`}
+                    className="h-7 rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground enabled:hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={i === block.logos.length - 1}
+                    type="button"
+                    onClick={() => moveLogo(i, i + 1)}
+                  >
+                    Move Down
+                  </button>
+                </div>
                 <input
                   className={inputCls}
                   placeholder="Logo name"

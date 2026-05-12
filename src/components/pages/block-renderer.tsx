@@ -289,7 +289,10 @@ function AccreditationRenderer({
   locale: "ar" | "en";
 }) {
   const featuredOrgs = (block.featuredOrgs ?? []).filter(
-    (org) => (org.name ?? "").trim() || (org.summary ?? "").trim(),
+    (org) =>
+      (org.name ?? "").trim() ||
+      (org.summary ?? "").trim() ||
+      (org.logo ?? "").trim(),
   );
   const logos = (block.logos ?? []).filter(
     (item) => (item.name ?? "").trim() || (item.logo ?? "").trim(),
