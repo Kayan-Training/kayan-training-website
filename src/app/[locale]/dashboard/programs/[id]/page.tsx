@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
@@ -10,6 +11,20 @@ import {
   updateEventAction,
 } from "../../events/_actions";
 import { EventForm, type EventFormValues } from "../../events/_components/event-form";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const event = await db.event.findUnique({
+    where: { id },
+    include: { translations: { where: { locale: "en" }, take: 1 } },
+  });
+  const title = event?.translations[0]?.title ?? "Edit Program";
+  return { title: `${title} — Programs` };
+}
 
 export default async function EditProgramPage({
   params,

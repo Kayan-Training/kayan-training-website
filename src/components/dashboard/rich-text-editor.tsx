@@ -1,19 +1,5 @@
 "use client";
 
-/**
- * TipTap editor used by dashboard content forms.
- *
- * The editor stores rich HTML and routes inline image uploads through the media
- * library upload API so inserted assets remain manageable from the dashboard.
- */
-import { useCallback, useEffect, useMemo, useState } from "react";
-import Image from "@tiptap/extension-image";
-import Link from "@tiptap/extension-link";
-import Placeholder from "@tiptap/extension-placeholder";
-import { EditorContent, useEditor } from "@tiptap/react";
-import { BubbleMenu } from "@tiptap/react/menus";
-import StarterKit from "@tiptap/starter-kit";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Heading02Icon,
   ImageAdd02Icon,
@@ -23,6 +9,20 @@ import {
   TextItalicIcon,
   TextStrikethroughIcon,
 } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import Image from "@tiptap/extension-image";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
+import { EditorContent, useEditor } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
+import StarterKit from "@tiptap/starter-kit";
+/**
+ * TipTap editor used by dashboard content forms.
+ *
+ * The editor stores rich HTML and routes inline image uploads through the media
+ * library upload API so inserted assets remain manageable from the dashboard.
+ */
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -35,8 +35,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 import { UploadProgress } from "@/components/ui/upload-progress";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { uploadMediaFile } from "@/lib/client/media-upload";
 
 const allowedLinkPattern = /^(https?:\/\/|mailto:|tel:)/i;
@@ -96,7 +102,12 @@ export function RichTextEditor({
       handleDOMEvents: {
         click: (_view, event) => {
           const target = event.target;
-          const element = target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
+          const element =
+            target instanceof Element
+              ? target
+              : target instanceof Node
+                ? target.parentElement
+                : null;
 
           if (!element?.closest("a")) {
             return false;
@@ -119,7 +130,8 @@ export function RichTextEditor({
   );
 
   const shouldShowLinkBubble = useCallback(
-    ({ editor: currentEditor }: { editor: NonNullable<typeof editor> }) => currentEditor.isActive("link"),
+    ({ editor: currentEditor }: { editor: NonNullable<typeof editor> }) =>
+      currentEditor.isActive("link"),
     [],
   );
 
@@ -141,7 +153,9 @@ export function RichTextEditor({
       : "Paragraph";
 
   function openLinkDialog() {
-    const previous = activeEditor.getAttributes("link").href as string | undefined;
+    const previous = activeEditor.getAttributes("link").href as
+      | string
+      | undefined;
     setLinkUrl(previous ?? "");
     setIsLinkDialogOpen(true);
   }
@@ -175,7 +189,12 @@ export function RichTextEditor({
       return;
     }
 
-    activeEditor.chain().focus().extendMarkRange("link").setLink({ href: normalizedHref }).run();
+    activeEditor
+      .chain()
+      .focus()
+      .extendMarkRange("link")
+      .setLink({ href: normalizedHref })
+      .run();
     setIsLinkDialogOpen(false);
   }
 
@@ -210,12 +229,17 @@ export function RichTextEditor({
       activeEditor
         .chain()
         .focus()
-        .setImage({ alt: imageAlt.trim() || selectedImage.name, src: media.url })
+        .setImage({
+          alt: imageAlt.trim() || selectedImage.name,
+          src: media.url,
+        })
         .run();
       toast.success("Image uploaded and inserted.");
       setIsImageDialogOpen(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Image upload failed.");
+      toast.error(
+        error instanceof Error ? error.message : "Image upload failed.",
+      );
     } finally {
       setIsUploadingImage(false);
     }
@@ -227,9 +251,12 @@ export function RichTextEditor({
         <Select
           value={blockLabel}
           onValueChange={(nextValue) => {
-            if (nextValue === "Heading 2") editor.chain().focus().toggleHeading({ level: 2 }).run();
-            if (nextValue === "Heading 3") editor.chain().focus().toggleHeading({ level: 3 }).run();
-            if (nextValue === "Paragraph") editor.chain().focus().setParagraph().run();
+            if (nextValue === "Heading 2")
+              editor.chain().focus().toggleHeading({ level: 2 }).run();
+            if (nextValue === "Heading 3")
+              editor.chain().focus().toggleHeading({ level: 3 }).run();
+            if (nextValue === "Paragraph")
+              editor.chain().focus().setParagraph().run();
           }}
         >
           <SelectTrigger className="tb-select">
@@ -244,34 +271,81 @@ export function RichTextEditor({
           </SelectContent>
         </Select>
         <span className="tb-sep" />
-        <Button className={`tb-btn ${editor.isActive("bold") ? "on" : ""}`} onClick={() => editor.chain().focus().toggleBold().run()} size="icon" title="Bold" type="button" variant="ghost">
+        <Button
+          className={`tb-btn ${editor.isActive("bold") ? "on" : ""}`}
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          size="icon"
+          title="Bold"
+          type="button"
+          variant="ghost"
+        >
           <HugeiconsIcon icon={TextBoldIcon} strokeWidth={2} />
         </Button>
-        <Button className={`tb-btn ${editor.isActive("italic") ? "on" : ""}`} onClick={() => editor.chain().focus().toggleItalic().run()} size="icon" title="Italic" type="button" variant="ghost">
+        <Button
+          className={`tb-btn ${editor.isActive("italic") ? "on" : ""}`}
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          size="icon"
+          title="Italic"
+          type="button"
+          variant="ghost"
+        >
           <HugeiconsIcon icon={TextItalicIcon} strokeWidth={2} />
         </Button>
-        <Button className={`tb-btn ${editor.isActive("strike") ? "on" : ""}`} onClick={() => editor.chain().focus().toggleStrike().run()} size="icon" title="Strikethrough" type="button" variant="ghost">
+        <Button
+          className={`tb-btn ${editor.isActive("strike") ? "on" : ""}`}
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          size="icon"
+          title="Strikethrough"
+          type="button"
+          variant="ghost"
+        >
           <HugeiconsIcon icon={TextStrikethroughIcon} strokeWidth={2} />
         </Button>
         <span className="tb-sep" />
-        <Button className={`tb-btn ${editor.isActive("bulletList") ? "on" : ""}`} onClick={() => editor.chain().focus().toggleBulletList().run()} size="icon" title="Bullet list" type="button" variant="ghost">
+        <Button
+          className={`tb-btn ${editor.isActive("bulletList") ? "on" : ""}`}
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          size="icon"
+          title="Bullet list"
+          type="button"
+          variant="ghost"
+        >
           <HugeiconsIcon icon={LeftToRightListBulletIcon} strokeWidth={2} />
         </Button>
-        <Button className={`tb-btn ${editor.isActive("heading", { level: 2 }) ? "on" : ""}`} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} size="icon" title="Heading" type="button" variant="ghost">
+        <Button
+          className={`tb-btn ${editor.isActive("heading", { level: 2 }) ? "on" : ""}`}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 2 }).run()
+          }
+          size="icon"
+          title="Heading"
+          type="button"
+          variant="ghost"
+        >
           <HugeiconsIcon icon={Heading02Icon} strokeWidth={2} />
         </Button>
         <span className="tb-sep" />
-        <Button className={`tb-wide ${editor.isActive("link") ? "on" : ""}`} onClick={openLinkDialog} type="button" variant="ghost">
+        <Button
+          className={`tb-wide ${editor.isActive("link") ? "on" : ""}`}
+          onClick={openLinkDialog}
+          type="button"
+          variant="ghost"
+        >
           <HugeiconsIcon icon={Link03Icon} strokeWidth={2} />
           Link
         </Button>
-        <Button className="tb-wide" onClick={openImageDialog} type="button" variant="ghost">
+        <Button
+          className="tb-wide"
+          onClick={openImageDialog}
+          type="button"
+          variant="ghost"
+        >
           <HugeiconsIcon icon={ImageAdd02Icon} strokeWidth={2} />
           Image
         </Button>
       </div>
 
-      <EditorContent editor={editor} />
+      <EditorContent editor={editor} className="max-h-[80vh] overflow-y-auto" />
 
       <BubbleMenu
         editor={editor}
@@ -281,20 +355,40 @@ export function RichTextEditor({
       >
         <div className="rte-link-bubble">
           <span>{String(editor.getAttributes("link").href ?? "")}</span>
-          <Button onClick={openCurrentLink} onMouseDown={preventToolbarMouseDown} size="xs" type="button" variant="outline">
+          <Button
+            onClick={openCurrentLink}
+            onMouseDown={preventToolbarMouseDown}
+            size="xs"
+            type="button"
+            variant="outline"
+          >
             View
           </Button>
-          <Button onClick={openLinkDialog} onMouseDown={preventToolbarMouseDown} size="xs" type="button" variant="outline">
+          <Button
+            onClick={openLinkDialog}
+            onMouseDown={preventToolbarMouseDown}
+            size="xs"
+            type="button"
+            variant="outline"
+          >
             Edit
           </Button>
-          <Button onClick={removeCurrentLink} onMouseDown={preventToolbarMouseDown} size="xs" type="button" variant="outline">
+          <Button
+            onClick={removeCurrentLink}
+            onMouseDown={preventToolbarMouseDown}
+            size="xs"
+            type="button"
+            variant="outline"
+          >
             Remove
           </Button>
         </div>
       </BubbleMenu>
 
       <div className="rte-footer">
-        <span className="rte-info">TipTap editor - supports headings, lists, links, and uploaded media</span>
+        <span className="rte-info">
+          TipTap editor - supports headings, lists, links, and uploaded media
+        </span>
         <span className="rte-mode on">Visual</span>
       </div>
 
@@ -303,10 +397,16 @@ export function RichTextEditor({
           <form className="space-y-4" onSubmit={handleSetLink}>
             <DialogHeader>
               <DialogTitle>Insert link</DialogTitle>
-              <DialogDescription>Use https://, http://, mailto:, or tel:. Leave empty to remove the selected link.</DialogDescription>
+              <DialogDescription>
+                Use https://, http://, mailto:, or tel:. Leave empty to remove
+                the selected link.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-[#7a6e60]" htmlFor="dashboard-rte-link-url">
+              <label
+                className="text-xs font-semibold text-[#7a6e60]"
+                htmlFor="dashboard-rte-link-url"
+              >
                 URL
               </label>
               <Input
@@ -319,10 +419,16 @@ export function RichTextEditor({
               />
             </div>
             <DialogFooter>
-              <Button onClick={() => setIsLinkDialogOpen(false)} type="button" variant="outline">
+              <Button
+                onClick={() => setIsLinkDialogOpen(false)}
+                type="button"
+                variant="outline"
+              >
                 Cancel
               </Button>
-              <Button type="submit">{linkUrl.trim() ? "Apply link" : "Remove link"}</Button>
+              <Button type="submit">
+                {linkUrl.trim() ? "Apply link" : "Remove link"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -333,23 +439,36 @@ export function RichTextEditor({
           <form className="space-y-4" onSubmit={handleImageUpload}>
             <DialogHeader>
               <DialogTitle>Upload image</DialogTitle>
-              <DialogDescription>Choose an image to insert into the editor. The uploaded file will be saved in Media.</DialogDescription>
+              <DialogDescription>
+                Choose an image to insert into the editor. The uploaded file
+                will be saved in Media.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-[#7a6e60]" htmlFor="dashboard-rte-image-file">
+              <label
+                className="text-xs font-semibold text-[#7a6e60]"
+                htmlFor="dashboard-rte-image-file"
+              >
                 Image file
               </label>
               <Input
                 accept="image/*"
                 className="bg-white text-[#1a1510]"
                 id="dashboard-rte-image-file"
-                onChange={(event) => setSelectedImage(event.target.files?.[0] ?? null)}
+                onChange={(event) =>
+                  setSelectedImage(event.target.files?.[0] ?? null)
+                }
                 type="file"
               />
-              {selectedImage ? <p className="text-xs text-[#7a6e60]">{selectedImage.name}</p> : null}
+              {selectedImage ? (
+                <p className="text-xs text-[#7a6e60]">{selectedImage.name}</p>
+              ) : null}
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-[#7a6e60]" htmlFor="dashboard-rte-image-alt">
+              <label
+                className="text-xs font-semibold text-[#7a6e60]"
+                htmlFor="dashboard-rte-image-alt"
+              >
                 Alt text
               </label>
               <Input
@@ -361,11 +480,18 @@ export function RichTextEditor({
               />
             </div>
             <DialogFooter>
-              <Button disabled={isUploadingImage} onClick={() => setIsImageDialogOpen(false)} type="button" variant="outline">
+              <Button
+                disabled={isUploadingImage}
+                onClick={() => setIsImageDialogOpen(false)}
+                type="button"
+                variant="outline"
+              >
                 Cancel
               </Button>
               <Button disabled={isUploadingImage} type="submit">
-                {isUploadingImage ? `Uploading... ${imageUploadProgress}%` : "Upload and insert"}
+                {isUploadingImage
+                  ? `Uploading... ${imageUploadProgress}%`
+                  : "Upload and insert"}
               </Button>
             </DialogFooter>
             <UploadProgress
