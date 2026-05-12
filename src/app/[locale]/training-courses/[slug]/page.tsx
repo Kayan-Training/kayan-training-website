@@ -328,7 +328,7 @@ export default async function TrainingCourseDetailPage({
                     rel={event.registrationType === "external" ? "noreferrer" : undefined}
                     target={event.registrationType === "external" ? "_blank" : undefined}
                   >
-                    {activeLocale === "ar" ? "سجّل مكانك" : "Reserve your seat"}
+                    {activeLocale === "ar" ? "احجز مقعدك" : "Reserve your seat"}
                     <HugeiconsIcon
                       className="rtl:rotate-180"
                       icon={ArrowRight01Icon}
