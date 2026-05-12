@@ -4,7 +4,10 @@ import { getAnimatedCategoryIcons } from "@/lib/content/category-icons";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "Coming Soon" };
+export const metadata = {
+  title: "Coming Soon",
+  robots: { follow: false, index: false },
+};
 
 type TapeKind = "chevron" | "slash" | "warning";
 type TapeDirection = "left" | "right";

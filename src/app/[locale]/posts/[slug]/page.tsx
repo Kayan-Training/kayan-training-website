@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 
 export default async function LegacyPostDetailPage({
   params,
@@ -6,5 +6,5 @@ export default async function LegacyPostDetailPage({
   params: Promise<{ locale: string; slug: string }>;
 }) {
   const { locale, slug } = await params;
-  redirect(`/${locale}/blog/${slug}`);
+  permanentRedirect(`/${locale}/blog/${slug}`);
 }

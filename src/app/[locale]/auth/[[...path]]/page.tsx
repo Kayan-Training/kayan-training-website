@@ -1,11 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 
 import { AuthPanel } from "@/components/auth/auth-panel";
 import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import { getServerSession } from "@/lib/session";
+
+export const metadata: Metadata = {
+  robots: { follow: false, index: false },
+};
 
 export default async function AuthPage({
   params,

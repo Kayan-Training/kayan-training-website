@@ -21,6 +21,7 @@ import {
   getLocalizedEvents,
 } from "@/lib/content/queries";
 import { isSupportedLocale } from "@/lib/i18n/config";
+import { buildAbsoluteUrl, buildMetadataWithLocaleAlternates, jsonLdScript } from "@/lib/seo";
 import { getServerSession } from "@/lib/session";
 
 export async function generateMetadata({
@@ -33,8 +34,12 @@ export async function generateMetadata({
   const event = await getEventDetailBySlug(activeLocale, slug);
   if (!event) return {};
   return {
-    title: event.seoTitle || event.title,
-    description: event.seoDescription || undefined,
+    ...buildMetadataWithLocaleAlternates({
+      description: event.seoDescription || event.excerpt || event.title,
+      locale: activeLocale,
+      path: `/events/${slug}`,
+      title: event.seoTitle || event.title,
+    }),
     openGraph: {
       title: event.seoTitle || event.title,
       images: event.coverImage ? [event.coverImage] : [],
@@ -247,10 +252,34 @@ export default async function EventDetailPage({
   const peopleStatLabel =
     event.heroPeopleLabel.trim() ||
     (activeLocale === "ar" ? "متحدثاً خبيراً" : "Expert Speakers");
+  const eventUrl = buildAbsoluteUrl(`/${activeLocale}/events/${slug}`);
+  const eventJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    description: event.seoDescription || event.excerpt || undefined,
+    endDate: endDate.toISOString(),
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    eventStatus: isPastProgram ? "https://schema.org/EventCompleted" : "https://schema.org/EventScheduled",
+    image: event.coverImage ? [event.coverImage] : undefined,
+    inLanguage: activeLocale,
+    location: event.location
+      ? {
+          "@type": "Place",
+          name: event.location,
+        }
+      : undefined,
+    name: event.seoTitle || event.title,
+    startDate: startDate.toISOString(),
+    url: eventUrl,
+  };
 
   if (event.isFeatured) {
     return (
       <main>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(eventJsonLd) }}
+        />
         <section className="relative flex min-h-screen items-end overflow-hidden pt-16">
           <div className="absolute inset-0 z-0 overflow-hidden">
             <Image
@@ -423,6 +452,10 @@ export default async function EventDetailPage({
 
   return (
     <main className="pt-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(eventJsonLd) }}
+      />
       <div className="relative h-64 overflow-hidden md:h-96">
         <Image
           alt={event.title}

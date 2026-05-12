@@ -1,10 +1,15 @@
 import { notFound, redirect } from "next/navigation";
+import type { Metadata } from "next";
 
 import { EventRegisterForm } from "@/components/events/event-register-form";
 import { getEventDetailBySlug } from "@/lib/content/queries";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import { createRegistration } from "@/lib/registrations/service";
 import { getServerSession } from "@/lib/session";
+
+export const metadata: Metadata = {
+  robots: { follow: false, index: false },
+};
 
 export default async function EventRegisterPage({
   params,

@@ -6,17 +6,20 @@ import { HugeiconsIcon } from "@hugeicons/react";
 
 import { getListingConfig, getLocalizedPosts } from "@/lib/content/queries";
 import { isSupportedLocale } from "@/lib/i18n/config";
+import { buildMetadataWithLocaleAlternates } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
   const config = (await getListingConfig(activeLocale, "blog")) ?? (await getListingConfig(activeLocale, "posts"));
-  return {
-    title: config?.heading || (activeLocale === "ar" ? "المكتبة المعرفية" : "Knowledge Library"),
+  return buildMetadataWithLocaleAlternates({
     description: config?.subheading || (activeLocale === "ar"
       ? "محتوى تحليلي وتطبيقي للقيادات والفرق التنفيذية."
       : "Applied and analytical content for leaders and execution teams."),
-  };
+    locale: activeLocale,
+    path: "/blog",
+    title: config?.heading || (activeLocale === "ar" ? "المكتبة المعرفية" : "Knowledge Library"),
+  });
 }
 
 const fallbackImages = [

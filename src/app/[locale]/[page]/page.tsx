@@ -7,6 +7,7 @@ import { getStaticPageBySlug } from "@/lib/content/queries";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import type { Block } from "@/lib/pages/block-types";
 import { migrateBlocks } from "@/lib/pages/migrate-blocks";
+import { buildMetadataWithLocaleAlternates } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -17,10 +18,12 @@ export async function generateMetadata({
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
   const data = await getStaticPageBySlug(activeLocale, page);
   if (!data) return {};
-  return {
+  return buildMetadataWithLocaleAlternates({
+    description: data.seoDescription || data.title,
+    locale: activeLocale,
+    path: `/${page}`,
     title: data.seoTitle || data.title,
-    description: data.seoDescription || undefined,
-  };
+  });
 }
 
 function parseBlocks(raw: unknown): Block[] {

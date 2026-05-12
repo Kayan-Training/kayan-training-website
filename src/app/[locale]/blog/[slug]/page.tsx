@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 
 import { getLocalizedPosts, getPostDetailBySlug } from "@/lib/content/queries";
 import { isSupportedLocale } from "@/lib/i18n/config";
+import { buildAbsoluteUrl, buildMetadataWithLocaleAlternates, jsonLdScript } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -14,11 +15,16 @@ export async function generateMetadata({
   params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
   const { locale, slug } = await params;
-  const post = await getPostDetailBySlug(isSupportedLocale(locale) ? locale : "ar", slug);
+  const activeLocale = isSupportedLocale(locale) ? locale : "ar";
+  const post = await getPostDetailBySlug(activeLocale, slug);
   if (!post) return {};
   return {
-    title: post.seoTitle || post.title,
-    description: post.seoDescription || post.excerpt || undefined,
+    ...buildMetadataWithLocaleAlternates({
+      description: post.seoDescription || post.excerpt || post.title,
+      locale: activeLocale,
+      path: `/blog/${slug}`,
+      title: post.seoTitle || post.title,
+    }),
     openGraph: post.seoImage ? { images: [{ url: post.seoImage }] } : undefined,
   };
 }
@@ -137,9 +143,26 @@ export default async function PostDetailPage({
   const body = readPostBody(post.content);
   const heroSrc = post.coverImage ?? fallbackHero;
   const relatedPosts = localizedPosts.filter((item) => item.slug !== post.slug).slice(0, 4);
+  const pageUrl = buildAbsoluteUrl(`/${activeLocale}/blog/${slug}`);
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    author: post.authorName ? [{ "@type": "Person", name: post.authorName }] : undefined,
+    datePublished: post.publishedAt?.toISOString() ?? undefined,
+    description: post.seoDescription || post.excerpt || undefined,
+    headline: post.seoTitle || post.title,
+    image: post.seoImage ? [post.seoImage] : undefined,
+    inLanguage: activeLocale,
+    mainEntityOfPage: pageUrl,
+    url: pageUrl,
+  };
 
   return (
     <main className="pt-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(articleJsonLd) }}
+      />
       {/* ── Hero ── */}
       <section className="relative h-[52vh] min-h-[380px] overflow-hidden">
         <Image

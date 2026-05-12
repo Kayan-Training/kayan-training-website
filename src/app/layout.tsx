@@ -5,9 +5,12 @@
  * This layout only provides global CSS and a stable body wrapper shared by all routes.
  */
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { LOCALE_DIRECTION, type AppLocale, isSupportedLocale } from "@/lib/i18n/config";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { getBaseUrl } from "@/lib/seo";
 import {
   Alexandria,
   DM_Mono,
@@ -41,6 +44,7 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getBaseUrl()),
   title: {
     default: "Kayan Training & Consulting",
     template: "%s — Kayan",
@@ -48,14 +52,19 @@ export const metadata: Metadata = {
   description: "Multilingual platform for events, consulting, and knowledge content.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const preferredLocaleRaw = cookieStore.get("preferred_locale")?.value;
+  const locale: AppLocale = preferredLocaleRaw && isSupportedLocale(preferredLocaleRaw) ? preferredLocaleRaw : "ar";
+
   return (
     <html
-      lang="en"
+      dir={LOCALE_DIRECTION[locale]}
+      lang={locale}
       className={cn(
         "h-full antialiased",
         montserrat.variable,

@@ -1,5 +1,6 @@
 import { Building01Icon, Mail01Icon, WhatsappIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -10,6 +11,7 @@ import { isSupportedLocale } from "@/lib/i18n/config";
 import { getLocalizedSiteSettings } from "@/lib/settings";
 import { SOCIAL_PLATFORM_OPTIONS, type SocialPlatformKey } from "@/lib/social-platforms";
 import { PhoneText } from "@/components/ui/phone-text";
+import { buildMetadataWithLocaleAlternates } from "@/lib/seo";
 
 function getMapEmbedSrc(raw: string): string {
   const value = raw.trim();
@@ -28,6 +30,23 @@ function getMapEmbedSrc(raw: string): string {
   } catch {
     return "";
   }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const activeLocale = isSupportedLocale(locale) ? locale : "ar";
+  const siteSettings = await getLocalizedSiteSettings(activeLocale);
+
+  return buildMetadataWithLocaleAlternates({
+    description: siteSettings.contactPage.subtitle,
+    locale: activeLocale,
+    path: "/contact-us",
+    title: siteSettings.contactPage.title,
+  });
 }
 
 export default async function ContactUsPage({

@@ -7,6 +7,7 @@ import { getAnimatedCategoryIcons } from "@/lib/content/category-icons";
 import { db } from "@/lib/db";
 import { LOCALE_DIRECTION, isSupportedLocale, type AppLocale } from "@/lib/i18n/config";
 import { getLocalizedSiteSettings } from "@/lib/settings";
+import { buildMetadataWithLocaleAlternates } from "@/lib/seo";
 
 function localizeMenuHref(href: string, locale: AppLocale): string {
   if (!href.startsWith("/")) return href;
@@ -25,11 +26,15 @@ export async function generateMetadata({
   const site = await getLocalizedSiteSettings(activeLocale);
 
   return {
-    description: site.siteDescription,
-    title: {
-      default: site.siteName,
-      template: `%s — ${site.siteName}`,
-    },
+    ...buildMetadataWithLocaleAlternates({
+      description: site.siteDescription,
+      locale: activeLocale,
+      path: "",
+      title: {
+        default: site.siteName,
+        template: `%s — ${site.siteName}`,
+      },
+    }),
   };
 }
 

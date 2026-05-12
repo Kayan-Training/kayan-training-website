@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { isSupportedLocale } from "@/lib/i18n/config";
+import { buildMetadataWithLocaleAlternates } from "@/lib/seo";
 import { SearchLiveClient } from "./search-live-client";
 
 export async function generateMetadata({
@@ -10,11 +11,16 @@ export async function generateMetadata({
   const { locale } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
   return {
-    title: activeLocale === "ar" ? "البحث" : "Search",
-    description:
-      activeLocale === "ar"
-        ? "ابحث في الفعاليات والدورات والمقالات والصفحات."
-        : "Search across events, training courses, posts, and pages.",
+    ...buildMetadataWithLocaleAlternates({
+      description:
+        activeLocale === "ar"
+          ? "ابحث في الفعاليات والدورات والمقالات والصفحات."
+          : "Search across events, training courses, posts, and pages.",
+      locale: activeLocale,
+      path: "/search",
+      title: activeLocale === "ar" ? "البحث" : "Search",
+    }),
+    robots: { follow: false, index: false },
   };
 }
 

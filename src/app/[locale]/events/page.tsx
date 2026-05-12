@@ -4,17 +4,20 @@ import { EventsListingClient } from "@/components/events/events-listing-client";
 import { resolveCategoryIconPath } from "@/lib/category-icons";
 import { getListingConfig, getLocalizedEvents } from "@/lib/content/queries";
 import { isSupportedLocale } from "@/lib/i18n/config";
+import { buildMetadataWithLocaleAlternates } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
   const config = await getListingConfig(activeLocale, "events");
-  return {
-    title: config?.heading || (activeLocale === "ar" ? "الفعاليات والبرامج" : "Events & Programs"),
+  return buildMetadataWithLocaleAlternates({
     description: config?.subheading || (activeLocale === "ar"
       ? "اكتشف برامجنا التدريبية والفعاليات القادمة."
       : "Discover our upcoming training programs and events."),
-  };
+    locale: activeLocale,
+    path: "/events",
+    title: config?.heading || (activeLocale === "ar" ? "الفعاليات والبرامج" : "Events & Programs"),
+  });
 }
 
 export default async function EventsPage({

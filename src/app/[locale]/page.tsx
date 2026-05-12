@@ -1,5 +1,6 @@
 import { ArrowRight01Icon, Calendar03Icon, StarIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -10,6 +11,8 @@ import { db } from "@/lib/db";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import { ensureHomeBlocksComplete } from "@/lib/pages/home-blocks";
 import { migrateBlocks } from "@/lib/pages/migrate-blocks";
+import { buildMetadataWithLocaleAlternates } from "@/lib/seo";
+import { getLocalizedSiteSettings } from "@/lib/settings";
 
 const domains = [
   { accent: "#c2b59b", ar: "الفنون", en: "Arts", img: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=700&q=75", icon: "kayan_profile_Arts.svg" },
@@ -39,6 +42,23 @@ function formatDate(date: Date, locale: "ar" | "en") {
     month: "short",
     year: "numeric",
   }).format(date);
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const activeLocale = isSupportedLocale(locale) ? locale : "ar";
+  const site = await getLocalizedSiteSettings(activeLocale);
+
+  return buildMetadataWithLocaleAlternates({
+    description: site.siteDescription,
+    locale: activeLocale,
+    path: "",
+    title: site.siteName,
+  });
 }
 
 export default async function LocaleHomePage({

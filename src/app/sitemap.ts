@@ -7,7 +7,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const now = new Date();
 
-  const staticPaths = ["", "/events", "/training-courses", "/blog", "/about"];
+  const staticPaths = ["", "/events", "/training-courses", "/blog", "/knowledge", "/contact-us"];
   const entries: MetadataRoute.Sitemap = [];
 
   for (const locale of SUPPORTED_LOCALES) {
@@ -22,9 +22,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   if (process.env.DATABASE_URL) {
-    const [events, posts] = await Promise.all([
+    const [events, posts, pages] = await Promise.all([
       db.event.findMany({ where: { status: "published" }, select: { slug: true, updatedAt: true, eventKind: true } }),
       db.post.findMany({ where: { status: "published" }, select: { slug: true, updatedAt: true } }),
+      db.page.findMany({ where: { status: "published" }, select: { slug: true, updatedAt: true } }),
     ]);
 
     for (const locale of SUPPORTED_LOCALES) {
@@ -43,6 +44,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           lastModified: post.updatedAt,
           priority: 0.7,
           url: `${baseUrl}/${locale}/blog/${post.slug}`,
+        });
+      }
+      for (const page of pages) {
+        if (page.slug === "home") continue;
+        entries.push({
+          changeFrequency: "weekly",
+          lastModified: page.updatedAt,
+          priority: 0.7,
+          url: `${baseUrl}/${locale}/${page.slug}`,
         });
       }
     }

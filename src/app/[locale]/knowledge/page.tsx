@@ -7,6 +7,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 
 import { getListingConfig, getLocalizedKnowledgePosts } from "@/lib/content/queries";
 import { isSupportedLocale } from "@/lib/i18n/config";
+import { buildMetadataWithLocaleAlternates } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -16,14 +17,16 @@ export async function generateMetadata({
   const { locale } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
   const config = await getListingConfig(activeLocale, "knowledge");
-  return {
-    title: config?.heading || (activeLocale === "ar" ? "مركز المعرفة" : "Knowledge Hub"),
+  return buildMetadataWithLocaleAlternates({
     description:
       config?.subheading ||
       (activeLocale === "ar"
         ? "موارد منتقاة للتطوير المهني والمؤسسي."
         : "Curated resources for professional and institutional development."),
-  };
+    locale: activeLocale,
+    path: "/knowledge",
+    title: config?.heading || (activeLocale === "ar" ? "مركز المعرفة" : "Knowledge Hub"),
+  });
 }
 
 function formatDate(date: Date, locale: "ar" | "en") {
