@@ -30,6 +30,7 @@ import { ImagePickerField } from "@/components/ui/image-picker-field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { LinkPickerInput, type LinkPickerEntities } from "@/components/ui/link-picker-input";
 import { cn } from "@/lib/utils";
 import { createTrainer, deleteTrainer, fetchTrainerMediaAction, saveTrainerOrder, updateTrainer, type TrainerPayload } from "./_actions";
 
@@ -43,6 +44,7 @@ export type TrainerItem = {
   bioEn: string;
   bioAr: string;
   imageUrl: string;
+  links: string[];
   sortOrder: number;
 };
 
@@ -57,6 +59,7 @@ const EMPTY_FORM: FormState = {
   bioEn: "",
   bioAr: "",
   imageUrl: "",
+  links: [],
 };
 
 const labelCls = "mb-1.5 block text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground";
@@ -70,11 +73,13 @@ function TrainerForm({
   onCancel,
   onSave,
   submitLabel,
+  entities,
 }: {
   initialValues?: FormState;
   onCancel?: () => void;
   onSave: (v: FormState) => void;
   submitLabel: string;
+  entities: LinkPickerEntities;
 }) {
   const [form, setForm] = useState<FormState>(initialValues ?? EMPTY_FORM);
   const [activeLocale, setActiveLocale] = useState<"en" | "ar">("en");
@@ -101,6 +106,49 @@ function TrainerForm({
       <div>
         <label className={labelCls}>Profile Image</label>
         <ImagePickerField fetchMedia={fetchTrainerMediaAction} value={form.imageUrl} onChange={(v) => set("imageUrl", v)} />
+      </div>
+      <div>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <label className={labelCls}>Links</label>
+          <Button
+            size="sm"
+            type="button"
+            variant="outline"
+            onClick={() => set("links", [...form.links, ""])}
+          >
+            Add Link
+          </Button>
+        </div>
+        <div className="space-y-2">
+          {form.links.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No links added yet.</p>
+          ) : null}
+          {form.links.map((link, index) => (
+            <div className="flex items-center gap-2" key={`${index}-${link}`}>
+              <div className="min-w-0 flex-1">
+                <LinkPickerInput
+                  dir="ltr"
+                  entities={entities}
+                  placeholder="https://example.com or /en/page"
+                  value={link}
+                  onChange={(value) => {
+                    const next = [...form.links];
+                    next[index] = value;
+                    set("links", next);
+                  }}
+                />
+              </div>
+              <Button
+                size="sm"
+                type="button"
+                variant="ghost"
+                onClick={() => set("links", form.links.filter((_, itemIndex) => itemIndex !== index))}
+              >
+                Remove
+              </Button>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="flex items-center gap-3">
@@ -184,9 +232,11 @@ function TrainerForm({
 export function TrainersManager({
   trainers,
   locale,
+  entities,
 }: {
   trainers: TrainerItem[];
   locale: string;
+  entities: LinkPickerEntities;
 }) {
   const [isPending, startTransition] = useTransition();
   const [addOpen, setAddOpen] = useState(false);
@@ -405,6 +455,7 @@ export function TrainersManager({
             <DialogTitle>Add Trainer</DialogTitle>
           </DialogHeader>
           <TrainerForm
+            entities={entities}
             onCancel={() => setAddOpen(false)}
             onSave={handleCreate}
             submitLabel={isPending ? "Creating..." : "Create Trainer"}
@@ -428,7 +479,9 @@ export function TrainersManager({
                 bioEn: editing.bioEn,
                 bioAr: editing.bioAr,
                 imageUrl: editing.imageUrl,
+                links: editing.links,
               }}
+              entities={entities}
               onCancel={() => setEditing(null)}
               onSave={(payload) => handleUpdate(editing.id, payload)}
               submitLabel={isPending ? "Saving..." : "Save Changes"}

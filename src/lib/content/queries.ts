@@ -311,6 +311,10 @@ export async function getEventDetailBySlug(
       const trainerTranslation = item.trainer?.translations.find((t) => t.locale === locale);
       const trainerFallback = item.trainer?.translations.find((t) => t.locale !== locale);
       return {
+        trainerLink:
+          Array.isArray(item.trainer?.links)
+            ? item.trainer?.links.find((value): value is string => typeof value === "string" && value.trim().length > 0) ?? ""
+            : "",
         day: item.day,
         time: item.time,
         title: item.title,
@@ -326,6 +330,10 @@ export async function getEventDetailBySlug(
           entry.trainer.imageUrl ??
           entry.trainer.avatar?.url ??
           "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&q=80",
+        link:
+          Array.isArray(entry.trainer.links)
+            ? entry.trainer.links.find((value): value is string => typeof value === "string" && value.trim().length > 0) ?? ""
+            : "",
         name: translation?.name ?? fallback?.name ?? entry.trainer.name ?? "Trainer",
         title:
           translation?.title ??

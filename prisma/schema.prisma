@@ -204,6 +204,7 @@ model Trainer {
   name           String?
   specialization String?
   imageUrl       String?
+  links          Json?
   sortOrder      Int      @default(0)
   createdAt      DateTime @default(now())
 

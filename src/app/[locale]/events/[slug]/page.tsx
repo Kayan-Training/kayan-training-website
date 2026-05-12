@@ -638,7 +638,13 @@ function AgendaAndTrainers({
                   <div className="break-words text-sm font-semibold">{item.title}</div>
                   {item.trainerName ? (
                     <div className="mt-1 break-words text-xs text-on-surface-variant">
-                      {item.trainerName}
+                      {item.trainerLink ? (
+                        <Link className="underline-offset-4 hover:text-primary hover:underline" href={item.trainerLink}>
+                          {item.trainerName}
+                        </Link>
+                      ) : (
+                        item.trainerName
+                      )}
                     </div>
                   ) : null}
                 </div>
@@ -668,7 +674,15 @@ function AgendaAndTrainers({
                   />
                 </div>
                 <div>
-                  <h3 className="mb-1 text-sm font-semibold">{trainer.name}</h3>
+                  <h3 className="mb-1 text-sm font-semibold">
+                    {trainer.link ? (
+                      <Link className="underline-offset-4 hover:text-primary hover:underline" href={trainer.link}>
+                        {trainer.name}
+                      </Link>
+                    ) : (
+                      trainer.name
+                    )}
+                  </h3>
                   <p className="text-xs text-on-surface-variant">
                     {trainer.title}
                   </p>

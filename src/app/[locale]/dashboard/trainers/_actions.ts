@@ -13,6 +13,7 @@ export type TrainerPayload = {
   bioEn: string;
   bioAr: string;
   imageUrl: string;
+  links: string[];
 };
 
 export async function fetchTrainerMediaAction(): Promise<{ id: string; originalName: string; url: string }[]> {
@@ -31,7 +32,14 @@ function validateTrainer(payload: TrainerPayload): { error?: string } {
   if (payload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
     return { error: "Invalid email format." };
   }
+  if (payload.links.some((link) => !link.trim())) {
+    return { error: "Trainer links cannot be empty." };
+  }
   return {};
+}
+
+function sanitizeLinks(links: string[]): string[] {
+  return links.map((link) => link.trim()).filter(Boolean);
 }
 
 export async function createTrainer(
@@ -49,6 +57,7 @@ export async function createTrainer(
         name: payload.nameEn.trim(),
         specialization: payload.specializationEn.trim() || null,
         imageUrl: payload.imageUrl.trim() || null,
+        links: sanitizeLinks(payload.links),
         sortOrder: (maxSort._max.sortOrder ?? -1) + 1,
         translations: {
           create: [
@@ -73,8 +82,9 @@ export async function createTrainer(
     revalidatePath(`/${locale}/events`);
     revalidatePath(`/${locale}/training-courses`);
     return {};
-  } catch {
-    return { error: "Failed to create trainer." };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { error: `Failed to create trainer. ${message}` };
   }
 }
 
@@ -94,6 +104,7 @@ export async function updateTrainer(
         name: payload.nameEn.trim(),
         specialization: payload.specializationEn.trim() || null,
         imageUrl: payload.imageUrl.trim() || null,
+        links: sanitizeLinks(payload.links),
       },
     });
 
@@ -134,8 +145,9 @@ export async function updateTrainer(
     revalidatePath(`/${locale}/events`);
     revalidatePath(`/${locale}/training-courses`);
     return {};
-  } catch {
-    return { error: "Failed to update trainer." };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { error: `Failed to update trainer. ${message}` };
   }
 }
 
@@ -150,8 +162,9 @@ export async function deleteTrainer(
     revalidatePath(`/${locale}/events`);
     revalidatePath(`/${locale}/training-courses`);
     return {};
-  } catch {
-    return { error: "Failed to delete trainer." };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { error: `Failed to delete trainer. ${message}` };
   }
 }
 
@@ -170,7 +183,8 @@ export async function saveTrainerOrder(
     revalidatePath(`/${locale}/dashboard/trainers`);
     revalidatePath(`/${locale}/dashboard/programs`);
     return {};
-  } catch {
-    return { error: "Failed to save trainer order." };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { error: `Failed to save trainer order. ${message}` };
   }
 }
