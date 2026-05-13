@@ -16,9 +16,13 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Delete02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  AlertTriangle,
   AlignLeft,
   ArrowLeft,
+  CheckCircle2,
   ChevronDown,
   ClipboardPaste,
   Copy,
@@ -29,7 +33,6 @@ import {
   Loader2,
   Plus,
   Search,
-  Trash2,
   Video,
 } from "lucide-react";
 import Link from "next/link";
@@ -39,6 +42,7 @@ import {
   isValidElement,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   useTransition,
@@ -59,12 +63,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ImagePickerField } from "@/components/ui/image-picker-field";
-import { MediaLibraryDialog } from "@/components/ui/media-library-dialog";
 import { Input } from "@/components/ui/input";
 import {
   type LinkPickerEntities,
   LinkPickerInput,
 } from "@/components/ui/link-picker-input";
+import { MediaLibraryDialog } from "@/components/ui/media-library-dialog";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { UploadProgress } from "@/components/ui/upload-progress";
@@ -98,17 +102,17 @@ export type PageData = {
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const inputCls =
-  "h-9 w-full rounded-md border border-input bg-input/20 px-3 text-sm text-foreground " +
+  "h-10 w-full rounded-lg border border-input/80 bg-background px-3 text-sm text-foreground shadow-sm " +
   "placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 " +
   "outline-none transition-colors";
 
 const labelCls =
-  "mb-1.5 block text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground";
+  "mb-1.5 block text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground";
 
 // ─── Primitives ───────────────────────────────────────────────────────────────
 
 function FieldRow({ children }: { children: React.ReactNode }) {
-  return <div className="grid gap-3 sm:grid-cols-2">{children}</div>;
+  return <div className="grid gap-4 sm:grid-cols-2">{children}</div>;
 }
 
 function Field({
@@ -128,7 +132,7 @@ function Field({
       )
     : children;
   return (
-    <div>
+    <div className="space-y-0.5">
       <label className={labelCls} htmlFor={id}>
         {label}
       </label>
@@ -139,27 +143,74 @@ function Field({
 
 function ArrayItemRow({
   index,
+  title,
+  onMoveUp,
+  onMoveDown,
+  onDuplicate,
   onRemove,
   children,
 }: {
   index: number;
+  title?: string;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  onDuplicate?: () => void;
   onRemove: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-border/50 bg-muted/20 p-3">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="font-mono text-[10px] text-muted-foreground">
-          {String(index + 1).padStart(2, "0")}
-        </span>
-        <button
-          aria-label={`Remove item ${index + 1}`}
-          className="text-muted-foreground hover:text-destructive"
-          type="button"
-          onClick={onRemove}
-        >
-          <Trash2 className="size-3" />
-        </button>
+    <div className="rounded-xl border border-border/60 bg-card/70 p-4 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="font-mono text-[10px] text-muted-foreground">
+            {String(index + 1).padStart(2, "0")}
+          </span>
+          {title ? (
+            <span className="truncate text-xs font-medium text-foreground/90">
+              {title}
+            </span>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-1">
+          {onMoveUp ? (
+            <button
+              aria-label={`Move item ${index + 1} up`}
+              className="inline-flex h-11 min-w-11 items-center justify-center rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              type="button"
+              onClick={onMoveUp}
+            >
+              Up
+            </button>
+          ) : null}
+          {onMoveDown ? (
+            <button
+              aria-label={`Move item ${index + 1} down`}
+              className="inline-flex h-11 min-w-11 items-center justify-center rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              type="button"
+              onClick={onMoveDown}
+            >
+              Down
+            </button>
+          ) : null}
+          {onDuplicate ? (
+            <button
+              aria-label={`Duplicate item ${index + 1}`}
+              className="inline-flex h-11 min-w-11 items-center justify-center rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              type="button"
+              onClick={onDuplicate}
+            >
+              Copy
+            </button>
+          ) : null}
+          <button
+            aria-label={`Remove item ${index + 1}`}
+            className="inline-flex h-11 min-w-11 items-center justify-center rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:border-destructive/50 hover:bg-destructive/5 hover:text-destructive"
+            type="button"
+            onClick={onRemove}
+          >
+            <HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={1.9} />
+          </button>
+        </div>
       </div>
       {children}
     </div>
@@ -175,13 +226,62 @@ function AddItemButton({
 }) {
   return (
     <button
-      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border/70 bg-muted/20 py-2 text-xs text-muted-foreground hover:border-primary/50 hover:text-primary"
+      className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border/70 bg-card/70 py-2 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
       type="button"
       onClick={onClick}
     >
       <Plus className="size-3" />
       {label}
     </button>
+  );
+}
+
+function BlockSubsection({
+  title,
+  hint,
+  defaultOpen = true,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="rounded-xl border border-border/60 bg-card/70 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]">
+      <button
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 px-4 py-3 text-left"
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+      >
+        <ChevronDown
+          className={cn(
+            "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+            !open && "-rotate-90",
+          )}
+        />
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground">
+            {title}
+          </p>
+          {hint ? (
+            <p className="truncate text-[11px] text-muted-foreground">{hint}</p>
+          ) : null}
+        </div>
+      </button>
+      <div
+        className={cn(
+          "grid transition-[grid-template-rows,opacity] duration-200",
+          open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+        )}
+      >
+        <div className="min-h-0 overflow-hidden border-t border-border/50 px-4 py-4">
+          {children}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -194,6 +294,11 @@ function makeId() {
 // ─── Block wireframes ─────────────────────────────────────────────────────────
 
 type BlockType = Block["type"];
+type BlockNavFilter =
+  | "all"
+  | "needs-attention"
+  | "media-heavy"
+  | "untranslated";
 
 function BlockWireframe({ type }: { type: BlockType }) {
   const bg = "#121414";
@@ -1072,35 +1177,230 @@ const ADD_BLOCK_OPTIONS: { label: string; type: BlockType }[] = [
   { type: "home_posts_grid", label: "Posts Grid" },
 ];
 
+const ADD_BLOCK_GROUPS: {
+  group: string;
+  types: BlockType[];
+}[] = [
+  {
+    group: "Core Content",
+    types: [
+      "page_hero",
+      "about_intro",
+      "mission_vision",
+      "process_steps",
+      "values_list",
+      "richtext",
+    ],
+  },
+  {
+    group: "Trust & Authority",
+    types: ["accreditation", "accreditation_bar"],
+  },
+  {
+    group: "Offer & Conversion",
+    types: ["service_cards", "training_domains", "cta_banner", "cta"],
+  },
+  {
+    group: "Homepage Dynamic",
+    types: [
+      "home_events_carousel",
+      "home_posts_grid",
+      "listing_config",
+      "hero",
+    ],
+  },
+];
+
 const BLOCK_LABELS: Record<BlockType, string> = Object.fromEntries(
   ADD_BLOCK_OPTIONS.map(({ type, label }) => [type, label]),
 ) as Record<BlockType, string>;
 
-function BlockNavSidebar({ blocks }: { blocks: Block[] }) {
+type BlockDiagnostics = {
+  mediaCount: number;
+  missingRequiredContent: boolean;
+  untranslated: boolean;
+};
+
+function hasMissingRequiredContent(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return true;
+    return value.some((item) => hasMissingRequiredContent(item));
+  }
+
+  for (const [key, fieldValue] of Object.entries(
+    value as Record<string, unknown>,
+  )) {
+    if (
+      /(id|slug|href|url|src|variant|style|theme|position|align|mode|type)/i.test(
+        key,
+      )
+    ) {
+      continue;
+    }
+    if (
+      /(title|heading|eyebrow|body|description|label|text|name|alt|caption|cta)/i.test(
+        key,
+      )
+    ) {
+      if (typeof fieldValue === "string" && fieldValue.trim().length === 0) {
+        return true;
+      }
+    }
+    if (fieldValue && typeof fieldValue === "object") {
+      if (hasMissingRequiredContent(fieldValue)) return true;
+    }
+  }
+
+  return false;
+}
+
+function countMediaReferences(value: unknown): number {
+  if (!value || typeof value !== "object") return 0;
+  if (Array.isArray(value)) {
+    return value.reduce((sum, item) => sum + countMediaReferences(item), 0);
+  }
+
+  let count = 0;
+  for (const [key, fieldValue] of Object.entries(
+    value as Record<string, unknown>,
+  )) {
+    if (/(image|video|media|logo|poster|thumbnail|file|asset)/i.test(key)) {
+      if (Array.isArray(fieldValue)) {
+        count += fieldValue.length;
+      } else if (fieldValue) {
+        count += 1;
+      }
+    }
+    if (typeof fieldValue === "string" && /^https?:\/\//.test(fieldValue)) {
+      count += 1;
+    } else if (fieldValue && typeof fieldValue === "object") {
+      count += countMediaReferences(fieldValue);
+    }
+  }
+  return count;
+}
+
+function BlockNavSidebar({
+  blocks,
+  diagnostics,
+  selectedBlockId,
+  onSelectBlock,
+}: {
+  blocks: Block[];
+  diagnostics: Record<string, BlockDiagnostics>;
+  selectedBlockId: string | null;
+  onSelectBlock: (id: string) => void;
+}) {
+  const [filter, setFilter] = useState<BlockNavFilter>("all");
   if (blocks.length === 0) return null;
+
+  const counts = blocks.reduce(
+    (acc, block) => {
+      const diag = diagnostics[block.id];
+      if (!diag) return acc;
+      if (diag.missingRequiredContent) acc.needsAttention += 1;
+      if (diag.mediaCount >= 4) acc.mediaHeavy += 1;
+      if (diag.untranslated) acc.untranslated += 1;
+      return acc;
+    },
+    { mediaHeavy: 0, needsAttention: 0, untranslated: 0 },
+  );
+
+  const filteredBlocks = blocks.filter((block) => {
+    const diag = diagnostics[block.id];
+    if (!diag) return true;
+    if (filter === "needs-attention") return diag.missingRequiredContent;
+    if (filter === "media-heavy") return diag.mediaCount >= 4;
+    if (filter === "untranslated") return diag.untranslated;
+    return true;
+  });
+
   return (
     <aside className="sticky top-24 hidden h-fit w-full px-3 shrink-0 self-start xl:block">
       <p className="mb-2 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">
         Blocks
       </p>
-      <nav className="space-y-0.5">
-        {blocks.map((block, i) => (
+      <div className="mb-2 rounded-md border border-border/60 bg-card/60 p-2">
+        <div className="flex items-center justify-between text-[10px]">
+          <span className="text-muted-foreground">Total</span>
+          <span className="font-semibold text-foreground">{blocks.length}</span>
+        </div>
+        <div className="mt-1 flex items-center justify-between text-[10px]">
+          <span className="text-muted-foreground">Healthy</span>
+          <span className="font-semibold text-emerald-600">
+            {blocks.length - counts.needsAttention}
+          </span>
+        </div>
+      </div>
+      <div className="mb-2 flex flex-wrap gap-1">
+        {[
+          { id: "all" as const, label: "All", value: blocks.length },
+          {
+            id: "needs-attention" as const,
+            label: "Needs",
+            value: counts.needsAttention,
+          },
+          {
+            id: "media-heavy" as const,
+            label: "Media",
+            value: counts.mediaHeavy,
+          },
+          {
+            id: "untranslated" as const,
+            label: "Locale",
+            value: counts.untranslated,
+          },
+        ].map((chip) => (
           <button
-            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            key={block.id}
+            className={cn(
+              "rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors",
+              filter === chip.id
+                ? "border-primary/50 bg-primary/10 text-primary"
+                : "border-border/70 text-muted-foreground hover:bg-muted",
+            )}
+            key={chip.id}
             type="button"
-            onClick={() => {
-              document
-                .querySelector(`[data-block-id="${block.id}"]`)
-                ?.scrollIntoView({ behavior: "smooth", block: "start" });
-            }}
+            onClick={() => setFilter(chip.id)}
           >
-            <span className="shrink-0 font-mono text-[9px] text-muted-foreground/40">
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            <span className="truncate">{BLOCK_LABELS[block.type]}</span>
+            {chip.label} {chip.value}
           </button>
         ))}
+      </div>
+      <nav className="space-y-0.5">
+        {filteredBlocks.map((block, i) => {
+          const diag = diagnostics[block.id];
+          const isSelected = selectedBlockId === block.id;
+          return (
+            <button
+              className={cn(
+                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[11px] transition-colors",
+                isSelected
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+              key={block.id}
+              type="button"
+              onClick={() => {
+                onSelectBlock(block.id);
+                document
+                  .querySelector(`[data-block-id="${block.id}"]`)
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            >
+              <span className="shrink-0 font-mono text-[9px] text-muted-foreground/40">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className="truncate">{BLOCK_LABELS[block.type]}</span>
+              {diag?.missingRequiredContent ? (
+                <AlertTriangle className="ml-auto size-3 shrink-0 text-amber-500" />
+              ) : (
+                <CheckCircle2 className="ml-auto size-3 shrink-0 text-emerald-600" />
+              )}
+            </button>
+          );
+        })}
       </nav>
     </aside>
   );
@@ -1108,6 +1408,21 @@ function BlockNavSidebar({ blocks }: { blocks: Block[] }) {
 
 function AddBlockMenu({ onAdd }: { onAdd: (type: BlockType) => void }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleGroups = ADD_BLOCK_GROUPS.map((group) => ({
+    ...group,
+    types: group.types.filter((type) => {
+      const label = BLOCK_LABELS[type].toLowerCase();
+      const description = BLOCK_DESCRIPTIONS[type].toLowerCase();
+      return (
+        normalizedQuery.length === 0 ||
+        label.includes(normalizedQuery) ||
+        description.includes(normalizedQuery)
+      );
+    }),
+  })).filter((group) => group.types.length > 0);
 
   return (
     <DropdownMenu onOpenChange={setOpen} open={open}>
@@ -1130,29 +1445,51 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: BlockType) => void }) {
         <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
           Choose a block type
         </p>
-        <div className="grid grid-cols-1 gap-1">
-          {ADD_BLOCK_OPTIONS.map(({ type, label }) => (
-            <button
-              className="flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-2 text-left transition-colors hover:border-border/50 hover:bg-secondary group cursor-pointer"
-              key={type}
-              type="button"
-              onClick={() => {
-                onAdd(type);
-                setOpen(false);
-              }}
-            >
-              <BlockWireframe type={type} />
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground group-hover:text-primary-container">
-                  {label}
+        <Input
+          className="mb-2 h-8"
+          placeholder="Search block types..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        {visibleGroups.length === 0 ? (
+          <div className="rounded-md border border-dashed border-border/60 px-3 py-4 text-xs text-muted-foreground">
+            No block types match this search.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {visibleGroups.map((group) => (
+              <div key={group.group}>
+                <p className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                  {group.group}
                 </p>
-                <p className="text-[11px] text-muted-foreground group-hover:text-primary-container/80">
-                  {BLOCK_DESCRIPTIONS[type]}
-                </p>
+                <div className="grid grid-cols-1 gap-1">
+                  {group.types.map((type) => (
+                    <button
+                      className="group flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-2 text-left transition-colors hover:border-border/50 hover:bg-secondary cursor-pointer"
+                      key={type}
+                      type="button"
+                      onClick={() => {
+                        onAdd(type);
+                        setOpen(false);
+                        setQuery("");
+                      }}
+                    >
+                      <BlockWireframe type={type} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground group-hover:text-primary-container">
+                          {BLOCK_LABELS[type]}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground group-hover:text-primary-container/80">
+                          {BLOCK_DESCRIPTIONS[type]}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </button>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -1191,7 +1528,9 @@ const ENABLE_BLOCK_TRANSLATION =
 function SortableBlock({
   children,
   id,
+  order,
   label,
+  health,
   copyLabel,
   translateLabel,
   isSelected,
@@ -1203,7 +1542,9 @@ function SortableBlock({
 }: {
   children: React.ReactNode;
   id: string;
+  order: number;
   label: string;
+  health: "healthy" | "needs-attention";
   copyLabel: string;
   translateLabel: string;
   isSelected: boolean;
@@ -1238,30 +1579,49 @@ function SortableBlock({
     >
       <div
         className={cn(
-          "overflow-hidden rounded-xl border border-border/70 bg-card transition-shadow",
+          "overflow-hidden rounded-xl border border-border/70 bg-card transition-all duration-200",
           isSelected && "ring-1 ring-primary/35",
           isDragging && "shadow-2xl ring-1 ring-primary/20",
         )}
       >
         {/* Block header */}
-        <div className="flex h-11 items-center gap-2 border-b border-border/50 bg-muted/20 px-3">
+        <div className="flex h-12 items-center gap-2 border-b border-border/50 bg-muted/20 px-3">
           <button
             {...attributes}
             {...listeners}
             aria-label="Drag to reorder"
-            className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+            className="cursor-grab touch-none rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing"
             type="button"
+            onClick={(e) => e.stopPropagation()}
           >
             <GripVertical className="size-4" />
           </button>
-          <span className="flex-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-            {label}
+          <span className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
+            {String(order).padStart(2, "0")}
+          </span>
+          <div className="min-w-0 flex-1">
+            <span className="block truncate text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              {label}
+            </span>
+          </div>
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+              health === "healthy"
+                ? "bg-emerald-500/10 text-emerald-700"
+                : "bg-amber-500/10 text-amber-700",
+            )}
+          >
+            {health === "healthy" ? "Healthy" : "Needs work"}
           </span>
           <button
             aria-label={collapsed ? "Expand block" : "Collapse block"}
-            className="text-muted-foreground hover:text-foreground"
+            className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             type="button"
-            onClick={() => setCollapsed((v) => !v)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setCollapsed((v) => !v);
+            }}
           >
             <ChevronDown
               className={cn(
@@ -1273,11 +1633,14 @@ function SortableBlock({
           {ENABLE_BLOCK_TRANSLATION ? (
             <button
               aria-label={`Translate ${label} block to ${translateLabel}`}
-              className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+              className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
               disabled={isTranslating}
               title={`Translate to ${translateLabel}`}
               type="button"
-              onClick={onTranslateToOtherLocale}
+              onClick={(e) => {
+                e.stopPropagation();
+                onTranslateToOtherLocale();
+              }}
             >
               {isTranslating ? (
                 <Loader2 className="size-3.5 animate-spin" />
@@ -1288,25 +1651,42 @@ function SortableBlock({
           ) : null}
           <button
             aria-label={`Copy ${label} block to ${copyLabel}`}
-            className="text-muted-foreground hover:text-foreground"
+            className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             title={`Copy to ${copyLabel}`}
             type="button"
-            onClick={onCopyToOtherLocale}
+            onClick={(e) => {
+              e.stopPropagation();
+              onCopyToOtherLocale();
+            }}
           >
             <Copy className="size-3.5" />
           </button>
           <button
             aria-label={`Remove ${label} block`}
-            className="text-muted-foreground hover:text-destructive"
+            className="rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
             type="button"
-            onClick={onRemove}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
           >
-            <Trash2 className="size-3.5" />
+            <HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={1.9} />
           </button>
         </div>
 
         {/* Block fields */}
-        {!collapsed && <div className="space-y-3 p-4">{children}</div>}
+        <div
+          className={cn(
+            "grid transition-[grid-template-rows,opacity] duration-200",
+            collapsed
+              ? "grid-rows-[0fr] opacity-0"
+              : "grid-rows-[1fr] opacity-100",
+          )}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <div className="space-y-4 bg-background/40 p-4">{children}</div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1403,7 +1783,7 @@ function MediaCarouselEditor({
 
   return (
     <>
-      <div className="space-y-2">
+      <div className="grid gap-2 xl:grid-cols-2">
         {media.length === 0 && (
           <p className="rounded-lg border border-dashed border-border/50 py-4 text-center text-xs text-muted-foreground">
             No media added yet — upload or browse the library below.
@@ -1411,46 +1791,56 @@ function MediaCarouselEditor({
         )}
         {media.map((item, i) => (
           <div
-            className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/20 p-2"
+            className="rounded-xl border border-border/60 bg-card/70 p-3 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]"
             key={item.id}
           >
-            <span className="font-mono text-[10px] text-muted-foreground">
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            {item.kind === "image" ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                alt="media preview"
-                className="h-10 w-16 shrink-0 rounded object-cover"
-                src={item.url}
-              />
-            ) : (
-              <div className="flex h-10 w-16 shrink-0 items-center justify-center rounded bg-muted">
-                <Video className="size-4 text-muted-foreground" />
-              </div>
-            )}
-            <span
-              className={cn(
-                "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase",
-                item.kind === "video"
-                  ? "border-blue-500/30 bg-blue-500/10 text-blue-600"
-                  : "border-border bg-muted text-muted-foreground",
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="font-mono text-[10px] text-muted-foreground">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <Button
+                aria-label="Remove media"
+                variant="destructive"
+                size="icon-sm"
+                title="Remove"
+                onClick={() => remove(item.id)}
+              >
+                <HugeiconsIcon
+                  icon={Delete02Icon}
+                  size={14}
+                  strokeWidth={1.9}
+                />
+              </Button>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-[72px_minmax(0,1fr)] sm:items-center">
+              {item.kind === "image" ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  alt="media preview"
+                  className="h-12 w-[72px] shrink-0 rounded object-cover"
+                  src={item.url}
+                />
+              ) : (
+                <div className="flex h-12 w-[72px] shrink-0 items-center justify-center rounded bg-muted">
+                  <Video className="size-4 text-muted-foreground" />
+                </div>
               )}
-            >
-              {item.kind}
-            </span>
-            <p className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground">
-              {item.url}
-            </p>
-            <button
-              aria-label="Remove media"
-              className="text-muted-foreground hover:text-destructive"
-              title="Remove"
-              type="button"
-              onClick={() => remove(item.id)}
-            >
-              <Trash2 className="size-3.5" />
-            </button>
+              <div className="min-w-0 space-y-1">
+                <span
+                  className={cn(
+                    "inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase",
+                    item.kind === "video"
+                      ? "border-blue-500/30 bg-blue-500/10 text-blue-600"
+                      : "border-border bg-muted text-muted-foreground",
+                  )}
+                >
+                  {item.kind}
+                </span>
+                <p className="truncate font-mono text-[11px] text-muted-foreground">
+                  {item.url}
+                </p>
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -1536,7 +1926,7 @@ function OverlayControls({
   }) => void;
 }) {
   return (
-    <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-3">
+    <div className="rounded-xl border border-border/60 bg-card/70 p-4 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)] space-y-3">
       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
         Display Options
       </p>
@@ -1616,41 +2006,47 @@ function PageHeroFields({
   entities: LinkPickerEntities;
 }) {
   return (
-    <>
-      <Field label="Eyebrow">
-        <input
-          className={cn(inputCls, dir === "rtl" && "text-right")}
-          dir={dir}
-          placeholder="e.g. Trust & Method"
-          value={block.eyebrow}
-          onChange={(e) => onChange({ eyebrow: e.target.value })}
-        />
-      </Field>
+    <div className="space-y-4">
+      <BlockSubsection hint="Eyebrow and visual treatment" title="Hero Basics">
+        <div className="space-y-4">
+          <Field label="Eyebrow">
+            <input
+              className={cn(inputCls, dir === "rtl" && "text-right")}
+              dir={dir}
+              placeholder="e.g. Trust & Method"
+              value={block.eyebrow}
+              onChange={(e) => onChange({ eyebrow: e.target.value })}
+            />
+          </Field>
+          <OverlayControls
+            backgroundColor={block.backgroundColor}
+            fullViewport={block.fullViewport}
+            overlayColor={block.overlayColor}
+            overlayOpacity={block.overlayOpacity}
+            onChange={onChange}
+          />
+        </div>
+      </BlockSubsection>
 
-      <OverlayControls
-        backgroundColor={block.backgroundColor}
-        fullViewport={block.fullViewport}
-        overlayColor={block.overlayColor}
-        overlayOpacity={block.overlayOpacity}
-        onChange={onChange}
-      />
-
-      <div>
-        <label className={labelCls}>Media (background — cycles through)</label>
+      <BlockSubsection
+        hint={`${block.media.length} item(s)`}
+        title="Background Media"
+      >
         <MediaCarouselEditor
           media={block.media}
           onChange={(media) => onChange({ media })}
         />
-      </div>
+      </BlockSubsection>
 
-      <div>
-        <label className={labelCls}>
-          Slides — heading &amp; subheading (cycles through)
-        </label>
+      <BlockSubsection
+        defaultOpen={false}
+        hint={`${block.slides.length} slide(s)`}
+        title="Slides Content"
+      >
         <div className="space-y-2">
           {block.slides.map((slide, i) => (
             <div
-              className="rounded-lg border border-border/50 bg-muted/20 p-3"
+              className="rounded-xl border border-border/60 bg-card/70 p-4 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]"
               key={slide.id}
             >
               <div className="mb-2 flex items-center justify-between">
@@ -1668,7 +2064,11 @@ function PageHeroFields({
                       })
                     }
                   >
-                    <Trash2 className="size-3" />
+                    <HugeiconsIcon
+                      icon={Delete02Icon}
+                      size={14}
+                      strokeWidth={1.9}
+                    />
                   </button>
                 )}
               </div>
@@ -1754,8 +2154,8 @@ function PageHeroFields({
             })
           }
         />
-      </div>
-    </>
+      </BlockSubsection>
+    </div>
   );
 }
 
@@ -1881,7 +2281,7 @@ function MissionVisionFields({
       {block.items.map((item, i) => {
         return (
           <div
-            className="rounded-lg border border-border/50 bg-muted/20 p-3"
+            className="rounded-xl border border-border/60 bg-card/70 p-4 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]"
             key={i}
           >
             <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-primary/70">
@@ -1921,14 +2321,19 @@ function MissionVisionFields({
             </FieldRow>
             <div className="mt-2 flex justify-end">
               <button
-                className="inline-flex h-8 items-center justify-center rounded-md border border-destructive/40 px-2 text-xs text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label={`Remove item ${i + 1}`}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-destructive/40 text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={block.items.length <= 1}
                 type="button"
                 onClick={() =>
                   onChange({ items: block.items.filter((_, j) => j !== i) })
                 }
               >
-                Remove item
+                <HugeiconsIcon
+                  icon={Delete02Icon}
+                  size={14}
+                  strokeWidth={1.9}
+                />
               </button>
             </div>
           </div>
@@ -2175,307 +2580,295 @@ function AccreditationFields({
   };
 
   return (
-    <>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-primary/70">
-        Featured Organizations (Left Column)
-      </p>
-      <FieldRow>
-        <Field label="Heading">
-          <input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            title="Heading"
-            value={block.heading}
-            onChange={(e) => onChange({ heading: e.target.value })}
-          />
-        </Field>
-        <Field label="Description">
-          <input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            title="Description"
-            value={block.description}
-            onChange={(e) => onChange({ description: e.target.value })}
-          />
-        </Field>
-      </FieldRow>
-      <div>
-        <label className={labelCls}>Featured Organizations</label>
-        <div className="space-y-2">
-          {block.featuredOrgs.map((org, i) => (
-            <ArrayItemRow
-              index={i}
-              key={i}
-              onRemove={() =>
-                onChange({
-                  featuredOrgs: block.featuredOrgs.filter((_, j) => j !== i),
-                })
-              }
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-end gap-2">
-                  <button
-                    aria-label={`Move featured organization ${i + 1} up`}
-                    className="h-7 rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground enabled:hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                    disabled={i === 0}
-                    type="button"
-                    onClick={() => moveFeaturedOrg(i, i - 1)}
-                  >
-                    Move Up
-                  </button>
-                  <button
-                    aria-label={`Move featured organization ${i + 1} down`}
-                    className="h-7 rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground enabled:hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                    disabled={i === block.featuredOrgs.length - 1}
-                    type="button"
-                    onClick={() => moveFeaturedOrg(i, i + 1)}
-                  >
-                    Move Down
-                  </button>
-                </div>
-                <input
-                  className={inputCls}
-                  placeholder="Organization name"
-                  value={org.name}
-                  onChange={(e) =>
-                    onChange({
-                      featuredOrgs: block.featuredOrgs.map((x, j) =>
-                        j === i ? { ...x, name: e.target.value } : x,
-                      ),
-                    })
-                  }
-                />
-                <input
-                  className={cn(inputCls, dir === "rtl" && "text-right")}
-                  dir={dir}
-                  placeholder="Short text"
-                  value={org.summary}
-                  onChange={(e) =>
-                    onChange({
-                      featuredOrgs: block.featuredOrgs.map((x, j) =>
-                        j === i ? { ...x, summary: e.target.value } : x,
-                      ),
-                    })
-                  }
-                />
-                <select
-                  className={inputCls}
-                  value={org.displayMode ?? "original"}
-                  onChange={(e) =>
-                    onChange({
-                      featuredOrgs: block.featuredOrgs.map((x, j) =>
-                        j === i
-                          ? {
-                              ...x,
-                              displayMode: e.target.value as
-                                | "original"
-                                | "mono",
-                            }
-                          : x,
-                      ),
-                    })
-                  }
-                >
-                  <option value="original">Original Colors</option>
-                  <option value="mono">Mono</option>
-                </select>
-                <select
-                  className={inputCls}
-                  value={org.size ?? "md"}
-                  onChange={(e) =>
-                    onChange({
-                      featuredOrgs: block.featuredOrgs.map((x, j) =>
-                        j === i
-                          ? {
-                              ...x,
-                              size: e.target.value as "sm" | "md" | "lg",
-                            }
-                          : x,
-                      ),
-                    })
-                  }
-                >
-                  <option value="sm">Small Logo</option>
-                  <option value="md">Medium Logo</option>
-                  <option value="lg">Large Logo</option>
-                </select>
-                <div>
-                  <label className={labelCls}>Logo</label>
-                  <ImagePickerField
-                    fetchMedia={fetchMediaAction}
-                    previewFit="contain"
-                    value={org.logo ?? ""}
-                    onChange={(url) =>
+    <div className="space-y-4">
+      <BlockSubsection
+        hint={`${block.featuredOrgs.length} organization(s)`}
+        title="Featured Organizations"
+      >
+        <div className="space-y-4">
+          <FieldRow>
+            <Field label="Heading">
+              <input
+                className={cn(inputCls, dir === "rtl" && "text-right")}
+                dir={dir}
+                title="Heading"
+                value={block.heading}
+                onChange={(e) => onChange({ heading: e.target.value })}
+              />
+            </Field>
+            <Field label="Description">
+              <input
+                className={cn(inputCls, dir === "rtl" && "text-right")}
+                dir={dir}
+                title="Description"
+                value={block.description}
+                onChange={(e) => onChange({ description: e.target.value })}
+              />
+            </Field>
+          </FieldRow>
+          <div className="grid gap-2 xl:grid-cols-2">
+            {block.featuredOrgs.map((org, i) => (
+              <ArrayItemRow
+                index={i}
+                key={i}
+                title={org.name?.trim() || "Untitled organization"}
+                onDuplicate={() =>
+                  onChange({
+                    featuredOrgs: [
+                      ...block.featuredOrgs.slice(0, i + 1),
+                      { ...org },
+                      ...block.featuredOrgs.slice(i + 1),
+                    ],
+                  })
+                }
+                onMoveDown={() => moveFeaturedOrg(i, i + 1)}
+                onMoveUp={() => moveFeaturedOrg(i, i - 1)}
+                onRemove={() =>
+                  onChange({
+                    featuredOrgs: block.featuredOrgs.filter((_, j) => j !== i),
+                  })
+                }
+              >
+                <div className="space-y-2">
+                  <input
+                    className={inputCls}
+                    placeholder="Organization name"
+                    value={org.name}
+                    onChange={(e) =>
                       onChange({
                         featuredOrgs: block.featuredOrgs.map((x, j) =>
-                          j === i ? { ...x, logo: url } : x,
+                          j === i ? { ...x, name: e.target.value } : x,
                         ),
                       })
                     }
                   />
+                  <input
+                    className={cn(inputCls, dir === "rtl" && "text-right")}
+                    dir={dir}
+                    placeholder="Short text"
+                    value={org.summary}
+                    onChange={(e) =>
+                      onChange({
+                        featuredOrgs: block.featuredOrgs.map((x, j) =>
+                          j === i ? { ...x, summary: e.target.value } : x,
+                        ),
+                      })
+                    }
+                  />
+                  <select
+                    className={inputCls}
+                    value={org.displayMode ?? "original"}
+                    onChange={(e) =>
+                      onChange({
+                        featuredOrgs: block.featuredOrgs.map((x, j) =>
+                          j === i
+                            ? {
+                                ...x,
+                                displayMode: e.target.value as
+                                  | "original"
+                                  | "mono",
+                              }
+                            : x,
+                        ),
+                      })
+                    }
+                  >
+                    <option value="original">Original Colors</option>
+                    <option value="mono">Mono</option>
+                  </select>
+                  <select
+                    className={inputCls}
+                    value={org.size ?? "md"}
+                    onChange={(e) =>
+                      onChange({
+                        featuredOrgs: block.featuredOrgs.map((x, j) =>
+                          j === i
+                            ? {
+                                ...x,
+                                size: e.target.value as "sm" | "md" | "lg",
+                              }
+                            : x,
+                        ),
+                      })
+                    }
+                  >
+                    <option value="sm">Small Logo</option>
+                    <option value="md">Medium Logo</option>
+                    <option value="lg">Large Logo</option>
+                  </select>
+                  <div>
+                    <label className={labelCls}>Logo</label>
+                    <ImagePickerField
+                      fetchMedia={fetchMediaAction}
+                      previewFit="contain"
+                      value={org.logo ?? ""}
+                      onChange={(url) =>
+                        onChange({
+                          featuredOrgs: block.featuredOrgs.map((x, j) =>
+                            j === i ? { ...x, logo: url } : x,
+                          ),
+                        })
+                      }
+                    />
+                  </div>
                 </div>
-              </div>
-            </ArrayItemRow>
-          ))}
+              </ArrayItemRow>
+            ))}
+          </div>
+          <AddItemButton
+            label="Add featured organization"
+            onClick={() =>
+              onChange({
+                featuredOrgs: [
+                  ...block.featuredOrgs,
+                  {
+                    name: "",
+                    summary: "",
+                    logo: "",
+                    displayMode: "original",
+                    size: "md",
+                  },
+                ],
+              })
+            }
+          />
         </div>
-        <AddItemButton
-          label="Add featured organization"
-          onClick={() =>
-            onChange({
-              featuredOrgs: [
-                ...block.featuredOrgs,
-                {
-                  name: "",
-                  summary: "",
-                  logo: "",
-                  displayMode: "original",
-                  size: "md",
-                },
-              ],
-            })
-          }
-        />
-      </div>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-primary/70">
-        Logos Marquee (Right Column)
-      </p>
-      <FieldRow>
-        <Field label="Logos Heading">
-          <input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            title="Logos Heading"
-            value={block.logosHeading}
-            onChange={(e) => onChange({ logosHeading: e.target.value })}
-          />
-        </Field>
-        <Field label="Logos Description">
-          <input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            title="Logos Description"
-            value={block.logosDescription}
-            onChange={(e) => onChange({ logosDescription: e.target.value })}
-          />
-        </Field>
-      </FieldRow>
-      <div>
-        <label className={labelCls}>Logos</label>
-        <div className="space-y-2">
-          {block.logos.map((p, i) => (
-            <ArrayItemRow
-              index={i}
-              key={i}
-              onRemove={() =>
-                onChange({ logos: block.logos.filter((_, j) => j !== i) })
-              }
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-end gap-2">
-                  <button
-                    aria-label={`Move logo ${i + 1} up`}
-                    className="h-7 rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground enabled:hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                    disabled={i === 0}
-                    type="button"
-                    onClick={() => moveLogo(i, i - 1)}
-                  >
-                    Move Up
-                  </button>
-                  <button
-                    aria-label={`Move logo ${i + 1} down`}
-                    className="h-7 rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground enabled:hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                    disabled={i === block.logos.length - 1}
-                    type="button"
-                    onClick={() => moveLogo(i, i + 1)}
-                  >
-                    Move Down
-                  </button>
-                </div>
-                <input
-                  className={inputCls}
-                  placeholder="Logo name"
-                  value={p.name}
-                  onChange={(e) =>
-                    onChange({
-                      logos: block.logos.map((x, j) =>
-                        j === i ? { ...x, name: e.target.value } : x,
-                      ),
-                    })
-                  }
-                />
-                <select
-                  className={inputCls}
-                  value={p.displayMode}
-                  onChange={(e) =>
-                    onChange({
-                      logos: block.logos.map((x, j) =>
-                        j === i
-                          ? {
-                              ...x,
-                              displayMode: e.target.value as
-                                | "original"
-                                | "mono",
-                            }
-                          : x,
-                      ),
-                    })
-                  }
-                >
-                  <option value="mono">Mono</option>
-                  <option value="original">Original Colors</option>
-                </select>
-                <select
-                  className={inputCls}
-                  value={p.size ?? "md"}
-                  onChange={(e) =>
-                    onChange({
-                      logos: block.logos.map((x, j) =>
-                        j === i
-                          ? {
-                              ...x,
-                              size: e.target.value as "sm" | "md" | "lg",
-                            }
-                          : x,
-                      ),
-                    })
-                  }
-                >
-                  <option value="sm">Small Logo</option>
-                  <option value="md">Medium Logo</option>
-                  <option value="lg">Large Logo</option>
-                </select>
-                <div>
-                  <label className={labelCls}>Logo</label>
-                  <ImagePickerField
-                    fetchMedia={fetchMediaAction}
-                    previewFit="contain"
-                    value={p.logo ?? ""}
-                    onChange={(url) =>
+      </BlockSubsection>
+
+      <BlockSubsection
+        defaultOpen={false}
+        hint={`${block.logos.length} logo(s)`}
+        title="Logos Marquee"
+      >
+        <div className="space-y-4">
+          <FieldRow>
+            <Field label="Logos Heading">
+              <input
+                className={cn(inputCls, dir === "rtl" && "text-right")}
+                dir={dir}
+                title="Logos Heading"
+                value={block.logosHeading}
+                onChange={(e) => onChange({ logosHeading: e.target.value })}
+              />
+            </Field>
+            <Field label="Logos Description">
+              <input
+                className={cn(inputCls, dir === "rtl" && "text-right")}
+                dir={dir}
+                title="Logos Description"
+                value={block.logosDescription}
+                onChange={(e) => onChange({ logosDescription: e.target.value })}
+              />
+            </Field>
+          </FieldRow>
+          <div className="grid gap-2 xl:grid-cols-2">
+            {block.logos.map((p, i) => (
+              <ArrayItemRow
+                index={i}
+                key={i}
+                title={p.name?.trim() || "Untitled logo"}
+                onDuplicate={() =>
+                  onChange({
+                    logos: [
+                      ...block.logos.slice(0, i + 1),
+                      { ...p },
+                      ...block.logos.slice(i + 1),
+                    ],
+                  })
+                }
+                onMoveDown={() => moveLogo(i, i + 1)}
+                onMoveUp={() => moveLogo(i, i - 1)}
+                onRemove={() =>
+                  onChange({ logos: block.logos.filter((_, j) => j !== i) })
+                }
+              >
+                <div className="space-y-2">
+                  <input
+                    className={inputCls}
+                    placeholder="Logo name"
+                    value={p.name}
+                    onChange={(e) =>
                       onChange({
                         logos: block.logos.map((x, j) =>
-                          j === i ? { ...x, logo: url } : x,
+                          j === i ? { ...x, name: e.target.value } : x,
                         ),
                       })
                     }
                   />
+                  <select
+                    className={inputCls}
+                    value={p.displayMode}
+                    onChange={(e) =>
+                      onChange({
+                        logos: block.logos.map((x, j) =>
+                          j === i
+                            ? {
+                                ...x,
+                                displayMode: e.target.value as
+                                  | "original"
+                                  | "mono",
+                              }
+                            : x,
+                        ),
+                      })
+                    }
+                  >
+                    <option value="mono">Mono</option>
+                    <option value="original">Original Colors</option>
+                  </select>
+                  <select
+                    className={inputCls}
+                    value={p.size ?? "md"}
+                    onChange={(e) =>
+                      onChange({
+                        logos: block.logos.map((x, j) =>
+                          j === i
+                            ? {
+                                ...x,
+                                size: e.target.value as "sm" | "md" | "lg",
+                              }
+                            : x,
+                        ),
+                      })
+                    }
+                  >
+                    <option value="sm">Small Logo</option>
+                    <option value="md">Medium Logo</option>
+                    <option value="lg">Large Logo</option>
+                  </select>
+                  <div>
+                    <label className={labelCls}>Logo</label>
+                    <ImagePickerField
+                      fetchMedia={fetchMediaAction}
+                      previewFit="contain"
+                      value={p.logo ?? ""}
+                      onChange={(url) =>
+                        onChange({
+                          logos: block.logos.map((x, j) =>
+                            j === i ? { ...x, logo: url } : x,
+                          ),
+                        })
+                      }
+                    />
+                  </div>
                 </div>
-              </div>
-            </ArrayItemRow>
-          ))}
+              </ArrayItemRow>
+            ))}
+          </div>
+          <AddItemButton
+            label="Add logo"
+            onClick={() =>
+              onChange({
+                logos: [
+                  ...block.logos,
+                  { name: "", logo: "", displayMode: "mono", size: "md" },
+                ],
+              })
+            }
+          />
         </div>
-        <AddItemButton
-          label="Add logo"
-          onClick={() =>
-            onChange({
-              logos: [
-                ...block.logos,
-                { name: "", logo: "", displayMode: "mono", size: "md" },
-              ],
-            })
-          }
-        />
-      </div>
-    </>
+      </BlockSubsection>
+    </div>
   );
 }
 
@@ -2488,86 +2881,116 @@ function ServiceCardsFields({
   dir: "ltr" | "rtl";
   onChange: (patch: Partial<typeof block>) => void;
 }) {
+  const moveItem = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= block.items.length) return;
+    onChange({ items: arrayMove(block.items, fromIndex, toIndex) });
+  };
+
   return (
-    <div className="space-y-3">
-      {block.items.map((item, i) => (
-        <ArrayItemRow
-          index={i}
-          key={i}
-          onRemove={() =>
-            onChange({ items: block.items.filter((_, j) => j !== i) })
-          }
-        >
-          <div className="grid gap-2 sm:grid-cols-2">
-            <input
-              className={cn(inputCls, dir === "rtl" && "text-right")}
-              dir={dir}
-              placeholder="Badge"
-              value={item.badge}
-              onChange={(e) =>
+    <div className="space-y-4">
+      <BlockSubsection
+        hint={`${block.items.length} card(s)`}
+        title="Service Cards Content"
+      >
+        <div className="space-y-3">
+          {block.items.map((item, i) => (
+            <ArrayItemRow
+              index={i}
+              key={i}
+              title={item.title?.trim() || "Untitled service card"}
+              onDuplicate={() =>
                 onChange({
-                  items: block.items.map((x, j) =>
-                    j === i ? { ...x, badge: e.target.value } : x,
-                  ),
+                  items: [
+                    ...block.items.slice(0, i + 1),
+                    { ...item },
+                    ...block.items.slice(i + 1),
+                  ],
                 })
               }
-            />
-            <input
-              className={cn(inputCls, dir === "rtl" && "text-right")}
-              dir={dir}
-              placeholder="Title"
-              value={item.title}
-              onChange={(e) =>
-                onChange({
-                  items: block.items.map((x, j) =>
-                    j === i ? { ...x, title: e.target.value } : x,
-                  ),
-                })
+              onMoveDown={() => moveItem(i, i + 1)}
+              onMoveUp={() => moveItem(i, i - 1)}
+              onRemove={() =>
+                onChange({ items: block.items.filter((_, j) => j !== i) })
               }
-            />
-            <div className="sm:col-span-2">
-              <input
-                className={cn(inputCls, dir === "rtl" && "text-right")}
-                dir={dir}
-                placeholder="Description"
-                value={item.desc}
-                onChange={(e) =>
-                  onChange({
-                    items: block.items.map((x, j) =>
-                      j === i ? { ...x, desc: e.target.value } : x,
-                    ),
-                  })
-                }
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className={labelCls}>Card Image</label>
-              <ImagePickerField
-                fetchMedia={fetchMediaAction}
-                value={item.image}
-                onChange={(url) =>
-                  onChange({
-                    items: block.items.map((x, j) =>
-                      j === i ? { ...x, image: url } : x,
-                    ),
-                  })
-                }
-              />
-            </div>
-          </div>
-        </ArrayItemRow>
-      ))}
-      <AddItemButton
-        label="Add service card"
-        onClick={() =>
-          onChange({
-            items: [
-              ...block.items,
-              { badge: "", title: "", desc: "", image: "" },
-            ],
-          })
-        }
-      />
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Card Badge">
+                  <input
+                    className={cn(inputCls, dir === "rtl" && "text-right")}
+                    dir={dir}
+                    placeholder="e.g. Corporate Track"
+                    value={item.badge}
+                    onChange={(e) =>
+                      onChange({
+                        items: block.items.map((x, j) =>
+                          j === i ? { ...x, badge: e.target.value } : x,
+                        ),
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Card Title">
+                  <input
+                    className={cn(inputCls, dir === "rtl" && "text-right")}
+                    dir={dir}
+                    placeholder="e.g. Executive Training"
+                    value={item.title}
+                    onChange={(e) =>
+                      onChange({
+                        items: block.items.map((x, j) =>
+                          j === i ? { ...x, title: e.target.value } : x,
+                        ),
+                      })
+                    }
+                  />
+                </Field>
+                <div className="sm:col-span-2">
+                  <Field label="Card Description">
+                    <input
+                      className={cn(inputCls, dir === "rtl" && "text-right")}
+                      dir={dir}
+                      placeholder="Short supporting copy for this card"
+                      value={item.desc}
+                      onChange={(e) =>
+                        onChange({
+                          items: block.items.map((x, j) =>
+                            j === i ? { ...x, desc: e.target.value } : x,
+                          ),
+                        })
+                      }
+                    />
+                  </Field>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelCls}>Card Image</label>
+                  <ImagePickerField
+                    fetchMedia={fetchMediaAction}
+                    value={item.image}
+                    onChange={(url) =>
+                      onChange({
+                        items: block.items.map((x, j) =>
+                          j === i ? { ...x, image: url } : x,
+                        ),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            </ArrayItemRow>
+          ))}
+          <AddItemButton
+            label="Add service card"
+            onClick={() =>
+              onChange({
+                items: [
+                  ...block.items,
+                  { badge: "", title: "", desc: "", image: "" },
+                ],
+              })
+            }
+          />
+        </div>
+      </BlockSubsection>
     </div>
   );
 }
@@ -2582,82 +3005,95 @@ function TrainingDomainsFields({
   onChange: (patch: Partial<typeof block>) => void;
 }) {
   return (
-    <>
-      <FieldRow>
-        <Field label="Eyebrow">
-          <input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            title="Eyebrow"
-            value={block.eyebrow}
-            onChange={(e) => onChange({ eyebrow: e.target.value })}
-          />
-        </Field>
-        <Field label="Heading">
-          <input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            title="Heading"
-            value={block.heading}
-            onChange={(e) => onChange({ heading: e.target.value })}
-          />
-        </Field>
-        <div className="sm:col-span-2">
-          <Field label="Description">
+    <div className="space-y-4">
+      <BlockSubsection hint="Section headline and copy" title="Domain Section">
+        <FieldRow>
+          <Field label="Section Eyebrow">
             <input
               className={cn(inputCls, dir === "rtl" && "text-right")}
               dir={dir}
-              title="Description"
-              value={block.description}
-              onChange={(e) => onChange({ description: e.target.value })}
+              title="Eyebrow"
+              value={block.eyebrow}
+              onChange={(e) => onChange({ eyebrow: e.target.value })}
             />
           </Field>
-        </div>
-        <Field label="Description Size">
-          <select
-            className={inputCls}
-            value={block.descriptionSize}
-            onChange={(e) =>
-              onChange({
-                descriptionSize: e.target.value as
-                  | "sm"
-                  | "md"
-                  | "lg"
-                  | "xl"
-                  | "custom",
-              })
-            }
-          >
-            <option value="sm">Small</option>
-            <option value="md">Medium</option>
-            <option value="lg">Large</option>
-            <option value="xl">Extra Large</option>
-            <option value="custom">Custom (px)</option>
-          </select>
-        </Field>
-        {block.descriptionSize === "custom" ? (
-          <Field label="Custom Size (px)">
+          <Field label="Section Heading">
             <input
+              className={cn(inputCls, dir === "rtl" && "text-right")}
+              dir={dir}
+              title="Heading"
+              value={block.heading}
+              onChange={(e) => onChange({ heading: e.target.value })}
+            />
+          </Field>
+          <div className="sm:col-span-2">
+            <Field label="Section Description">
+              <input
+                className={cn(inputCls, dir === "rtl" && "text-right")}
+                dir={dir}
+                title="Description"
+                value={block.description}
+                onChange={(e) => onChange({ description: e.target.value })}
+              />
+            </Field>
+          </div>
+        </FieldRow>
+      </BlockSubsection>
+
+      <BlockSubsection
+        defaultOpen={false}
+        hint="Typography controls"
+        title="Description Display"
+      >
+        <FieldRow>
+          <Field label="Description Size Preset">
+            <select
               className={inputCls}
-              min={12}
-              max={40}
-              step={1}
-              type="number"
-              value={block.customDescriptionSize}
+              value={block.descriptionSize}
               onChange={(e) =>
                 onChange({
-                  customDescriptionSize: Number(e.target.value) || 16,
+                  descriptionSize: e.target.value as
+                    | "sm"
+                    | "md"
+                    | "lg"
+                    | "xl"
+                    | "custom",
                 })
               }
-            />
+            >
+              <option value="sm">Small</option>
+              <option value="md">Medium</option>
+              <option value="lg">Large</option>
+              <option value="xl">Extra Large</option>
+              <option value="custom">Custom (px)</option>
+            </select>
           </Field>
-        ) : null}
-      </FieldRow>
-      <p className="rounded-lg border border-border/30 bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">
-        Domain cards are automatically populated from the Categories database.
-        No manual input required.
-      </p>
-    </>
+          {block.descriptionSize === "custom" ? (
+            <Field label="Custom Size (px)">
+              <input
+                className={inputCls}
+                max={40}
+                min={12}
+                step={1}
+                type="number"
+                value={block.customDescriptionSize}
+                onChange={(e) =>
+                  onChange({
+                    customDescriptionSize: Number(e.target.value) || 16,
+                  })
+                }
+              />
+            </Field>
+          ) : (
+            <div />
+          )}
+        </FieldRow>
+        <p className="rounded-lg border border-border/40 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+          Domain cards are auto-populated from Categories. This block controls
+          display only.
+        </p>
+      </BlockSubsection>
+    </div>
   );
 }
 
@@ -2673,74 +3109,87 @@ function CtaBannerFields({
   entities: LinkPickerEntities;
 }) {
   return (
-    <FieldRow>
-      <Field label="Eyebrow">
-        <input
-          className={cn(inputCls, dir === "rtl" && "text-right")}
-          dir={dir}
-          title="Eyebrow"
-          value={block.eyebrow}
-          onChange={(e) => onChange({ eyebrow: e.target.value })}
-        />
-      </Field>
-      <Field label="Heading">
-        <input
-          className={cn(inputCls, dir === "rtl" && "text-right")}
-          dir={dir}
-          title="Heading"
-          value={block.heading}
-          onChange={(e) => onChange({ heading: e.target.value })}
-        />
-      </Field>
-      <div className="sm:col-span-2">
-        <Field label="Body">
-          <input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            title="Body"
-            value={block.body}
-            onChange={(e) => onChange({ body: e.target.value })}
-          />
-        </Field>
-      </div>
-      <Field label="Button Text">
-        <input
-          className={cn(inputCls, dir === "rtl" && "text-right")}
-          dir={dir}
-          title="Button Text"
-          value={block.buttonText}
-          onChange={(e) => onChange({ buttonText: e.target.value })}
-        />
-      </Field>
-      <div>
-        <label className={labelCls}>Button URL</label>
-        <LinkPickerInput
-          dir={dir}
-          entities={entities}
-          placeholder="mailto:…"
-          value={block.buttonUrl}
-          onChange={(url) => onChange({ buttonUrl: url })}
-        />
-      </div>
-      <Field label="Link Text">
-        <input
-          className={cn(inputCls, dir === "rtl" && "text-right")}
-          dir={dir}
-          title="Link Text"
-          value={block.linkText}
-          onChange={(e) => onChange({ linkText: e.target.value })}
-        />
-      </Field>
-      <div>
-        <label className={labelCls}>Link URL</label>
-        <LinkPickerInput
-          dir={dir}
-          entities={entities}
-          value={block.linkUrl}
-          onChange={(url) => onChange({ linkUrl: url })}
-        />
-      </div>
-    </FieldRow>
+    <div className="space-y-4">
+      <BlockSubsection hint="Primary message content" title="Banner Content">
+        <FieldRow>
+          <Field label="Eyebrow">
+            <input
+              className={cn(inputCls, dir === "rtl" && "text-right")}
+              dir={dir}
+              title="Eyebrow"
+              value={block.eyebrow}
+              onChange={(e) => onChange({ eyebrow: e.target.value })}
+            />
+          </Field>
+          <Field label="Heading">
+            <input
+              className={cn(inputCls, dir === "rtl" && "text-right")}
+              dir={dir}
+              title="Heading"
+              value={block.heading}
+              onChange={(e) => onChange({ heading: e.target.value })}
+            />
+          </Field>
+          <div className="sm:col-span-2">
+            <Field label="Supporting Body Copy">
+              <input
+                className={cn(inputCls, dir === "rtl" && "text-right")}
+                dir={dir}
+                title="Body"
+                value={block.body}
+                onChange={(e) => onChange({ body: e.target.value })}
+              />
+            </Field>
+          </div>
+        </FieldRow>
+      </BlockSubsection>
+
+      <BlockSubsection
+        defaultOpen={false}
+        hint="Primary and secondary links"
+        title="Calls To Action"
+      >
+        <FieldRow>
+          <Field label="Primary Button Text">
+            <input
+              className={cn(inputCls, dir === "rtl" && "text-right")}
+              dir={dir}
+              title="Button Text"
+              value={block.buttonText}
+              onChange={(e) => onChange({ buttonText: e.target.value })}
+            />
+          </Field>
+          <div>
+            <label className={labelCls}>Primary Button URL</label>
+            <LinkPickerInput
+              dir={dir}
+              entities={entities}
+              placeholder="mailto:…"
+              value={block.buttonUrl}
+              onChange={(url) => onChange({ buttonUrl: url })}
+            />
+          </div>
+          <Field label="Secondary Link Text">
+            <input
+              className={cn(inputCls, dir === "rtl" && "text-right")}
+              dir={dir}
+              title="Link Text"
+              value={block.linkText}
+              onChange={(e) => onChange({ linkText: e.target.value })}
+            />
+          </Field>
+          <div>
+            <label className={labelCls}>Secondary Link URL</label>
+            <LinkPickerInput
+              dir={dir}
+              entities={entities}
+              value={block.linkUrl}
+              onChange={(url) => onChange({ linkUrl: url })}
+            />
+          </div>
+        </FieldRow>
+      </BlockSubsection>
+    </div>
   );
 }
 
@@ -2754,12 +3203,19 @@ function RichTextFields({
   onChange: (patch: Partial<typeof block>) => void;
 }) {
   return (
-    <RichTextEditor
-      dir={dir}
-      key={block.id}
-      value={block.html}
-      onChange={(html) => onChange({ html })}
-    />
+    <div className="space-y-4">
+      <BlockSubsection
+        hint="Long-form editorial content"
+        title="Rich Text Content"
+      >
+        <RichTextEditor
+          dir={dir}
+          key={block.id}
+          value={block.html}
+          onChange={(html) => onChange({ html })}
+        />
+      </BlockSubsection>
+    </div>
   );
 }
 
@@ -2775,33 +3231,36 @@ function HeroBlockFields({
   entities: LinkPickerEntities;
 }) {
   return (
-    <>
-      <OverlayControls
-        backgroundColor={block.backgroundColor}
-        fullViewport={block.fullViewport}
-        overlayColor={block.overlayColor}
-        overlayOpacity={block.overlayOpacity}
-        onChange={onChange}
-      />
+    <div className="space-y-4">
+      <BlockSubsection hint="Hero viewport and overlays" title="Hero Display">
+        <OverlayControls
+          backgroundColor={block.backgroundColor}
+          fullViewport={block.fullViewport}
+          overlayColor={block.overlayColor}
+          overlayOpacity={block.overlayOpacity}
+          onChange={onChange}
+        />
+      </BlockSubsection>
 
-      <div>
-        <label className={labelCls}>
-          Media (cycles through images &amp; video)
-        </label>
+      <BlockSubsection
+        hint={`${block.media.length} media item(s)`}
+        title="Hero Media"
+      >
         <MediaCarouselEditor
           media={block.media}
           onChange={(media) => onChange({ media })}
         />
-      </div>
+      </BlockSubsection>
 
-      <div>
-        <label className={labelCls}>
-          Slides — heading, subheading &amp; CTA (cycles through)
-        </label>
+      <BlockSubsection
+        defaultOpen={false}
+        hint={`${block.slides.length} slide(s)`}
+        title="Slides & CTAs"
+      >
         <div className="space-y-2">
           {block.slides.map((slide, i) => (
             <div
-              className="rounded-lg border border-border/50 bg-muted/20 p-3"
+              className="rounded-xl border border-border/60 bg-card/70 p-4 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]"
               key={slide.id}
             >
               <div className="mb-2 flex items-center justify-between">
@@ -2819,7 +3278,11 @@ function HeroBlockFields({
                       })
                     }
                   >
-                    <Trash2 className="size-3" />
+                    <HugeiconsIcon
+                      icon={Delete02Icon}
+                      size={14}
+                      strokeWidth={1.9}
+                    />
                   </button>
                 )}
               </div>
@@ -2877,7 +3340,7 @@ function HeroBlockFields({
                     />
                   </Field>
                 </FieldRow>
-                <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/20 p-3">
+                <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/70 p-4 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]">
                   <Switch
                     checked={!!slide.showCategoryIcons}
                     id={`showCategoryIcons-${slide.id}`}
@@ -2900,160 +3363,166 @@ function HeroBlockFields({
                 {/* CTAs */}
                 <div className="mt-2 space-y-2">
                   <span className={labelCls}>CTAs</span>
-                  {(slide.ctas ?? []).map((cta, ci) => (
-                    <div
-                      className="flex items-start gap-2 rounded-md border border-border/40 bg-background/50 p-2"
-                      key={cta.id}
-                    >
-                      <div className="flex-1 space-y-1.5">
-                        <input
-                          className={cn(
-                            inputCls,
-                            dir === "rtl" && "text-right",
-                          )}
-                          dir={dir}
-                          placeholder="Button label"
-                          value={cta.text}
-                          onChange={(e) =>
-                            onChange({
-                              slides: block.slides.map((s, j) =>
-                                j === i
-                                  ? {
-                                      ...s,
-                                      ctas: s.ctas.map((c, k) =>
-                                        k === ci
-                                          ? { ...c, text: e.target.value }
-                                          : c,
-                                      ),
-                                    }
-                                  : s,
-                              ),
-                            })
-                          }
-                        />
-                        <LinkPickerInput
-                          dir={dir}
-                          entities={entities}
-                          placeholder="/en/contact"
-                          value={cta.url}
-                          onChange={(url) =>
-                            onChange({
-                              slides: block.slides.map((s, j) =>
-                                j === i
-                                  ? {
-                                      ...s,
-                                      ctas: s.ctas.map((c, k) =>
-                                        k === ci ? { ...c, url } : c,
-                                      ),
-                                    }
-                                  : s,
-                              ),
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="flex w-[178px] shrink-0 flex-col gap-2">
-                        <div className="rounded-md border border-border/60 bg-muted/30 p-1">
-                          <div className="grid grid-cols-2 gap-1">
-                            <button
-                              className={cn(
-                                "rounded px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors",
-                                cta.style === "primary"
-                                  ? "bg-primary text-primary-foreground shadow-sm"
-                                  : "text-muted-foreground hover:bg-background",
-                              )}
-                              title="Primary style"
-                              type="button"
-                              onClick={() =>
-                                onChange({
-                                  slides: block.slides.map((s, j) =>
-                                    j === i
-                                      ? {
-                                          ...s,
-                                          ctas: s.ctas.map((c, k) =>
-                                            k === ci
-                                              ? {
-                                                  ...c,
-                                                  style: "primary" as const,
-                                                }
-                                              : c,
-                                          ),
-                                        }
-                                      : s,
-                                  ),
-                                })
-                              }
-                            >
-                              Primary
-                            </button>
-                            <button
-                              className={cn(
-                                "rounded px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors",
-                                cta.style === "secondary"
-                                  ? "bg-primary text-primary-foreground shadow-sm"
-                                  : "text-muted-foreground hover:bg-background",
-                              )}
-                              title="Secondary style"
-                              type="button"
-                              onClick={() =>
-                                onChange({
-                                  slides: block.slides.map((s, j) =>
-                                    j === i
-                                      ? {
-                                          ...s,
-                                          ctas: s.ctas.map((c, k) =>
-                                            k === ci
-                                              ? {
-                                                  ...c,
-                                                  style: "secondary" as const,
-                                                }
-                                              : c,
-                                          ),
-                                        }
-                                      : s,
-                                  ),
-                                })
-                              }
-                            >
-                              Secondary
-                            </button>
-                          </div>
-                        </div>
-                        <div className="rounded-md border border-border/50 bg-background px-2 py-1.5 text-[10px] text-muted-foreground">
-                          Preview:{" "}
-                          <span
+                  <div className="grid gap-2 lg:grid-cols-2">
+                    {(slide.ctas ?? []).map((cta, ci) => (
+                      <div
+                        className="flex items-start gap-2 rounded-md border border-border/40 bg-background/50 p-2"
+                        key={cta.id}
+                      >
+                        <div className="flex-1 space-y-1.5">
+                          <input
                             className={cn(
-                              "inline-flex items-center rounded px-1.5 py-0.5 font-semibold uppercase tracking-wide",
-                              cta.style === "primary"
-                                ? "bg-primary text-primary-foreground"
-                                : "border border-border text-foreground",
+                              inputCls,
+                              dir === "rtl" && "text-right",
                             )}
-                          >
-                            {cta.style}
-                          </span>
+                            dir={dir}
+                            placeholder="Button label"
+                            value={cta.text}
+                            onChange={(e) =>
+                              onChange({
+                                slides: block.slides.map((s, j) =>
+                                  j === i
+                                    ? {
+                                        ...s,
+                                        ctas: s.ctas.map((c, k) =>
+                                          k === ci
+                                            ? { ...c, text: e.target.value }
+                                            : c,
+                                        ),
+                                      }
+                                    : s,
+                                ),
+                              })
+                            }
+                          />
+                          <LinkPickerInput
+                            dir={dir}
+                            entities={entities}
+                            placeholder="/en/contact"
+                            value={cta.url}
+                            onChange={(url) =>
+                              onChange({
+                                slides: block.slides.map((s, j) =>
+                                  j === i
+                                    ? {
+                                        ...s,
+                                        ctas: s.ctas.map((c, k) =>
+                                          k === ci ? { ...c, url } : c,
+                                        ),
+                                      }
+                                    : s,
+                                ),
+                              })
+                            }
+                          />
                         </div>
-                        <button
-                          aria-label="Remove CTA"
-                          className="inline-flex h-7 items-center justify-center rounded border border-border/60 text-muted-foreground transition-colors hover:border-destructive/50 hover:bg-destructive/5 hover:text-destructive"
-                          type="button"
-                          onClick={() =>
-                            onChange({
-                              slides: block.slides.map((s, j) =>
-                                j === i
-                                  ? {
-                                      ...s,
-                                      ctas: s.ctas.filter((_, k) => k !== ci),
-                                    }
-                                  : s,
-                              ),
-                            })
-                          }
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
+                        <div className="flex w-[178px] shrink-0 flex-col gap-2">
+                          <div className="rounded-md border border-border/60 bg-muted/30 p-1">
+                            <div className="grid grid-cols-2 gap-1">
+                              <button
+                                className={cn(
+                                  "rounded px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors",
+                                  cta.style === "primary"
+                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                    : "text-muted-foreground hover:bg-background",
+                                )}
+                                title="Primary style"
+                                type="button"
+                                onClick={() =>
+                                  onChange({
+                                    slides: block.slides.map((s, j) =>
+                                      j === i
+                                        ? {
+                                            ...s,
+                                            ctas: s.ctas.map((c, k) =>
+                                              k === ci
+                                                ? {
+                                                    ...c,
+                                                    style: "primary" as const,
+                                                  }
+                                                : c,
+                                            ),
+                                          }
+                                        : s,
+                                    ),
+                                  })
+                                }
+                              >
+                                Primary
+                              </button>
+                              <button
+                                className={cn(
+                                  "rounded px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors",
+                                  cta.style === "secondary"
+                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                    : "text-muted-foreground hover:bg-background",
+                                )}
+                                title="Secondary style"
+                                type="button"
+                                onClick={() =>
+                                  onChange({
+                                    slides: block.slides.map((s, j) =>
+                                      j === i
+                                        ? {
+                                            ...s,
+                                            ctas: s.ctas.map((c, k) =>
+                                              k === ci
+                                                ? {
+                                                    ...c,
+                                                    style: "secondary" as const,
+                                                  }
+                                                : c,
+                                            ),
+                                          }
+                                        : s,
+                                    ),
+                                  })
+                                }
+                              >
+                                Secondary
+                              </button>
+                            </div>
+                          </div>
+                          <div className="rounded-md border border-border/50 bg-background px-2 py-1.5 text-[10px] text-muted-foreground">
+                            Preview:{" "}
+                            <span
+                              className={cn(
+                                "inline-flex items-center rounded px-1.5 py-0.5 font-semibold uppercase tracking-wide",
+                                cta.style === "primary"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "border border-border text-foreground",
+                              )}
+                            >
+                              {cta.style}
+                            </span>
+                          </div>
+                          <button
+                            aria-label="Remove CTA"
+                            className="inline-flex h-7 items-center justify-center rounded border border-border/60 text-muted-foreground transition-colors hover:border-destructive/50 hover:bg-destructive/5 hover:text-destructive"
+                            type="button"
+                            onClick={() =>
+                              onChange({
+                                slides: block.slides.map((s, j) =>
+                                  j === i
+                                    ? {
+                                        ...s,
+                                        ctas: s.ctas.filter((_, k) => k !== ci),
+                                      }
+                                    : s,
+                                ),
+                              })
+                            }
+                          >
+                            <HugeiconsIcon
+                              icon={Delete02Icon}
+                              size={14}
+                              strokeWidth={1.9}
+                            />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                   <AddItemButton
                     label="Add CTA"
                     onClick={() =>
@@ -3100,30 +3569,41 @@ function HeroBlockFields({
             })
           }
         />
-      </div>
+      </BlockSubsection>
 
-      <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/20 p-3">
-        <Switch
-          checked={!!block.showFeaturedEvent}
-          id="showFeaturedEvent"
-          onCheckedChange={(v) => onChange({ showFeaturedEvent: v })}
-        />
-        <label className="cursor-pointer text-sm" htmlFor="showFeaturedEvent">
-          Show featured event card
-        </label>
-      </div>
+      <BlockSubsection
+        defaultOpen={false}
+        hint="Optional hero behaviors"
+        title="Advanced Options"
+      >
+        <div className="space-y-3">
+          <div className="flex min-h-11 items-center gap-3 rounded-xl border border-border/60 bg-card/70 p-4 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]">
+            <Switch
+              checked={!!block.showFeaturedEvent}
+              id="showFeaturedEvent"
+              onCheckedChange={(v) => onChange({ showFeaturedEvent: v })}
+            />
+            <label
+              className="cursor-pointer text-sm"
+              htmlFor="showFeaturedEvent"
+            >
+              Show featured event card under hero
+            </label>
+          </div>
 
-      <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/20 p-3">
-        <Switch
-          checked={!!block.grayscaleMedia}
-          id="grayscaleMedia"
-          onCheckedChange={(v) => onChange({ grayscaleMedia: v })}
-        />
-        <label className="cursor-pointer text-sm" htmlFor="grayscaleMedia">
-          Grayscale background media
-        </label>
-      </div>
-    </>
+          <div className="flex min-h-11 items-center gap-3 rounded-xl border border-border/60 bg-card/70 p-4 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]">
+            <Switch
+              checked={!!block.grayscaleMedia}
+              id="grayscaleMedia"
+              onCheckedChange={(v) => onChange({ grayscaleMedia: v })}
+            />
+            <label className="cursor-pointer text-sm" htmlFor="grayscaleMedia">
+              Apply grayscale treatment to background media
+            </label>
+          </div>
+        </div>
+      </BlockSubsection>
+    </div>
   );
 }
 
@@ -3190,51 +3670,61 @@ function ListingConfigFields({
   onChange: (patch: Partial<typeof block>) => void;
 }) {
   return (
-    <>
-      <FieldRow>
-        <Field label="Eyebrow">
-          <input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            title="Eyebrow"
-            value={block.eyebrow}
-            onChange={(e) => onChange({ eyebrow: e.target.value })}
-          />
-        </Field>
-        <Field label="Heading">
-          <input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            title="Heading"
-            value={block.heading}
-            onChange={(e) => onChange({ heading: e.target.value })}
-          />
-        </Field>
-        <div className="sm:col-span-2">
-          <Field label="Subheading">
+    <div className="space-y-4">
+      <BlockSubsection hint="Listing header content" title="Content">
+        <FieldRow>
+          <Field label="Eyebrow">
             <input
               className={cn(inputCls, dir === "rtl" && "text-right")}
               dir={dir}
-              title="Subheading"
-              value={block.subheading}
-              onChange={(e) => onChange({ subheading: e.target.value })}
+              title="Eyebrow"
+              value={block.eyebrow}
+              onChange={(e) => onChange({ eyebrow: e.target.value })}
             />
           </Field>
-        </div>
-        <Field label="Results Per Page">
-          <input
-            className={inputCls}
-            min={1}
-            title="Results Per Page"
-            type="number"
-            value={block.resultsPerPage}
-            onChange={(e) =>
-              onChange({ resultsPerPage: Number(e.target.value) || 12 })
-            }
-          />
-        </Field>
-      </FieldRow>
-    </>
+          <Field label="Heading">
+            <input
+              className={cn(inputCls, dir === "rtl" && "text-right")}
+              dir={dir}
+              title="Heading"
+              value={block.heading}
+              onChange={(e) => onChange({ heading: e.target.value })}
+            />
+          </Field>
+          <div className="sm:col-span-2">
+            <Field label="Subheading">
+              <input
+                className={cn(inputCls, dir === "rtl" && "text-right")}
+                dir={dir}
+                title="Subheading"
+                value={block.subheading}
+                onChange={(e) => onChange({ subheading: e.target.value })}
+              />
+            </Field>
+          </div>
+        </FieldRow>
+      </BlockSubsection>
+      <BlockSubsection
+        defaultOpen={false}
+        hint="Pagination and density"
+        title="Display Settings"
+      >
+        <FieldRow>
+          <Field label="Results Per Page">
+            <input
+              className={inputCls}
+              min={1}
+              title="Results Per Page"
+              type="number"
+              value={block.resultsPerPage}
+              onChange={(e) =>
+                onChange({ resultsPerPage: Number(e.target.value) || 12 })
+              }
+            />
+          </Field>
+        </FieldRow>
+      </BlockSubsection>
+    </div>
   );
 }
 
@@ -3248,116 +3738,153 @@ function AccreditationBarFields({
   onChange: (patch: Partial<typeof block>) => void;
 }) {
   return (
-    <>
-      <FieldRow>
-        <Field label="Eyebrow">
-          <input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            placeholder="e.g. Accredited by"
-            title="Eyebrow"
-            value={block.eyebrow}
-            onChange={(e) => onChange({ eyebrow: e.target.value })}
-          />
-        </Field>
-        <Field label="Badge Label">
-          <input
-            className={inputCls}
-            placeholder="e.g. QABA"
-            title="Badge Label"
-            value={block.badgeLabel}
-            onChange={(e) => onChange({ badgeLabel: e.target.value })}
-          />
-        </Field>
-      </FieldRow>
-      <FieldRow>
-        <Field label="Badge Title">
-          <input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            placeholder="Quality Assurance Body"
-            title="Badge Title"
-            value={block.badgeTitle}
-            onChange={(e) => onChange({ badgeTitle: e.target.value })}
-          />
-        </Field>
-        <Field label="Badge Subtitle">
-          <input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            placeholder="Certified Training Provider"
-            title="Badge Subtitle"
-            value={block.badgeSub}
-            onChange={(e) => onChange({ badgeSub: e.target.value })}
-          />
-        </Field>
-      </FieldRow>
-      <Field label="Clients Heading">
-        <input
-          className={cn(inputCls, dir === "rtl" && "text-right")}
-          dir={dir}
-          placeholder="Our clients"
-          title="Clients Heading"
-          value={block.clientsHeading}
-          onChange={(e) => onChange({ clientsHeading: e.target.value })}
-        />
-      </Field>
-      <div className="space-y-4">
-        <label className={labelCls}>Organization Logos</label>
-        {(block.clients ?? []).map((client, i) => (
-          <ArrayItemRow
-            index={i}
-            key={client.id || i}
-            onRemove={() =>
+    <div className="space-y-4">
+      <BlockSubsection hint="Topline and badge copy" title="Badge & Context">
+        <div className="space-y-4">
+          <FieldRow>
+            <Field label="Eyebrow">
+              <input
+                className={cn(inputCls, dir === "rtl" && "text-right")}
+                dir={dir}
+                placeholder="e.g. Accredited by"
+                title="Eyebrow"
+                value={block.eyebrow}
+                onChange={(e) => onChange({ eyebrow: e.target.value })}
+              />
+            </Field>
+            <Field label="Badge Label">
+              <input
+                className={inputCls}
+                placeholder="e.g. QABA"
+                title="Badge Label"
+                value={block.badgeLabel}
+                onChange={(e) => onChange({ badgeLabel: e.target.value })}
+              />
+            </Field>
+          </FieldRow>
+          <FieldRow>
+            <Field label="Badge Title">
+              <input
+                className={cn(inputCls, dir === "rtl" && "text-right")}
+                dir={dir}
+                placeholder="Quality Assurance Body"
+                title="Badge Title"
+                value={block.badgeTitle}
+                onChange={(e) => onChange({ badgeTitle: e.target.value })}
+              />
+            </Field>
+            <Field label="Badge Subtitle">
+              <input
+                className={cn(inputCls, dir === "rtl" && "text-right")}
+                dir={dir}
+                placeholder="Certified Training Provider"
+                title="Badge Subtitle"
+                value={block.badgeSub}
+                onChange={(e) => onChange({ badgeSub: e.target.value })}
+              />
+            </Field>
+          </FieldRow>
+          <Field label="Clients Heading">
+            <input
+              className={cn(inputCls, dir === "rtl" && "text-right")}
+              dir={dir}
+              placeholder="Our clients"
+              title="Clients Heading"
+              value={block.clientsHeading}
+              onChange={(e) => onChange({ clientsHeading: e.target.value })}
+            />
+          </Field>
+        </div>
+      </BlockSubsection>
+
+      <BlockSubsection
+        defaultOpen={false}
+        hint={`${(block.clients ?? []).length} organization(s)`}
+        title="Organization Logos"
+      >
+        <div className="grid gap-3 xl:grid-cols-2">
+          {(block.clients ?? []).map((client, i) => (
+            <ArrayItemRow
+              index={i}
+              key={client.id || i}
+              title={client.name?.trim() || "Untitled organization"}
+              onDuplicate={() =>
+                onChange({
+                  clients: [
+                    ...block.clients.slice(0, i + 1),
+                    { ...client, id: makeId() },
+                    ...block.clients.slice(i + 1),
+                  ],
+                })
+              }
+              onMoveDown={() =>
+                i < block.clients.length - 1
+                  ? onChange({
+                      clients: arrayMove(block.clients, i, i + 1),
+                    })
+                  : undefined
+              }
+              onMoveUp={() =>
+                i > 0
+                  ? onChange({
+                      clients: arrayMove(block.clients, i, i - 1),
+                    })
+                  : undefined
+              }
+              onRemove={() =>
+                onChange({
+                  clients: block.clients.filter((_, idx) => idx !== i),
+                })
+              }
+            >
+              <div className="space-y-3">
+                <Field label="Organization Name">
+                  <input
+                    className={cn(inputCls, dir === "rtl" && "text-right")}
+                    dir={dir}
+                    placeholder="e.g. Ministry of Education"
+                    value={client.name}
+                    onChange={(e) =>
+                      onChange({
+                        clients: block.clients.map((item, idx) =>
+                          idx === i ? { ...item, name: e.target.value } : item,
+                        ),
+                      })
+                    }
+                  />
+                </Field>
+                <div>
+                  <label className={labelCls}>Logo</label>
+                  <ImagePickerField
+                    dir={dir}
+                    fetchMedia={fetchMediaAction}
+                    value={client.logo ?? ""}
+                    onChange={(url) =>
+                      onChange({
+                        clients: block.clients.map((item, idx) =>
+                          idx === i ? { ...item, logo: url } : item,
+                        ),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            </ArrayItemRow>
+          ))}
+          <AddItemButton
+            label="Add organization"
+            onClick={() =>
               onChange({
-                clients: block.clients.filter((_, idx) => idx !== i),
+                clients: [
+                  ...block.clients,
+                  { id: makeId(), name: "", logo: "" },
+                ],
               })
             }
-          >
-            <div className="space-y-3">
-              <Field label="Organization Name">
-                <input
-                  className={cn(inputCls, dir === "rtl" && "text-right")}
-                  dir={dir}
-                  placeholder="e.g. Ministry of Education"
-                  value={client.name}
-                  onChange={(e) =>
-                    onChange({
-                      clients: block.clients.map((item, idx) =>
-                        idx === i ? { ...item, name: e.target.value } : item,
-                      ),
-                    })
-                  }
-                />
-              </Field>
-              <div>
-                <label className={labelCls}>Logo</label>
-                <ImagePickerField
-                  dir={dir}
-                  fetchMedia={fetchMediaAction}
-                  value={client.logo ?? ""}
-                  onChange={(url) =>
-                    onChange({
-                      clients: block.clients.map((item, idx) =>
-                        idx === i ? { ...item, logo: url } : item,
-                      ),
-                    })
-                  }
-                />
-              </div>
-            </div>
-          </ArrayItemRow>
-        ))}
-        <AddItemButton
-          label="Add organization"
-          onClick={() =>
-            onChange({
-              clients: [...block.clients, { id: makeId(), name: "", logo: "" }],
-            })
-          }
-        />
-      </div>
-    </>
+          />
+        </div>
+      </BlockSubsection>
+    </div>
   );
 }
 
@@ -3852,6 +4379,41 @@ export function PageEditor({
 
   const blocks = activeLocale === "en" ? blocksEn : blocksAr;
   const setBlocks = activeLocale === "en" ? setBlocksEn : setBlocksAr;
+  const targetLocaleBlockIds = useMemo(
+    () =>
+      new Set(
+        (activeLocale === "en" ? blocksAr : blocksEn).map((block) => block.id),
+      ),
+    [activeLocale, blocksAr, blocksEn],
+  );
+  const blockDiagnostics = useMemo<Record<string, BlockDiagnostics>>(
+    () =>
+      Object.fromEntries(
+        blocks.map((block) => [
+          block.id,
+          {
+            mediaCount: countMediaReferences(block),
+            missingRequiredContent: hasMissingRequiredContent(block),
+            untranslated: !targetLocaleBlockIds.has(block.id),
+          },
+        ]),
+      ),
+    [blocks, targetLocaleBlockIds],
+  );
+  const qualityCounts = useMemo(
+    () =>
+      blocks.reduce(
+        (acc, block) => {
+          const diag = blockDiagnostics[block.id];
+          if (!diag) return acc;
+          if (diag.missingRequiredContent) acc.needsAttention += 1;
+          if (diag.untranslated) acc.untranslated += 1;
+          return acc;
+        },
+        { needsAttention: 0, untranslated: 0 },
+      ),
+    [blockDiagnostics, blocks],
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -4164,10 +4726,10 @@ export function PageEditor({
   return (
     <div className="event-editor relative grid-cols-[220px_minmax(0,1fr)_220px]!">
       {/* Left rail */}
-      <nav className="event-editor__rail_ flex-col flex gap-2 h-[calc(100vh-4rem)] p-0 sticky top-14">
+      <nav className="event-editor__rail_ sticky top-14 hidden h-[calc(100vh-4rem)] flex-col gap-2 border-r border-border/40 bg-card/50 p-0 md:flex">
         <div className="px-4 py-5">
           <Button
-            className="mb-6 h-8 w-full justify-start gap-2 text-xs"
+            className="mb-5 h-8 w-full justify-start gap-2 text-xs transition-colors hover:bg-primary/5"
             render={<Link href={`/${locale}/dashboard/pages`} />}
             size="sm"
             type="button"
@@ -4180,13 +4742,13 @@ export function PageEditor({
           <p className="mb-2 px-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">
             Sections
           </p>
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {sectionNav.map(({ id, label, icon: Icon }) => (
               <button
                 className={cn(
-                  "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[12.5px] font-medium transition-colors",
+                  "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[12.5px] font-medium transition-all duration-150",
                   activeSection === id
-                    ? "bg-primary/10 text-primary"
+                    ? "bg-primary/12 text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.22)]"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
                 key={id}
@@ -4203,7 +4765,7 @@ export function PageEditor({
         <div className="mt-auto border-t border-border/50 px-4 py-4">
           <span
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold",
+              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors",
               status === "published"
                 ? "bg-green-500/10 text-green-600"
                 : "bg-muted text-muted-foreground",
@@ -4221,22 +4783,22 @@ export function PageEditor({
       </nav>
 
       {/* Main panel */}
-      <div className="flex min-h-0 flex-col max-w-6xl">
+      <div className="flex min-h-0 max-w-6xl flex-col">
         {/* Toolbar */}
-        <div className="flex items-center justify-between border-b border-border/50 bg-card/80 px-6 py-3 backdrop-blur-sm sticky top-14 z-10">
-          <div className="flex items-center gap-3">
+        <div className="sticky top-14 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-border/50 bg-card/90 px-4 py-3 backdrop-blur-sm sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
             <span className="text-[13px] font-semibold text-foreground">
               {activeLocale === "en" ? titleEn : titleAr}
             </span>
-            <span className="font-mono text-[11px] text-muted-foreground">
+            <span className="truncate font-mono text-[11px] text-muted-foreground">
               /{pageData.slug}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <div className="flex overflow-hidden rounded-md border border-border/70">
               <button
                 className={cn(
-                  "px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors",
+                  "px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors duration-150",
                   viewMode === "editor"
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-muted",
@@ -4264,7 +4826,7 @@ export function PageEditor({
               {(["en", "ar"] as const).map((loc) => (
                 <button
                   className={cn(
-                    "px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors",
+                    "px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors duration-150",
                     activeLocale === loc
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted",
@@ -4278,7 +4840,7 @@ export function PageEditor({
               ))}
             </div>
             <button
-              className="inline-flex h-8 items-center gap-1.5 rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground transition-colors hover:bg-secondary disabled:opacity-50"
+              className="inline-flex h-8 items-center gap-1.5 rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground transition-colors duration-150 hover:bg-secondary disabled:opacity-50"
               disabled={isPending}
               type="button"
               onClick={handleSave}
@@ -4290,7 +4852,7 @@ export function PageEditor({
         </div>
 
         {/* Sections */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 isolate">
+        <div className="isolate flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
           {viewMode === "preview" && (
             <div className="space-y-3">
               <div className="flex items-center justify-between rounded-md border border-border/50 bg-card/70 px-3 py-2 text-xs">
@@ -4405,6 +4967,12 @@ export function PageEditor({
                           {activeLocale === "en" ? "English" : "Arabic"} ·{" "}
                           {blocks.length} block{blocks.length !== 1 ? "s" : ""}
                         </span>
+                        <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                          Needs attention: {qualityCounts.needsAttention}
+                        </span>
+                        <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                          Missing locale: {qualityCounts.untranslated}
+                        </span>
                         <button
                           className="inline-flex h-9 items-center gap-2 rounded-md border border-border/70 bg-card px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
                           disabled={!hasClipboardBlock}
@@ -4458,15 +5026,22 @@ export function PageEditor({
                         strategy={verticalListSortingStrategy}
                       >
                         <div className="space-y-3">
-                          {blocks.map((block) => (
+                          {blocks.map((block, index) => (
                             <SortableBlock
                               copyLabel={
                                 activeLocale === "en" ? "Arabic" : "English"
+                              }
+                              health={
+                                blockDiagnostics[block.id]
+                                  ?.missingRequiredContent
+                                  ? "needs-attention"
+                                  : "healthy"
                               }
                               id={block.id}
                               isSelected={selectedBlockId === block.id}
                               key={block.id}
                               label={BLOCK_LABELS[block.type]}
+                              order={index + 1}
                               onSelect={() => setSelectedBlockId(block.id)}
                               isTranslating={translatingBlockId === block.id}
                               onTranslateToOtherLocale={() =>
@@ -4568,7 +5143,12 @@ export function PageEditor({
 
       {/* Right rail */}
       <div className="hidden xl:flex xl:gap-4">
-        <BlockNavSidebar blocks={blocks} />
+        <BlockNavSidebar
+          blocks={blocks}
+          diagnostics={blockDiagnostics}
+          selectedBlockId={selectedBlockId}
+          onSelectBlock={setSelectedBlockId}
+        />
       </div>
     </div>
   );
