@@ -171,6 +171,18 @@ export async function updateEventAction(
               ar: values.registrationOpenLabelAr.trim() || null,
             },
           },
+          agenda: values.agenda.map((item, i) => ({
+            order: i,
+            title: {
+              en: item.titleEn,
+              ar: item.titleAr,
+            },
+            speakerNames: {
+              en: item.speakerNamesEn,
+              ar: item.speakerNamesAr,
+            },
+            highlighted: item.highlighted,
+          })),
         },
         showMapEmbed: values.showMapEmbed,
         googleMapsLink: values.googleMapsLink || null,
@@ -231,7 +243,7 @@ export async function updateEventAction(
           eventId: id,
           day: item.day,
           time: item.time,
-          title: item.title,
+          title: item.titleEn || item.titleAr || item.title || "",
           type: item.type,
           trainerId: item.trainerId || null,
           order: i,
@@ -362,6 +374,18 @@ export async function createEventAction(
               ar: values.registrationOpenLabelAr.trim() || null,
             },
           },
+          agenda: values.agenda.map((item, i) => ({
+            order: i,
+            title: {
+              en: item.titleEn,
+              ar: item.titleAr,
+            },
+            speakerNames: {
+              en: item.speakerNamesEn,
+              ar: item.speakerNamesAr,
+            },
+            highlighted: item.highlighted,
+          })),
         },
         showMapEmbed: values.showMapEmbed,
         googleMapsLink: values.googleMapsLink || null,
@@ -395,7 +419,7 @@ export async function createEventAction(
                 create: values.agenda.map((item, i) => ({
                   day: item.day,
                   time: item.time,
-                  title: item.title,
+                  title: item.titleEn || item.titleAr || item.title || "",
                   type: item.type,
                   trainerId: item.trainerId || null,
                   order: i,

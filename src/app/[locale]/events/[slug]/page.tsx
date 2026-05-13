@@ -14,6 +14,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { FeaturedCountdown } from "@/components/events/featured-countdown";
+import { AgendaDayTabs } from "@/components/events/agenda-day-tabs";
 import { ProgramGallery } from "@/components/events/program-gallery";
 import { PhoneText } from "@/components/ui/phone-text";
 import {
@@ -655,35 +656,7 @@ function AgendaAndTrainers({
           <h2 className="mb-6 border-b border-outline-variant/20 pb-3 text-xl font-semibold">
             {locale === "ar" ? "جدول الأعمال" : "Agenda"}
           </h2>
-          <div className="flex flex-col gap-1">
-            {event.agenda.map((item, index) => (
-              <div
-                className={`flex gap-5 p-4 ${index % 2 ? "bg-surface-container-low" : "bg-surface-container-lowest"}`}
-                key={`${item.day}-${item.time}-${item.title}`}
-              >
-                <span
-                  className="w-20 shrink-0 pt-0.5 font-mono text-xs text-secondary"
-                  dir="ltr"
-                >
-                  {item.time}
-                </span>
-                <div className="min-w-0">
-                  <div className="break-words text-sm font-semibold">{item.title}</div>
-                  {item.trainerName ? (
-                    <div className="mt-1 break-words text-xs text-on-surface-variant">
-                      {item.trainerLink ? (
-                        <Link className="underline-offset-4 hover:text-primary hover:underline" href={item.trainerLink} rel="noreferrer" target="_blank">
-                          {item.trainerName}
-                        </Link>
-                      ) : (
-                        item.trainerName
-                      )}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            ))}
-          </div>
+          <AgendaDayTabs items={event.agenda} locale={locale} />
         </div>
       ) : null}
       {event.trainers.length ? (

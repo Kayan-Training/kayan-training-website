@@ -339,9 +339,33 @@ export async function getEventDetailBySlug(
         type: field.type,
       };
     }),
-    agenda: event.agendaSessions.map((item) => {
+    agenda: event.agendaSessions.map((item, index) => {
+      const agendaMeta =
+        event.bankTransferDetails && typeof event.bankTransferDetails === "object"
+          ? ((event.bankTransferDetails as {
+              agenda?: Array<{
+                order?: number;
+                title?: { ar?: string | null; en?: string | null };
+                speakerNames?:
+                  | string[]
+                  | {
+                      ar?: string[];
+                      en?: string[];
+                    };
+                highlighted?: boolean;
+              }>;
+            }).agenda?.find((entry) => (entry.order ?? -1) === index))
+          : undefined;
       const trainerTranslation = item.trainer?.translations.find((t) => t.locale === locale);
       const trainerFallback = item.trainer?.translations.find((t) => t.locale !== locale);
+      const manualSpeakerNames = (
+        Array.isArray(agendaMeta?.speakerNames)
+          ? agendaMeta?.speakerNames
+          : locale === "ar"
+            ? agendaMeta?.speakerNames?.ar
+            : agendaMeta?.speakerNames?.en
+      )?.filter((name): name is string => typeof name === "string" && name.trim().length > 0) ?? [];
+      const trainerName = trainerTranslation?.name ?? trainerFallback?.name ?? item.trainer?.name ?? "";
       return {
         trainerLink:
           Array.isArray(item.trainer?.links)
@@ -349,8 +373,12 @@ export async function getEventDetailBySlug(
             : "",
         day: item.day,
         time: item.time,
-        title: item.title,
-        trainerName: trainerTranslation?.name ?? trainerFallback?.name ?? item.trainer?.name ?? "",
+        title:
+          (locale === "ar"
+            ? (agendaMeta?.title?.ar ?? "")
+            : (agendaMeta?.title?.en ?? "")) || item.title,
+        trainerName: [trainerName, ...manualSpeakerNames].filter(Boolean).join(", "),
+        highlighted: Boolean(agendaMeta?.highlighted),
         type: item.type,
       };
     }),

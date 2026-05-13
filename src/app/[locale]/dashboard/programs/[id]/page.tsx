@@ -99,6 +99,17 @@ export default async function EditProgramPage({
             location?: { ar?: string | null; en?: string | null };
             registrationOpenLabel?: { ar?: string | null; en?: string | null };
           };
+          agenda?: Array<{
+            order?: number;
+            title?: { ar?: string | null; en?: string | null };
+            speakerNames?:
+              | string[]
+              | {
+                  ar?: string[];
+                  en?: string[];
+                };
+            highlighted?: boolean;
+          }>;
         })
       : {};
 
@@ -169,13 +180,33 @@ export default async function EditProgramPage({
     seoDescriptionAr: trAr?.seoDescription ?? "",
     trainerIds: event.trainers.map((et) => et.trainerId),
     categories: event.categories.map((ec) => ec.categoryId),
-    agenda: event.agendaSessions.map((s) => ({
+    agenda: event.agendaSessions.map((s, i) => {
+      const agendaMeta = Array.isArray(galleryDetails.agenda)
+        ? galleryDetails.agenda.find((entry) => (entry.order ?? -1) === i)
+        : undefined;
+      return ({
       day: s.day,
       time: s.time,
       title: s.title,
+      titleEn: agendaMeta?.title?.en ?? s.title,
+      titleAr: agendaMeta?.title?.ar ?? "",
       type: s.type as EventFormValues["agenda"][number]["type"],
       trainerId: s.trainerId ?? undefined,
-    })),
+      speakerNamesEn:
+        Array.isArray(agendaMeta?.speakerNames)
+          ? agendaMeta?.speakerNames ?? []
+          : Array.isArray(agendaMeta?.speakerNames?.en)
+            ? agendaMeta?.speakerNames?.en ?? []
+            : [],
+      speakerNamesAr:
+        Array.isArray(agendaMeta?.speakerNames)
+          ? []
+          : Array.isArray(agendaMeta?.speakerNames?.ar)
+            ? agendaMeta?.speakerNames?.ar ?? []
+            : [],
+      highlighted: Boolean(agendaMeta?.highlighted),
+    });
+    }),
     registrationFields: event.formFields.map((f) => ({
       id: f.id,
       type: f.type as EventFormValues["registrationFields"][number]["type"],
