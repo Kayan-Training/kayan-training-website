@@ -2,7 +2,7 @@
 
 import { Delete02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Eye, FileText, Play } from "lucide-react";
+import { CheckSquare2, Eye, FileText, Play, Square } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
@@ -76,6 +76,7 @@ const ACCEPTED_MEDIA_MIME_TYPES = new Set([
   "application/pdf",
 ]);
 const MEDIA_INPUT_ACCEPT = Array.from(ACCEPTED_MEDIA_MIME_TYPES).join(",");
+const videoPosterCache = new Map<string, string>();
 
 function VideoFrameThumbnail({
   alt,
@@ -86,11 +87,33 @@ function VideoFrameThumbnail({
   className?: string;
   src: string;
 }) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const [poster, setPoster] = useState<string | null>(null);
+  const [shouldCapture, setShouldCapture] = useState(false);
 
   useEffect(() => {
+    const cached = videoPosterCache.get(src);
+    if (cached) {
+      setPoster(cached);
+      return;
+    }
+    const target = rootRef.current;
+    if (!target) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setShouldCapture(true);
+        observer.disconnect();
+      },
+      { rootMargin: "180px" },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [src]);
+
+  useEffect(() => {
+    if (!shouldCapture) return;
     let cancelled = false;
-    let objectUrlToRevoke: string | null = null;
 
     async function captureFrame() {
       try {
@@ -124,8 +147,11 @@ function VideoFrameThumbnail({
         );
         if (!blob || cancelled) return;
 
-        objectUrlToRevoke = URL.createObjectURL(blob);
-        if (!cancelled) setPoster(objectUrlToRevoke);
+        const objectUrlToCache = URL.createObjectURL(blob);
+        // Cache poster URLs for this session so repeated renders avoid recapture.
+        // Intentionally not revoked per-item; cache lifecycle is page-lifetime.
+        videoPosterCache.set(src, objectUrlToCache);
+        if (!cancelled) setPoster(objectUrlToCache);
       } catch {
         // Keep fallback UI if capture fails.
       }
@@ -134,15 +160,15 @@ function VideoFrameThumbnail({
     void captureFrame();
     return () => {
       cancelled = true;
-      if (objectUrlToRevoke) {
-        URL.revokeObjectURL(objectUrlToRevoke);
-      }
     };
-  }, [src]);
+  }, [shouldCapture, src]);
 
   if (!poster) {
     return (
-      <div className={cn("flex h-full items-center justify-center bg-muted text-muted-foreground", className)}>
+      <div
+        ref={rootRef}
+        className={cn("flex h-full items-center justify-center bg-muted text-muted-foreground", className)}
+      >
         <Play className="size-6" />
       </div>
     );
@@ -370,8 +396,13 @@ export function MediaGrid({
   const [enteringIds, setEnteringIds] = useState<string[]>([]);
   const prevMediaIdsRef = useRef<string[]>(media.map((item) => item.id));
   const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
-  const [typeFilter, setTypeFilter] = useState<"all" | "image" | "video" | "other">("all");
+  const [typeFilter, setTypeFilter] = useState<
+    "all" | "image" | "video" | "other" | "missing_metadata"
+  >("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "nameAsc">("newest");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [visibleCount, setVisibleCount] = useState(48);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const nextIds = media.map((item) => item.id);
@@ -400,7 +431,12 @@ export function MediaGrid({
         : m.mimeType.startsWith("video/")
           ? "video"
           : "other";
-      const matchesType = typeFilter === "all" || typeFilter === type;
+      const trEn = m.translations.find((t) => t.locale === "en");
+      const hasMetadata = !!(trEn?.title || trEn?.altText);
+      const matchesType =
+        typeFilter === "all" ||
+        typeFilter === type ||
+        (typeFilter === "missing_metadata" && !hasMetadata);
       return matchesQuery && matchesType;
     });
     const sorted = [...list];
@@ -409,6 +445,62 @@ export function MediaGrid({
     else sorted.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     return sorted;
   }, [items, query, typeFilter, sortBy]);
+  const renderedItems = useMemo(
+    () => filtered.slice(0, Math.min(filtered.length, visibleCount)),
+    [filtered, visibleCount],
+  );
+
+  const filterCounts = useMemo(() => {
+    let image = 0;
+    let video = 0;
+    let other = 0;
+    let missingMetadata = 0;
+    for (const item of items) {
+      if (item.mimeType.startsWith("image/")) image++;
+      else if (item.mimeType.startsWith("video/")) video++;
+      else other++;
+      const trEn = item.translations.find((t) => t.locale === "en");
+      if (!(trEn?.title || trEn?.altText)) missingMetadata++;
+    }
+    return {
+      all: items.length,
+      image,
+      missing_metadata: missingMetadata,
+      other,
+      video,
+    };
+  }, [items]);
+  const metadataKpis = useMemo(() => {
+    let complete = 0;
+    for (const item of items) {
+      const trEn = item.translations.find((t) => t.locale === "en");
+      if (trEn?.title && trEn?.altText) complete++;
+    }
+    const missing = Math.max(0, items.length - complete);
+    const percent = items.length === 0 ? 100 : Math.round((complete / items.length) * 100);
+    return { complete, missing, percent };
+  }, [items]);
+
+  useEffect(() => {
+    setVisibleCount(48);
+  }, [query, sortBy, typeFilter, items.length]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setVisibleCount((prev) => {
+          if (prev >= filtered.length) return prev;
+          return Math.min(filtered.length, prev + 36);
+        });
+      },
+      { rootMargin: "220px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [filtered.length]);
 
   function handleDelete(id: string) {
     startTransition(async () => {
@@ -419,6 +511,43 @@ export function MediaGrid({
       }
       setItems((prev) => prev.filter((item) => item.id !== id));
       toast.success("Media deleted");
+      router.refresh();
+    });
+  }
+
+  function toggleItemSelection(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  function selectVisible() {
+    setSelectedIds((prev) => new Set([...prev, ...filtered.map((item) => item.id)]));
+  }
+
+  function bulkDeleteSelected() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    startTransition(async () => {
+      let failed = 0;
+      for (const id of ids) {
+        const result = await deleteMedia(id, locale);
+        if (result.error) failed++;
+      }
+      setItems((prev) => prev.filter((item) => !selectedIds.has(item.id)));
+      setSelectedIds(new Set());
+      if (failed > 0) {
+        toast.error(`Deleted ${ids.length - failed} items. ${failed} failed.`);
+      } else {
+        toast.success(`Deleted ${ids.length} item${ids.length === 1 ? "" : "s"}.`);
+      }
       router.refresh();
     });
   }
@@ -497,6 +626,9 @@ export function MediaGrid({
     <>
       <div className="grid gap-4">
         <div className="rounded-xl border border-border/70 bg-card p-4">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Upload Queue
+          </p>
           <div className="mb-3">
             <label className="mb-1.5 block text-xs font-medium text-muted-foreground" htmlFor="media-upload-input">
               Upload file
@@ -549,6 +681,9 @@ export function MediaGrid({
               </div>
             ) : null}
           </div>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Asset Browser
+          </p>
           <div className="flex flex-wrap items-center gap-3">
             <Input
               className="h-10 min-w-[260px] flex-[1.6_1_320px]"
@@ -557,7 +692,15 @@ export function MediaGrid({
               value={query}
             />
             <div className="w-[150px] shrink-0">
-              <Select value={typeFilter} onValueChange={(v) => setTypeFilter((v as "all" | "image" | "video" | "other") ?? "all")}>
+              <Select
+                value={typeFilter}
+                onValueChange={(v) =>
+                  setTypeFilter(
+                    (v as "all" | "image" | "video" | "other" | "missing_metadata") ??
+                      "all",
+                  )
+                }
+              >
                 <SelectTrigger className="!h-10 w-full text-xs">
                   <span>{typeFilter === "all" ? "All types" : typeFilter}</span>
                 </SelectTrigger>
@@ -566,6 +709,7 @@ export function MediaGrid({
                   <SelectItem value="image">image</SelectItem>
                   <SelectItem value="video">video</SelectItem>
                   <SelectItem value="other">other</SelectItem>
+                  <SelectItem value="missing_metadata">missing metadata</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -594,24 +738,113 @@ export function MediaGrid({
               Reset
             </Button>
           </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {(
+              [
+                ["all", "All", filterCounts.all],
+                ["image", "Images", filterCounts.image],
+                ["video", "Videos", filterCounts.video],
+                ["other", "Other", filterCounts.other],
+                ["missing_metadata", "Missing metadata", filterCounts.missing_metadata],
+              ] as const
+            ).map(([id, label, count]) => (
+              <button
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-[11px] font-semibold transition-colors",
+                  typeFilter === id
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "border-border/70 text-muted-foreground hover:bg-muted",
+                )}
+                key={id}
+                type="button"
+                onClick={() => setTypeFilter(id)}
+              >
+                {label} ({count})
+              </button>
+            ))}
+          </div>
           <p className="mt-2 text-xs text-muted-foreground">
             Showing{" "}
             <span className="font-medium text-foreground">
-              {filtered.length}
+              {renderedItems.length}
             </span>{" "}
             of{" "}
-            <span className="font-medium text-foreground">{items.length}</span>{" "}
+            <span className="font-medium text-foreground">{filtered.length}</span>{" "}
             files
           </p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            <div className="rounded-md border border-border/70 bg-background px-2.5 py-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Metadata complete
+              </p>
+              <p className="text-sm font-semibold text-foreground tabular-nums">
+                {metadataKpis.complete}
+              </p>
+            </div>
+            <div className="rounded-md border border-border/70 bg-background px-2.5 py-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Missing metadata
+              </p>
+              <p className="text-sm font-semibold text-amber-700 tabular-nums">
+                {metadataKpis.missing}
+              </p>
+            </div>
+            <div className="rounded-md border border-border/70 bg-background px-2.5 py-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Quality score
+              </p>
+              <p className="text-sm font-semibold text-foreground tabular-nums">
+                {metadataKpis.percent}%
+              </p>
+            </div>
+          </div>
         </div>
+        {selectedIds.size > 0 && (
+          <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
+            <p className="text-xs font-semibold text-primary">
+              {selectedIds.size} selected
+            </p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Button className="h-7 text-xs" size="sm" variant="outline" onClick={selectVisible}>
+                Select visible
+              </Button>
+              <Button className="h-7 text-xs" size="sm" variant="outline" onClick={clearSelection}>
+                Clear
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger disabled={isPending}>
+                  <Button className="h-7 text-xs" size="sm" variant="destructive">
+                    Delete selected
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete selected files?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {selectedIds.size} selected file{selectedIds.size === 1 ? "" : "s"} will be permanently deleted.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={bulkDeleteSelected} variant={"destructive"}>
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
+        )}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
-          {filtered.map((item) => {
+          {renderedItems.map((item) => {
             const trEn = item.translations.find((t) => t.locale === "en");
             const hasMetadata = !!(trEn?.title || trEn?.altText);
+            const selected = selectedIds.has(item.id);
             return (
               <article
                 className={cn(
-                  "overflow-hidden rounded-xl border border-border/70 bg-card",
+                  "overflow-hidden rounded-xl border border-border/70 bg-card transition-colors",
+                  selected && "border-primary/40 bg-primary/5",
                   enteringIds.includes(item.id) && "animate-in fade-in-0 zoom-in-95 duration-500",
                 )}
                 key={item.id}
@@ -640,6 +873,17 @@ export function MediaGrid({
                       No metadata
                     </div>
                   )}
+                  <button
+                    aria-label={selected ? "Unselect asset" : "Select asset"}
+                    className={cn(
+                      "absolute left-1 top-1 flex size-6 items-center justify-center rounded-md border bg-black/55 text-white transition-colors",
+                      selected ? "border-primary bg-primary" : "border-white/40 hover:bg-black/70",
+                    )}
+                    type="button"
+                    onClick={() => toggleItemSelection(item.id)}
+                  >
+                    {selected ? <CheckSquare2 className="size-3.5" /> : <Square className="size-3.5" />}
+                  </button>
                 </div>
                 <div className="p-2">
                   <p
@@ -703,6 +947,22 @@ export function MediaGrid({
             );
           })}
         </div>
+        <div ref={sentinelRef} className="h-8" />
+        {renderedItems.length < filtered.length && (
+          <div className="flex justify-center pt-1">
+            <Button
+              className="h-8 text-xs"
+              size="sm"
+              type="button"
+              variant="outline"
+              onClick={() =>
+                setVisibleCount((prev) => Math.min(filtered.length, prev + 48))
+              }
+            >
+              Load more assets
+            </Button>
+          </div>
+        )}
       </div>
 
       <Dialog
