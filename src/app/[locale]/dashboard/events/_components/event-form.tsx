@@ -37,6 +37,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Delete02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   AlignLeft,
   ArrowLeft,
@@ -70,7 +71,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   memo,
   useCallback,
@@ -134,11 +134,11 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { UploadProgress } from "@/components/ui/upload-progress";
 import { uploadMediaFile } from "@/lib/client/media-upload";
+import { buildEventFormFixQueue } from "@/lib/events/event-form-fix-queue";
 import {
   computeHealthSummary,
   computeSectionHealth,
 } from "@/lib/events/event-form-health";
-import { buildEventFormFixQueue } from "@/lib/events/event-form-fix-queue";
 import { buildOverdrivePlan } from "@/lib/events/event-form-overdrive";
 import {
   buildEventFormRailGroups,
@@ -355,7 +355,9 @@ function handleSectionRailKeyDown(
   sections: Array<{ id: SectionId }>,
   setActiveSection: (id: SectionId) => void,
 ) {
-  const currentIndex = sections.findIndex((section) => section.id === currentId);
+  const currentIndex = sections.findIndex(
+    (section) => section.id === currentId,
+  );
   if (currentIndex < 0) return;
   const focusSection = (nextIndex: number) => {
     const next = sections[nextIndex];
@@ -487,9 +489,20 @@ const SectionRailNav = memo(function SectionRailNav({
   useHeatMode: boolean;
 }) {
   const railSectionIds = sections.map((section) => ({ id: section.id }));
-  const filterMatches = (
-    health: { completed: boolean; errors: number; status: "error" | "done" | "todo" },
-  ) => {
+  const filterCounts = useMemo(() => {
+    const all = sections.length;
+    const blocking = sections.filter(
+      (s) => sectionHealth[s.id].errors > 0,
+    ).length;
+    const done = sections.filter((s) => sectionHealth[s.id].completed).length;
+    const incomplete = all - done;
+    return { all, blocking, done, incomplete };
+  }, [sections, sectionHealth]);
+  const filterMatches = (health: {
+    completed: boolean;
+    errors: number;
+    status: "error" | "done" | "todo";
+  }) => {
     if (railFilter === "all") return true;
     if (railFilter === "blocking") return health.errors > 0;
     if (railFilter === "done") return health.completed;
@@ -511,7 +524,9 @@ const SectionRailNav = memo(function SectionRailNav({
           <span
             className={cn(
               "size-1.5 rounded-full",
-              status === "published" ? "animate-pulse bg-teal-500" : "bg-zinc-300",
+              status === "published"
+                ? "animate-pulse bg-teal-500"
+                : "bg-zinc-300",
             )}
           />
           <span className="text-[11px] font-semibold text-zinc-400">
@@ -533,7 +548,18 @@ const SectionRailNav = memo(function SectionRailNav({
               type="button"
               onClick={() => setRailFilter(mode)}
             >
-              {mode}
+              {mode}{" "}
+              <span className="tabular-nums">
+                (
+                {mode === "all"
+                  ? filterCounts.all
+                  : mode === "blocking"
+                    ? filterCounts.blocking
+                    : mode === "done"
+                      ? filterCounts.done
+                      : filterCounts.incomplete}
+                )
+              </span>
             </button>
           ))}
           <button
@@ -551,16 +577,20 @@ const SectionRailNav = memo(function SectionRailNav({
         </div>
         <div className="flex min-w-max gap-3 px-2 pb-1 lg:block lg:min-w-0 lg:space-y-3 lg:gap-0 lg:px-0 lg:pb-0">
           {sectionGroups.map((group) => {
-            let groupSections = getGroupSections(group, sections).filter((section) =>
-              filterMatches(sectionHealth[section.id]),
+            let groupSections = getGroupSections(group, sections).filter(
+              (section) => filterMatches(sectionHealth[section.id]),
             );
             if (useHeatMode) {
               groupSections = [...groupSections].sort(
-                (a, b) => sectionHealth[b.id].errors - sectionHealth[a.id].errors,
+                (a, b) =>
+                  sectionHealth[b.id].errors - sectionHealth[a.id].errors,
               );
             }
             if (groupSections.length === 0) return null;
-            const groupProgress = getGroupProgress(groupSections, sectionHealth);
+            const groupProgress = getGroupProgress(
+              groupSections,
+              sectionHealth,
+            );
             return (
               <div className="min-w-[190px] lg:min-w-0" key={group.id}>
                 <div className="mb-1 flex items-center justify-between px-2 lg:px-4">
@@ -671,6 +701,7 @@ const EventSettingsRailShell = memo(function EventSettingsRailShell({
 type EventSettingsRailProps = {
   activeSection: SectionId;
   completedOverdriveStepIds: string[];
+  deferredFixItemPaths: string[];
   enableOverdriveHints: boolean;
   fixQueue: Array<{
     path: string;
@@ -683,23 +714,27 @@ type EventSettingsRailProps = {
   healthSummary: ReturnType<typeof computeHealthSummary>;
   idPrefix: string;
   inputCls: string;
-  onFixItem: (item: {
-    path: string;
-    sectionId: SectionId;
-  }) => void;
+  onFixItem: (item: { path: string; sectionId: SectionId }) => void;
   onDismissSmartHint: () => void;
+  onToggleDeferredFixItem: (path: string) => void;
   onToggleOverdriveStep: (id: string) => void;
   onSectionChange: (id: SectionId) => void;
   overdrivePlan: ReturnType<typeof buildOverdrivePlan>;
   sections: Array<{ icon: React.ElementType; id: SectionId; label: string }>;
   sidebarContext: ReturnType<typeof buildEventFormSidebarContext>;
   smartHintDismissed: boolean;
-  smartHint: { cta: string; description: string; target: SectionId; title: string };
+  smartHint: {
+    cta: string;
+    description: string;
+    target: SectionId;
+    title: string;
+  };
 };
 
 const EventSettingsRail = memo(function EventSettingsRail({
   activeSection,
   completedOverdriveStepIds,
+  deferredFixItemPaths,
   enableOverdriveHints,
   fixQueue,
   form,
@@ -708,6 +743,7 @@ const EventSettingsRail = memo(function EventSettingsRail({
   inputCls,
   onFixItem,
   onDismissSmartHint,
+  onToggleDeferredFixItem,
   onToggleOverdriveStep,
   onSectionChange,
   overdrivePlan,
@@ -716,9 +752,103 @@ const EventSettingsRail = memo(function EventSettingsRail({
   smartHintDismissed,
   smartHint,
 }: EventSettingsRailProps) {
+  const shouldReduceMotion = useReducedMotion();
   const [expandedFixSections, setExpandedFixSections] = useState<SectionId[]>([
     activeSection,
   ]);
+  const [overdriveMode, setOverdriveMode] = useState<"review" | "execute">(
+    "review",
+  );
+  const [activeScenario, setActiveScenario] = useState<
+    "new" | "publish" | "live" | "archive"
+  >("new");
+  const previousConfidenceRef = useRef(overdrivePlan.confidence);
+  const confidenceDelta =
+    overdrivePlan.confidence - previousConfidenceRef.current;
+  const confidenceBreakdown = useMemo(() => {
+    const completeness = healthSummary.completionPercent;
+    const consistency = Math.max(
+      0,
+      Math.min(100, 100 - healthSummary.errors * 12 - deferredFixItemPaths.length * 3),
+    );
+    const opsReadiness =
+      sections.find((s) => s.id === "registrations") &&
+      healthSummary.blockingItems.some((item) => item.id === "registrations")
+        ? 58
+        : 86;
+    const publishReadiness = healthSummary.publishReady
+      ? 100
+      : Math.max(35, 82 - healthSummary.errors * 9);
+    return {
+      completeness,
+      consistency,
+      opsReadiness,
+      publishReadiness,
+    };
+  }, [
+    deferredFixItemPaths.length,
+    healthSummary.blockingItems,
+    healthSummary.completionPercent,
+    healthSummary.errors,
+    healthSummary.publishReady,
+    sections,
+  ]);
+  const workflowPhase =
+    activeSection === "identity" ||
+    activeSection === "schedule" ||
+    activeSection === "location" ||
+    activeSection === "pricing"
+      ? "Setup"
+      : activeSection === "content" ||
+          activeSection === "gallery" ||
+          activeSection === "agenda" ||
+          activeSection === "trainers" ||
+          activeSection === "categories"
+        ? "Content"
+        : "Operations";
+  const scenarioOrderedSteps = useMemo(() => {
+    const base = [...overdrivePlan.steps];
+    if (activeScenario === "publish") {
+      return base.sort((a, b) =>
+        a.id === "prepare-publishing-state"
+          ? -1
+          : b.id === "prepare-publishing-state"
+            ? 1
+            : a.priority - b.priority,
+      );
+    }
+    if (activeScenario === "live") {
+      return base.sort((a, b) =>
+        a.id === "review-live-operations"
+          ? -1
+          : b.id === "review-live-operations"
+            ? 1
+            : a.priority - b.priority,
+      );
+    }
+    if (activeScenario === "archive") {
+      return base.sort((a, b) =>
+        a.id === "run-learner-flow-check"
+          ? 1
+          : b.id === "run-learner-flow-check"
+            ? -1
+            : a.priority - b.priority,
+      );
+    }
+    return base.sort((a, b) => a.priority - b.priority);
+  }, [activeScenario, overdrivePlan.steps]);
+  const primaryAction = fixQueue[0]
+    ? {
+        label: `Fix now: ${fixQueue[0].title}`,
+        onClick: () => onFixItem(fixQueue[0]),
+      }
+    : {
+        label: `Go to: ${smartHint.cta}`,
+        onClick: () => onSectionChange(smartHint.target),
+      };
+  useEffect(() => {
+    previousConfidenceRef.current = overdrivePlan.confidence;
+  }, [overdrivePlan.confidence]);
   const groupedFixQueue = useMemo(() => {
     const map = new Map<SectionId, typeof fixQueue>();
     for (const item of fixQueue) {
@@ -730,9 +860,24 @@ const EventSettingsRail = memo(function EventSettingsRail({
   }, [fixQueue]);
   return (
     <EventSettingsRailShell>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-300">
+      <p className="text-[10px] font-bold uppercase tracking-widest">
         Operational Controls
       </p>
+      <div className="rounded-md border border-zinc-200 bg-white px-2.5 py-2">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+          Workflow Phase
+        </p>
+        <p className="text-[12px] font-semibold text-zinc-800">
+          {workflowPhase}
+        </p>
+      </div>
+      <Button
+        className="h-8 w-full text-[11.5px] font-semibold text-white"
+        type="button"
+        onClick={primaryAction.onClick}
+      >
+        {primaryAction.label}
+      </Button>
       <p className="text-[10.5px] font-semibold uppercase tracking-wider text-zinc-400">
         Context: {sections.find((s) => s.id === activeSection)?.label}
       </p>
@@ -768,7 +913,10 @@ const EventSettingsRail = memo(function EventSettingsRail({
                   }
                 >
                   <span className="text-[11px] font-semibold text-zinc-700">
-                    {sections.find((section) => section.id === sectionId)?.label}
+                    {
+                      sections.find((section) => section.id === sectionId)
+                        ?.label
+                    }
                   </span>
                   <span className="text-[10px] tabular-nums text-zinc-500">
                     {items.length}
@@ -776,31 +924,56 @@ const EventSettingsRail = memo(function EventSettingsRail({
                 </button>
                 {expandedFixSections.includes(sectionId) && (
                   <div className="space-y-1 border-t border-zinc-100 p-1.5">
-                    {items.map((item) => (
-                      <button
-                        className="flex w-full items-start justify-between gap-2 rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-left hover:border-zinc-300 hover:bg-zinc-50"
-                        key={`${item.path}-${item.severity}`}
-                        type="button"
-                        onClick={() => onFixItem(item)}
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate text-[11px] font-semibold text-zinc-800">
-                            {item.title}
-                          </p>
-                          <p className="truncate text-[10.5px] text-zinc-500">
-                            {item.reason}
-                          </p>
-                        </div>
-                        <span
+                    {items.map((item) => {
+                      const deferred = deferredFixItemPaths.includes(item.path);
+                      return (
+                        <button
                           className={cn(
-                            "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
-                            severityPillClasses[item.severity],
+                            "flex w-full items-start justify-between gap-2 rounded-md border px-2 py-1.5 text-left",
+                            deferred
+                              ? "border-zinc-200 bg-zinc-50/70 text-zinc-500"
+                              : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50",
                           )}
+                          key={`${item.path}-${item.severity}`}
+                          type="button"
+                          onClick={() => onFixItem(item)}
                         >
-                          {item.severity}
-                        </span>
-                      </button>
-                    ))}
+                          <div className="min-w-0">
+                            <p className="truncate text-[11px] font-semibold text-zinc-800">
+                              {item.title}
+                            </p>
+                            <p className="truncate text-[10.5px] text-zinc-500">
+                              {item.reason}
+                            </p>
+                            {deferred && (
+                              <p className="text-[10px] font-semibold text-zinc-400">
+                                Deferred
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              className="rounded border border-zinc-200 px-1.5 py-0.5 text-[9.5px] font-semibold text-zinc-500 hover:bg-zinc-100"
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                onToggleDeferredFixItem(item.path);
+                              }}
+                            >
+                              {deferred ? "Undefer" : "Defer"}
+                            </button>
+                            <span
+                              className={cn(
+                                "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                                severityPillClasses[item.severity],
+                              )}
+                            >
+                              {item.severity}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -812,7 +985,9 @@ const EventSettingsRail = memo(function EventSettingsRail({
         <FieldLegend variant="label">Form Health</FieldLegend>
         <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-[12px] font-semibold text-zinc-800">Completion</p>
+            <p className="text-[12px] font-semibold text-zinc-800">
+              Completion
+            </p>
             <p className="text-[11px] font-semibold tabular-nums text-zinc-500">
               {healthSummary.completed}/{healthSummary.total}
             </p>
@@ -839,7 +1014,9 @@ const EventSettingsRail = memo(function EventSettingsRail({
             <span
               className={cn(
                 "font-semibold",
-                healthSummary.publishReady ? "text-emerald-600" : "text-amber-600",
+                healthSummary.publishReady
+                  ? "text-emerald-600"
+                  : "text-amber-600",
               )}
             >
               {healthSummary.publishReady ? "Ready" : "Needs attention"}
@@ -882,7 +1059,8 @@ const EventSettingsRail = memo(function EventSettingsRail({
               Confidence reason:{" "}
               {healthSummary.errors > 0
                 ? "blocking errors remain"
-                : "no blockers, now optimizing quality"}.
+                : "no blockers, now optimizing quality"}
+              .
             </p>
             <Button
               className="mt-2 h-8 bg-indigo-600 px-3 text-[11.5px] font-semibold hover:bg-indigo-700"
@@ -900,18 +1078,94 @@ const EventSettingsRail = memo(function EventSettingsRail({
               Skip for now
             </Button>
             <div className="mt-2 rounded-md border border-indigo-100 bg-white/70 px-2.5 py-2">
+              <div className="mb-1 flex items-center gap-1">
+                <button
+                  className={cn(
+                    "rounded-full border px-2 py-0.5 text-[9.5px] font-semibold",
+                    overdriveMode === "review"
+                      ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+                      : "border-zinc-200 text-zinc-500",
+                  )}
+                  type="button"
+                  onClick={() => setOverdriveMode("review")}
+                >
+                  Review mode
+                </button>
+                <button
+                  className={cn(
+                    "rounded-full border px-2 py-0.5 text-[9.5px] font-semibold",
+                    overdriveMode === "execute"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                      : "border-zinc-200 text-zinc-500",
+                  )}
+                  type="button"
+                  onClick={() => setOverdriveMode("execute")}
+                >
+                  Execute mode
+                </button>
+              </div>
               <p className="text-[11px] font-semibold text-indigo-800">
-                Overdrive Plan · Confidence {overdrivePlan.confidence}%
+                Overdrive Plan · Confidence{" "}
+                <motion.span
+                  animate={
+                    shouldReduceMotion ? undefined : { opacity: [0.75, 1], y: [-1, 0] }
+                  }
+                  className="inline-block tabular-nums"
+                  key={`confidence-${overdrivePlan.confidence}`}
+                  transition={{ duration: 0.28 }}
+                >
+                  {overdrivePlan.confidence}%
+                </motion.span>
               </p>
+              <motion.p
+                animate={shouldReduceMotion ? undefined : { opacity: [0.7, 1] }}
+                className="text-[10px] text-indigo-600"
+                key={`delta-${confidenceDelta}`}
+                transition={{ duration: 0.25 }}
+              >
+                Delta {confidenceDelta >= 0 ? "+" : ""}
+                {confidenceDelta}% from last state
+              </motion.p>
               <p className="mt-0.5 text-[10.5px] text-indigo-700">
                 {overdrivePlan.summary}
               </p>
+              <div className="mt-1.5 space-y-1.5">
+                {(
+                  [
+                    ["Completeness", confidenceBreakdown.completeness],
+                    ["Consistency", confidenceBreakdown.consistency],
+                    ["Ops readiness", confidenceBreakdown.opsReadiness],
+                    ["Publish readiness", confidenceBreakdown.publishReadiness],
+                  ] as const
+                ).map(([label, value]) => (
+                  <div key={label}>
+                    <div className="mb-0.5 flex items-center justify-between text-[10px]">
+                      <span className="text-indigo-700">{label}</span>
+                      <span className="tabular-nums text-indigo-600">{Math.round(value)}%</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-indigo-100">
+                      <motion.div
+                        animate={{ width: `${Math.max(0, Math.min(100, value))}%` }}
+                        className="h-full rounded-full bg-indigo-500"
+                        transition={
+                          shouldReduceMotion
+                            ? { duration: 0 }
+                            : { duration: 0.35, ease: "easeOut" }
+                        }
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
               <p className="mt-0.5 text-[10px] font-medium text-indigo-600">
                 Progress {completedOverdriveStepIds.length}/
                 {overdrivePlan.steps.length}
               </p>
               <div className="mt-1.5 space-y-1">
-                {overdrivePlan.steps.slice(0, 3).map((step) => (
+                {(overdriveMode === "execute"
+                  ? scenarioOrderedSteps
+                  : scenarioOrderedSteps.slice(0, 3)
+                ).map((step) => (
                   <div
                     className="rounded border border-indigo-100 bg-white px-2 py-1.5"
                     key={step.id}
@@ -945,6 +1199,35 @@ const EventSettingsRail = memo(function EventSettingsRail({
                     </button>
                   </div>
                 ))}
+              </div>
+              <div className="mt-2 border-t border-indigo-100 pt-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-500">
+                  Scenario runbook
+                </p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {(
+                    [
+                      ["new", "New event"],
+                      ["publish", "Last-minute publish"],
+                      ["live", "Live operations"],
+                      ["archive", "Post-event archive"],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <button
+                      className={cn(
+                        "rounded-full border px-2 py-0.5 text-[9.5px] font-semibold",
+                        activeScenario === id
+                          ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+                          : "border-zinc-200 text-zinc-500",
+                      )}
+                      key={id}
+                      type="button"
+                      onClick={() => setActiveScenario(id)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -1108,7 +1391,9 @@ const EventSettingsRail = memo(function EventSettingsRail({
             {form.watch("registrationsOpen") ? (
               <>
                 <Field className="grid gap-2">
-                  <FieldLabel htmlFor={`${idPrefix}-registration-open-label-en`}>
+                  <FieldLabel
+                    htmlFor={`${idPrefix}-registration-open-label-en`}
+                  >
                     Open Label (English)
                   </FieldLabel>
                   <FieldContent>
@@ -1124,7 +1409,9 @@ const EventSettingsRail = memo(function EventSettingsRail({
                   />
                 </Field>
                 <Field className="grid gap-2">
-                  <FieldLabel htmlFor={`${idPrefix}-registration-open-label-ar`}>
+                  <FieldLabel
+                    htmlFor={`${idPrefix}-registration-open-label-ar`}
+                  >
                     Open Label (Arabic)
                   </FieldLabel>
                   <FieldContent>
@@ -1204,19 +1491,6 @@ const severityPillClasses: Record<"P0" | "P1" | "P2", string> = {
   P0: "bg-red-50 text-red-600",
   P1: "bg-amber-50 text-amber-600",
   P2: "bg-zinc-100 text-zinc-600",
-};
-const sectionGoals: Record<SectionId, string[]> = {
-  agenda: ["At least one session", "Session time provided", "Titles are localized"],
-  categories: ["Relevant categories selected", "Tagging matches learner discovery"],
-  content: ["Short summary complete", "Main content complete", "Bilingual quality checked"],
-  gallery: ["Gallery visibility selected", "Media curated", "Post-event strategy decided"],
-  identity: ["Title and slug complete", "Cover image selected", "Program type set"],
-  location: ["Delivery channel complete", "Venue/link verified", "Public map behavior decided"],
-  pricing: ["Registration path chosen", "Price/payment validated", "Learner payment visibility checked"],
-  registrationForm: ["Required learner fields added", "Labels localized", "Field order validated"],
-  registrations: ["Registration state labels ready", "Open/close behavior verified", "Ops monitoring ready"],
-  schedule: ["Dates are valid", "Deadline aligns with start", "Language/type are set"],
-  trainers: ["Lead trainers selected", "Order is intentional", "No duplicates"],
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1712,6 +1986,9 @@ export function EventForm({
   const [completedOverdriveStepIds, setCompletedOverdriveStepIds] = useState<
     string[]
   >([]);
+  const [deferredFixItemPaths, setDeferredFixItemPaths] = useState<string[]>(
+    [],
+  );
   const [railFilter, setRailFilter] = useState<
     "all" | "blocking" | "done" | "incomplete"
   >("all");
@@ -2077,7 +2354,8 @@ export function EventForm({
     }
     return {
       cta: "Review pricing",
-      description: "Sanity-check registration flow, pricing, and payment setup.",
+      description:
+        "Sanity-check registration flow, pricing, and payment setup.",
       target: "pricing" as SectionId,
       title: "Final quality pass",
     };
@@ -2111,11 +2389,18 @@ export function EventForm({
       prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id],
     );
   }, []);
+  const handleToggleDeferredFixItem = useCallback((path: string) => {
+    setDeferredFixItemPaths((prev) =>
+      prev.includes(path) ? prev.filter((v) => v !== path) : [...prev, path],
+    );
+  }, []);
 
   useEffect(() => {
     const previous = previousSectionRef.current;
     if (previous !== activeSection) {
-      const prevIndex = sections.findIndex((section) => section.id === previous);
+      const prevIndex = sections.findIndex(
+        (section) => section.id === previous,
+      );
       const nextIndex = sections.findIndex(
         (section) => section.id === activeSection,
       );
@@ -2688,7 +2973,11 @@ export function EventForm({
                   exit={
                     shouldReduceMotion
                       ? { opacity: 1, x: 0, y: 0 }
-                      : { opacity: 0, x: sectionDirection > 0 ? -14 : 14, y: -2 }
+                      : {
+                          opacity: 0,
+                          x: sectionDirection > 0 ? -14 : 14,
+                          y: -2,
+                        }
                   }
                   initial={
                     shouldReduceMotion
@@ -2701,2542 +2990,2607 @@ export function EventForm({
                     ease: motionTokens.easing,
                   }}
                 >
-                  <div className="mb-4 rounded-xl border border-zinc-200 bg-gradient-to-r from-zinc-50 to-white p-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-                      Current objective
-                    </p>
-                    <p className="mt-1 text-[12px] font-semibold text-zinc-800">
-                      {sections.find((section) => section.id === activeSection)?.label}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {sectionGoals[activeSection].map((goal) => (
-                        <span
-                          className="rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[10.5px] text-zinc-600"
-                          key={goal}
-                        >
-                          {goal}
-                        </span>
-                      ))}
-                    </div>
-                    {!healthSummary.publishReady && (
-                      <p className="mt-2 text-[10.5px] text-amber-700">
-                        Blocking reason:{" "}
-                        {healthSummary.blockingItems.find(
-                          (item) => item.id === activeSection,
-                        )?.errors
-                          ? `${healthSummary.blockingItems.find((item) => item.id === activeSection)?.errors} issues in this section`
-                          : "other sections still have blocking issues"}
-                      </p>
-                    )}
-                  </div>
-              {/* ─────────────────────────────────────────────────────────
+                  {/* ─────────────────────────────────────────────────────────
                   §01  IDENTITY
                   Cover image · title + inline slug · short description
                   Delivery mode · language of instruction
               ───────────────────────────────────────────────────────── */}
-              {activeSection === "identity" && (
-                <FieldSet className="">
-                  <SectionHeader
-                    description="Cover image, titles, URL slug, type and language"
-                    icon={Pencil}
-                    number="01"
-                    title="Identity"
-                  />
+                  {activeSection === "identity" && (
+                    <FieldSet className="">
+                      <SectionHeader
+                        description="Cover image, titles, URL slug, type and language"
+                        icon={Pencil}
+                        number="01"
+                        title="Identity"
+                      />
 
-                  {/* Cover image upload */}
-                  <Field className="grid gap-2">
-                    <FieldLabel htmlFor={coverImageInputId}>
-                      Cover Image
-                    </FieldLabel>
-                    <input
-                      ref={coverInputRef}
-                      accept="image/*"
-                      className="sr-only"
-                      id={coverImageInputId}
-                      type="file"
-                      onChange={(e) =>
-                        void uploadCoverImage(e.target.files?.[0])
-                      }
-                    />
-                    <button
-                      className={cn(
-                        "group relative flex w-full cursor-pointer items-center justify-center overflow-hidden",
-                        "rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50 transition-colors",
-                        "hover:border-teal-400 hover:bg-teal-50/30",
-                        isCoverUploading && "pointer-events-none opacity-60",
-                      )}
-                      style={{ height: 172 }}
-                      type="button"
-                      onClick={() => coverInputRef.current?.click()}
-                    >
-                      {coverImage ? (
-                        <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            alt="Cover"
-                            className="absolute inset-0 h-full w-full object-cover"
-                            src={coverImage}
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                            <Upload className="size-4 text-white" />
-                            <span className="text-[13px] font-semibold text-white">
-                              Replace image
-                            </span>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2 text-zinc-400">
-                          {isCoverUploading ? (
-                            <Loader2 className="size-6 animate-spin text-teal-500" />
-                          ) : (
-                            <ImageIcon className="size-7 text-zinc-300" />
+                      {/* Cover image upload */}
+                      <Field className="grid gap-2">
+                        <FieldLabel htmlFor={coverImageInputId}>
+                          Cover Image
+                        </FieldLabel>
+                        <input
+                          ref={coverInputRef}
+                          accept="image/*"
+                          className="sr-only"
+                          id={coverImageInputId}
+                          type="file"
+                          onChange={(e) =>
+                            void uploadCoverImage(e.target.files?.[0])
+                          }
+                        />
+                        <button
+                          className={cn(
+                            "group relative flex w-full cursor-pointer items-center justify-center overflow-hidden",
+                            "rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50 transition-colors",
+                            "hover:border-teal-400 hover:bg-teal-50/30",
+                            isCoverUploading &&
+                              "pointer-events-none opacity-60",
                           )}
-                          <span className="text-[13px] font-medium">
-                            {isCoverUploading
-                              ? `Uploading… ${coverUploadProgress}%`
-                              : "Upload cover image"}
-                          </span>
-                          <span className="text-[11.5px] text-zinc-300">
-                            JPG, PNG or WebP · Recommended 1600 × 900
-                          </span>
-                          <UploadProgress
-                            className="w-full max-w-[260px]"
-                            isActive={isCoverUploading}
-                            percent={coverUploadProgress}
-                            status={coverUploadStatus}
-                          />
-                        </div>
-                      )}
-                    </button>
-                    {coverImage ? (
-                      <div className="mt-2 flex gap-2">
-                        <Button
-                          className="h-7 text-[11.5px]"
-                          size="sm"
+                          style={{ height: 172 }}
                           type="button"
-                          variant="outline"
                           onClick={() => coverInputRef.current?.click()}
                         >
-                          <Upload className="mr-1 size-3" /> Replace
-                        </Button>
-                        <Button
-                          className="h-7 text-[11.5px] text-red-500 hover:text-red-600"
-                          size="sm"
-                          type="button"
-                          variant="outline"
-                          onClick={() =>
-                            form.setValue("coverImage", "", {
-                              shouldDirty: true,
-                            })
-                          }
-                        >
-                          <X className="mr-1 size-3" /> Remove
-                        </Button>
-                        <Button
-                          className="h-7 text-[11.5px]"
-                          disabled={coverLibraryLoading || isCoverUploading}
-                          size="sm"
-                          type="button"
-                          variant="outline"
-                          onClick={() => void openCoverLibrary()}
-                        >
-                          {coverLibraryLoading ? (
-                            <Loader2 className="mr-1 size-3 animate-spin" />
-                          ) : (
-                            <Search className="mr-1 size-3" />
-                          )}{" "}
-                          Browse
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="mt-2 flex gap-2">
-                        <Button
-                          className="h-7 text-[11.5px]"
-                          disabled={coverLibraryLoading || isCoverUploading}
-                          size="sm"
-                          type="button"
-                          variant="outline"
-                          onClick={() => void openCoverLibrary()}
-                        >
-                          {coverLibraryLoading ? (
-                            <Loader2 className="mr-1 size-3 animate-spin" />
-                          ) : (
-                            <Search className="mr-1 size-3" />
-                          )}{" "}
-                          Browse library
-                        </Button>
-                      </div>
-                    )}
-                    <input
-                      className="sr-only"
-                      type="text"
-                      {...form.register("coverImage")}
-                    />
-                    <FieldError errors={[form.formState.errors.coverImage]} />
-                  </Field>
-
-                  <FieldGroup className="grid gap-3 md:grid-cols-2">
-                    <Field className="grid gap-2">
-                      <FieldLabel htmlFor={heroProgramLogoInputId}>
-                        Hero Program Logo
-                      </FieldLabel>
-                      <input
-                        ref={heroProgramLogoInputRef}
-                        accept="image/*"
-                        className="sr-only"
-                        id={heroProgramLogoInputId}
-                        type="file"
-                        onChange={(e) =>
-                          void uploadHeroProgramLogo(e.target.files?.[0])
-                        }
-                      />
-                      <div className="rounded-md border border-zinc-200 bg-white p-2">
-                        {heroProgramLogo ? (
-                          <div className="relative h-16 w-40 overflow-hidden rounded bg-zinc-50">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              alt="Hero program logo"
-                              className="h-full w-full object-contain p-2"
-                              src={heroProgramLogo}
-                            />
-                          </div>
-                        ) : (
-                          <p className="text-xs text-zinc-400">
-                            No logo selected
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          className="h-7 text-[11.5px]"
-                          size="sm"
-                          type="button"
-                          variant="outline"
-                          onClick={() =>
-                            heroProgramLogoInputRef.current?.click()
-                          }
-                        >
-                          <Upload className="mr-1 size-3" /> Replace
-                        </Button>
-                        <Button
-                          className="h-7 text-[11.5px]"
-                          size="sm"
-                          type="button"
-                          variant="outline"
-                          onClick={() => void openCoverLibrary("heroProgram")}
-                        >
-                          <Search className="mr-1 size-3" /> Browse
-                        </Button>
-                        <Button
-                          className="h-7 text-[11.5px] text-red-500 hover:text-red-600"
-                          size="sm"
-                          type="button"
-                          variant="outline"
-                          onClick={() =>
-                            form.setValue("heroProgramLogo", "", {
-                              shouldDirty: true,
-                            })
-                          }
-                        >
-                          <X className="mr-1 size-3" /> Remove
-                        </Button>
-                      </div>
-                      <FieldDescription>
-                        Shown beside the featured hero title.
-                      </FieldDescription>
-                    </Field>
-                    <Field className="grid gap-2">
-                      <FieldLabel htmlFor={heroCollaboratorLogosInputId}>
-                        Collaborator Logos
-                      </FieldLabel>
-                      <input
-                        ref={heroCollaboratorLogosInputRef}
-                        accept="image/*"
-                        className="sr-only"
-                        id={heroCollaboratorLogosInputId}
-                        multiple
-                        type="file"
-                        onChange={(e) =>
-                          void uploadHeroCollaboratorLogos(e.target.files)
-                        }
-                      />
-                      <div className="rounded-md border border-zinc-200 bg-white p-2">
-                        {heroCollaboratorLogos.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {heroCollaboratorLogos.map((url) => (
-                              <div
-                                className="group relative h-12 w-24 overflow-hidden rounded border border-zinc-200 bg-zinc-50"
-                                key={url}
-                              >
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  alt="Collaborator logo"
-                                  className="h-full w-full object-contain p-1"
-                                  src={url}
-                                />
-                                <button
-                                  className="absolute right-0 top-0 hidden bg-black/65 px-1 py-0.5 text-[10px] text-white group-hover:block"
-                                  type="button"
-                                  onClick={() =>
-                                    form.setValue(
-                                      "heroCollaboratorLogos",
-                                      heroCollaboratorLogos
-                                        .filter((item) => item !== url)
-                                        .join("\n"),
-                                      { shouldDirty: true },
-                                    )
-                                  }
-                                >
-                                  ×
-                                </button>
+                          {coverImage ? (
+                            <>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                alt="Cover"
+                                className="absolute inset-0 h-full w-full object-cover"
+                                src={coverImage}
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                                <Upload className="size-4 text-white" />
+                                <span className="text-[13px] font-semibold text-white">
+                                  Replace image
+                                </span>
                               </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-zinc-400">
-                            No collaborator logos selected
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          className="h-7 text-[11.5px]"
-                          size="sm"
-                          type="button"
-                          variant="outline"
-                          onClick={() =>
-                            heroCollaboratorLogosInputRef.current?.click()
-                          }
-                        >
-                          <Upload className="mr-1 size-3" /> Replace
-                        </Button>
-                        <Button
-                          className="h-7 text-[11.5px]"
-                          size="sm"
-                          type="button"
-                          variant="outline"
-                          onClick={() =>
-                            void openCoverLibrary("heroCollaborators")
-                          }
-                        >
-                          <Search className="mr-1 size-3" /> Browse
-                        </Button>
-                        <Button
-                          className="h-7 text-[11.5px] text-red-500 hover:text-red-600"
-                          size="sm"
-                          type="button"
-                          variant="outline"
-                          onClick={() =>
-                            form.setValue("heroCollaboratorLogos", "", {
-                              shouldDirty: true,
-                            })
-                          }
-                        >
-                          <X className="mr-1 size-3" /> Remove
-                        </Button>
-                      </div>
-                      <FieldDescription>
-                        These render in the featured hero as partner logos.
-                      </FieldDescription>
-                    </Field>
-                  </FieldGroup>
-                  <Field className="grid gap-2">
-                    <FieldLabel>
-                      People Label ({activeLocale.toUpperCase()})
-                    </FieldLabel>
-                    <Input
-                      className={inputCls}
-                      dir={activeLocale === "ar" ? "rtl" : "ltr"}
-                      placeholder={
-                        activeLocale === "ar" ? "المدربون" : "Trainers"
-                      }
-                      value={form.watch(
-                        activeLocale === "en"
-                          ? "heroPeopleLabelEn"
-                          : "heroPeopleLabelAr",
-                      )}
-                      onChange={(e) =>
-                        form.setValue(
-                          activeLocale === "en"
-                            ? "heroPeopleLabelEn"
-                            : "heroPeopleLabelAr",
-                          e.target.value,
-                          { shouldDirty: true },
-                        )
-                      }
-                    />
-                    <FieldDescription>
-                      If empty, default label is used automatically.
-                    </FieldDescription>
-                  </Field>
-                  <FieldGroup className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <Field className="grid gap-2">
-                      <FieldLabel
-                        htmlFor={`${idPrefix}-featured-sessions-stat`}
-                      >
-                        Featured Sessions Stat
-                      </FieldLabel>
-                      <Input
-                        className={inputCls}
-                        id={`${idPrefix}-featured-sessions-stat`}
-                        placeholder="8+"
-                        {...form.register("featuredSessionsStat")}
-                      />
-                      <FieldDescription>
-                        Value shown for the Sessions stat on featured program
-                        pages.
-                      </FieldDescription>
-                    </Field>
-                    <Field className="grid gap-2">
-                      <FieldLabel
-                        htmlFor={`${idPrefix}-featured-full-day-stat`}
-                      >
-                        Featured Full Day Stat
-                      </FieldLabel>
-                      <Input
-                        className={inputCls}
-                        id={`${idPrefix}-featured-full-day-stat`}
-                        placeholder="2 Days"
-                        {...form.register("featuredFullDayStat")}
-                      />
-                      <FieldDescription>
-                        Value shown for the Full Day stat on featured program
-                        pages.
-                      </FieldDescription>
-                    </Field>
-                  </FieldGroup>
-                  <Field className="grid gap-2">
-                    <FieldLabel>
-                      Hero Tags ({activeLocale.toUpperCase()}, one per line)
-                    </FieldLabel>
-                    <Textarea
-                      className={cn(inputCls, "min-h-24 py-2")}
-                      dir={activeLocale === "ar" ? "rtl" : "ltr"}
-                      placeholder={
-                        activeLocale === "ar"
-                          ? "القيادة\nعلم النفس"
-                          : "Leadership\nPsychology"
-                      }
-                      value={form.watch(
-                        activeLocale === "en" ? "heroTagsEn" : "heroTagsAr",
-                      )}
-                      onChange={(e) =>
-                        form.setValue(
-                          activeLocale === "en" ? "heroTagsEn" : "heroTagsAr",
-                          e.target.value,
-                          { shouldDirty: true },
-                        )
-                      }
-                    />
-                    <div className="flex flex-wrap gap-2">
-                      {form
-                        .watch(
-                          activeLocale === "en" ? "heroTagsEn" : "heroTagsAr",
-                        )
-                        .split("\n")
-                        .map((item) => item.trim())
-                        .filter(Boolean)
-                        .map((tag) => (
-                          <Badge
-                            className="border-teal-200 bg-teal-50 text-teal-700"
-                            key={tag}
-                            variant="outline"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                    </div>
-                    <FieldDescription>
-                      Locale-aware tags. Switch EN/AR above to edit each locale.
-                    </FieldDescription>
-                  </Field>
-
-                  {/* Title + inline editable slug */}
-                  <Field className="grid gap-2">
-                    <FieldLabel htmlFor={titleInputId}>Title</FieldLabel>
-                    <FieldContent>
-                      <Input
-                        className={cn(inputCls, "text-[15px] font-semibold")}
-                        dir={activeLocale === "ar" ? "rtl" : "ltr"}
-                        id={titleInputId}
-                        placeholder={
-                          activeLocale === "en"
-                            ? "Event title in English"
-                            : "عنوان الفعالية بالعربية"
-                        }
-                        value={
-                          form.watch(
-                            activeLocale === "en" ? "titleEn" : "titleAr",
-                          ) ?? ""
-                        }
-                        onChange={(e) => {
-                          form.setValue(
-                            activeLocale === "en" ? "titleEn" : "titleAr",
-                            e.target.value,
-                            { shouldDirty: true },
-                          );
-                          const cur = form.getValues("slug");
-                          const auto = toSlug(form.getValues("titleEn"));
-                          if (!cur || cur === auto) {
-                            form.setValue("slug", toSlug(e.target.value), {
-                              shouldDirty: true,
-                            });
-                          }
-                        }}
-                      />
-                    </FieldContent>
-                    <FieldError
-                      errors={[
-                        activeLocale === "en"
-                          ? form.formState.errors.titleEn
-                          : form.formState.errors.titleAr,
-                      ]}
-                    />
-                    {/* Inline slug — directly beneath title */}
-
-                    <div className="mt-1.5 flex items-stretch overflow-hidden rounded-md border border-zinc-200 bg-zinc-50 text-[11.5px] shadow-xs focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-500/10">
-                      <span className="flex items-center border-r border-zinc-200 bg-zinc-100 px-2.5 font-medium text-zinc-400 select-none whitespace-nowrap">
-                        kayan.om/events/
-                      </span>
-                      <input
-                        className="flex-1 min-w-0 bg-transparent px-2.5 py-1.5 font-mono font-semibold text-teal-600! outline-none placeholder:text-zinc-300"
-                        id={slugInputId}
-                        placeholder="event-slug"
-                        spellCheck={false}
-                        {...form.register("slug")}
-                        onBlur={(e) => {
-                          form.setValue(
-                            "slug",
-                            toSlug(e.target.value) || "event-slug",
-                            { shouldDirty: true },
-                          );
-                        }}
-                      />
-                      <span className="flex items-center px-2 text-zinc-300">
-                        <Pencil className="size-3" />
-                      </span>
-                    </div>
-                    <FieldError errors={[form.formState.errors.slug]} />
-                  </Field>
-
-                  {/* Short description */}
-                  {(() => {
-                    const count =
-                      activeLocale === "en" ? shortEnLen : shortArLen;
-                    return (
-                      <Field className="grid gap-2">
-                        <div className="mb-1.5 flex items-center justify-between">
-                          <FieldLabel htmlFor={shortDescriptionInputId}>
-                            Short Description
-                            <span className="ml-1.5 font-normal normal-case tracking-normal text-zinc-400">
-                              shown in listings
-                            </span>
-                          </FieldLabel>
-                          <span
-                            className={cn(
-                              "font-mono text-[10.5px] font-semibold",
-                              count > 144
-                                ? "text-red-500"
-                                : count > 120
-                                  ? "text-amber-500"
-                                  : "text-zinc-300",
-                            )}
-                          >
-                            {count} / 160
-                          </span>
-                        </div>
-                        <FieldContent>
-                          <Textarea
-                            className={cn(inputCls, "h-auto resize-none py-2")}
-                            dir={activeLocale === "ar" ? "rtl" : "ltr"}
-                            id={shortDescriptionInputId}
-                            maxLength={160}
-                            placeholder={
-                              activeLocale === "en"
-                                ? "A concise summary shown in event cards…"
-                                : "ملخص قصير يظهر في بطاقات الفعاليات…"
-                            }
-                            rows={2}
-                            value={
-                              form.watch(
-                                activeLocale === "en" ? "shortEn" : "shortAr",
-                              ) ?? ""
-                            }
-                            onChange={(e) =>
-                              form.setValue(
-                                activeLocale === "en" ? "shortEn" : "shortAr",
-                                e.target.value,
-                                { shouldDirty: true },
-                              )
-                            }
-                          />
-                        </FieldContent>
-                        <FieldError
-                          errors={[
-                            activeLocale === "en"
-                              ? form.formState.errors.shortEn
-                              : form.formState.errors.shortAr,
-                          ]}
-                        />
-                      </Field>
-                    );
-                  })()}
-
-                  {/* Delivery mode + language */}
-                  <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field className="grid gap-2">
-                      <EnumSelect
-                        label="Delivery Mode"
-                        onChange={(value) =>
-                          form.setValue("type", value, {
-                            shouldDirty: true,
-                          })
-                        }
-                        options={eventTypeLabels}
-                        value={form.watch("type")}
-                      />
-                      <FieldError errors={[form.formState.errors.type]} />
-                    </Field>
-                    <Field className="grid gap-2">
-                      <EnumSelect
-                        label="Language of Instruction"
-                        onChange={(value) =>
-                          form.setValue("language", value, {
-                            shouldDirty: true,
-                          })
-                        }
-                        options={languageLabels}
-                        value={form.watch("language")}
-                      />
-                      <FieldError errors={[form.formState.errors.language]} />
-                    </Field>
-                  </FieldGroup>
-
-                  <div className="h-px border-0 bg-zinc-100" />
-
-                  {/* SEO moved from right sidebar into Identity tab */}
-                  <FieldSet className="">
-                    <FieldLegend variant="label">SEO Metadata</FieldLegend>
-                    <Field className="grid gap-2">
-                      <FieldLabel htmlFor={seoTitleInputId}>
-                        <FieldTitle>
-                          SEO Title ({activeLocale.toUpperCase()})
-                        </FieldTitle>
-                      </FieldLabel>
-                      <FieldContent>
-                        <Input
-                          className={inputCls}
-                          dir={activeLocale === "ar" ? "rtl" : "ltr"}
-                          id={seoTitleInputId}
-                          value={
-                            form.watch(
-                              activeLocale === "en"
-                                ? "seoTitleEn"
-                                : "seoTitleAr",
-                            ) ?? ""
-                          }
-                          onChange={(e) =>
-                            form.setValue(
-                              activeLocale === "en"
-                                ? "seoTitleEn"
-                                : "seoTitleAr",
-                              e.target.value,
-                              { shouldDirty: true },
-                            )
-                          }
-                        />
-                      </FieldContent>
-                      <FieldError
-                        errors={[
-                          activeLocale === "en"
-                            ? form.formState.errors.seoTitleEn
-                            : form.formState.errors.seoTitleAr,
-                        ]}
-                      />
-                      <FieldDescription>
-                        Prefer 50-60 characters for search result titles.
-                      </FieldDescription>
-                    </Field>
-                    <Field className="grid gap-2">
-                      <FieldLabel htmlFor={seoDescriptionInputId}>
-                        SEO Description ({activeLocale.toUpperCase()})
-                      </FieldLabel>
-                      <FieldContent>
-                        <Textarea
-                          className={cn(inputCls, "h-auto resize-none py-2")}
-                          dir={activeLocale === "ar" ? "rtl" : "ltr"}
-                          id={seoDescriptionInputId}
-                          rows={3}
-                          value={
-                            form.watch(
-                              activeLocale === "en"
-                                ? "seoDescriptionEn"
-                                : "seoDescriptionAr",
-                            ) ?? ""
-                          }
-                          onChange={(e) =>
-                            form.setValue(
-                              activeLocale === "en"
-                                ? "seoDescriptionEn"
-                                : "seoDescriptionAr",
-                              e.target.value,
-                              { shouldDirty: true },
-                            )
-                          }
-                        />
-                      </FieldContent>
-                      <FieldError
-                        errors={[
-                          activeLocale === "en"
-                            ? form.formState.errors.seoDescriptionEn
-                            : form.formState.errors.seoDescriptionAr,
-                        ]}
-                      />
-                      <FieldDescription>
-                        Keep this concise for better click-through in listings.
-                      </FieldDescription>
-                    </Field>
-                  </FieldSet>
-                </FieldSet>
-              )}
-
-              {/* ─────────────────────────────────────────────────────────
-                  §02  SCHEDULE
-                  Start · end · registration deadline · capacity
-              ───────────────────────────────────────────────────────── */}
-              {activeSection === "schedule" && (
-                <FieldSet className="">
-                  <SectionHeader
-                    description="Dates, capacity and registration window"
-                    icon={CalendarDays}
-                    number="02"
-                    title="Schedule"
-                  />
-                  <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field className="grid gap-2">
-                      <FieldLabel htmlFor={`${idPrefix}-start-date`}>
-                        Start Date
-                      </FieldLabel>
-                      <FieldContent>
-                        <Input
-                          className={inputCls}
-                          id={`${idPrefix}-start-date`}
-                          type="date"
-                          {...form.register("startDate")}
-                        />
-                      </FieldContent>
-                      <FieldError errors={[form.formState.errors.startDate]} />
-                    </Field>
-                    <Field className="grid gap-2">
-                      <FieldLabel htmlFor={`${idPrefix}-end-date`}>
-                        End Date
-                      </FieldLabel>
-                      <FieldContent>
-                        <Input
-                          className={inputCls}
-                          id={`${idPrefix}-end-date`}
-                          type="date"
-                          {...form.register("endDate")}
-                        />
-                      </FieldContent>
-                      <FieldError errors={[form.formState.errors.endDate]} />
-                    </Field>
-                    <Field className="grid gap-2">
-                      <div className="mb-1.5 flex items-center justify-between">
-                        <FieldLabel
-                          htmlFor={`${idPrefix}-registration-deadline`}
-                        >
-                          Registration Deadline
-                        </FieldLabel>
-                        <span className="text-[11px] text-zinc-400">
-                          optional
-                        </span>
-                      </div>
-                      <FieldContent>
-                        <Input
-                          className={inputCls}
-                          id={`${idPrefix}-registration-deadline`}
-                          type="date"
-                          {...form.register("registrationDeadline")}
-                        />
-                      </FieldContent>
-                      <FieldError
-                        errors={[form.formState.errors.registrationDeadline]}
-                      />
-                    </Field>
-                    <Field className="grid gap-2">
-                      <div className="mb-1.5 flex items-center justify-between">
-                        <FieldLabel htmlFor={`${idPrefix}-capacity`}>
-                          Capacity
-                        </FieldLabel>
-                        <span className="text-[11px] text-zinc-400">
-                          max seats
-                        </span>
-                      </div>
-                      <FieldContent>
-                        <Input
-                          className={inputCls}
-                          id={`${idPrefix}-capacity`}
-                          min={1}
-                          placeholder="e.g. 40"
-                          type="number"
-                          {...form.register("capacity")}
-                        />
-                      </FieldContent>
-                      <FieldError errors={[form.formState.errors.capacity]} />
-                    </Field>
-                  </FieldGroup>
-                  <Note>
-                    Capacity is enforced automatically — registrations close
-                    once the limit is reached, without any manual action needed.
-                  </Note>
-                </FieldSet>
-              )}
-
-              {/* ─────────────────────────────────────────────────────────
-                  §03  LOCATION
-                  Conditional blocks: onsite / online / hybrid
-              ───────────────────────────────────────────────────────── */}
-              {activeSection === "location" && (
-                <FieldSet className="">
-                  <SectionHeader
-                    description={
-                      eventType === "online"
-                        ? "Meeting platform and join link"
-                        : eventType === "hybrid"
-                          ? "Venue address plus online delivery link"
-                          : "Venue details and map embed settings"
-                    }
-                    icon={MapPin}
-                    number="03"
-                    title={locationLabel}
-                  />
-                  <Note className="mb-2 text-[11px]">
-                    Visibility rule: location fields adapt to `Delivery Mode` in
-                    Schedule. On-site/Hybrid shows venue data; Online/Hybrid
-                    shows meeting setup.
-                  </Note>
-
-                  {/* Onsite / Hybrid: venue + map */}
-                  {visibility.showVenueFields && (
-                    <>
-                      <Field className="grid gap-2">
-                        <FieldLabel htmlFor={`${idPrefix}-location`}>
-                          {locale === "ar"
-                            ? "اسم / عنوان المكان"
-                            : "Venue Name / Address"}
-                        </FieldLabel>
-                        <FieldContent>
-                          <div className="relative">
-                            <MapPin className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-zinc-400" />
-                            <Input
-                              className={cn(inputCls, "pl-8")}
-                              dir={activeLocale === "ar" ? "rtl" : "ltr"}
-                              id={`${idPrefix}-location`}
-                              placeholder={
-                                activeLocale === "ar"
-                                  ? "جراند حياة مسقط، شارع الشاطئ"
-                                  : "Grand Hyatt Muscat, Al Shati Street"
-                              }
-                              value={localizedVenueValue}
-                              onChange={(event) =>
-                                form.setValue(
-                                  activeLocale === "en"
-                                    ? "locationEn"
-                                    : "locationAr",
-                                  event.target.value,
-                                  { shouldDirty: true },
-                                )
-                              }
-                            />
-                          </div>
-                        </FieldContent>
-                        <FieldError
-                          errors={[
-                            activeLocale === "en"
-                              ? form.formState.errors.locationEn
-                              : form.formState.errors.locationAr,
-                          ]}
-                        />
-                      </Field>
-                      <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <Field className="grid gap-2">
-                          <FieldLabel htmlFor={`${idPrefix}-google-maps-link`}>
-                            Google Maps Link
-                          </FieldLabel>
-                          <FieldContent>
-                            <div className="relative">
-                              <Link2 className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-zinc-400" />
-                              <Input
-                                className={cn(inputCls, "pl-8")}
-                                id={`${idPrefix}-google-maps-link`}
-                                placeholder="https://maps.google.com/…"
-                                type="url"
-                                {...form.register("googleMapsLink")}
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center gap-2 text-zinc-400">
+                              {isCoverUploading ? (
+                                <Loader2 className="size-6 animate-spin text-teal-500" />
+                              ) : (
+                                <ImageIcon className="size-7 text-zinc-300" />
+                              )}
+                              <span className="text-[13px] font-medium">
+                                {isCoverUploading
+                                  ? `Uploading… ${coverUploadProgress}%`
+                                  : "Upload cover image"}
+                              </span>
+                              <span className="text-[11.5px] text-zinc-300">
+                                JPG, PNG or WebP · Recommended 1600 × 900
+                              </span>
+                              <UploadProgress
+                                className="w-full max-w-[260px]"
+                                isActive={isCoverUploading}
+                                percent={coverUploadProgress}
+                                status={coverUploadStatus}
                               />
                             </div>
-                          </FieldContent>
-                          <FieldError
-                            errors={[form.formState.errors.googleMapsLink]}
-                          />
-                        </Field>
-                        <Field className="grid gap-2">
-                          <FieldLabel>Map Embed</FieldLabel>
-                          <ToggleControl
-                            checked={form.watch("showMapEmbed")}
-                            description="Show interactive map on event page"
-                            iconBg="bg-teal-50"
-                            iconEl={<MapPin className="size-4 text-teal-600" />}
-                            title="Show map embed"
-                            onCheckedChange={(v) =>
-                              form.setValue("showMapEmbed", v, {
-                                shouldDirty: true,
-                              })
-                            }
-                          />
-                          <FieldError
-                            errors={[form.formState.errors.showMapEmbed]}
-                          />
-                        </Field>
-                      </FieldGroup>
-                    </>
-                  )}
-
-                  {/* Online / Hybrid: meeting platform + link */}
-                  {visibility.showOnlineFields && (
-                    <div className="space-y-4 rounded-xl border border-zinc-200 bg-white p-5">
-                      <div className="flex items-center gap-2">
-                        <Video className="size-4 text-teal-600" />
-                        <p className="text-[13px] font-semibold text-zinc-700">
-                          Online Delivery
-                        </p>
-                      </div>
-                      <Field className="grid gap-2">
-                        <FieldLabel>Platform</FieldLabel>
-                        <div className="flex flex-wrap gap-2">
-                          {(
-                            Object.entries(platformLabels) as [
-                              keyof typeof platformLabels,
-                              string,
-                            ][]
-                          ).map(([v, lbl]) => (
-                            <button
-                              className={cn(
-                                "rounded-md border px-3 py-1.5 text-[12px] font-semibold transition-all",
-                                form.watch("meetingPlatform") === v
-                                  ? "border-teal-500 bg-teal-50 text-teal-700"
-                                  : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300",
-                              )}
-                              key={v}
+                          )}
+                        </button>
+                        {coverImage ? (
+                          <div className="mt-2 flex gap-2">
+                            <Button
+                              className="h-7 text-[11.5px]"
+                              size="sm"
                               type="button"
+                              variant="outline"
+                              onClick={() => coverInputRef.current?.click()}
+                            >
+                              <Upload className="mr-1 size-3" /> Replace
+                            </Button>
+                            <Button
+                              className="h-7 text-[11.5px] text-red-500 hover:text-red-600"
+                              size="sm"
+                              type="button"
+                              variant="outline"
                               onClick={() =>
-                                form.setValue("meetingPlatform", v, {
+                                form.setValue("coverImage", "", {
                                   shouldDirty: true,
                                 })
                               }
                             >
-                              {lbl}
-                            </button>
-                          ))}
-                        </div>
-                        <FieldError
-                          errors={[form.formState.errors.meetingPlatform]}
-                        />
-                      </Field>
-                      <Field className="grid gap-2">
-                        <FieldLabel htmlFor={`${idPrefix}-meeting-link`}>
-                          Meeting Link
-                        </FieldLabel>
-                        <FieldContent>
-                          <div className="relative">
-                            <Link2 className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-zinc-400" />
-                            <Input
-                              className={cn(inputCls, "pl-8")}
-                              id={`${idPrefix}-meeting-link`}
-                              placeholder="https://zoom.us/j/…"
-                              type="url"
-                              {...form.register("meetingLink")}
-                            />
+                              <X className="mr-1 size-3" /> Remove
+                            </Button>
+                            <Button
+                              className="h-7 text-[11.5px]"
+                              disabled={coverLibraryLoading || isCoverUploading}
+                              size="sm"
+                              type="button"
+                              variant="outline"
+                              onClick={() => void openCoverLibrary()}
+                            >
+                              {coverLibraryLoading ? (
+                                <Loader2 className="mr-1 size-3 animate-spin" />
+                              ) : (
+                                <Search className="mr-1 size-3" />
+                              )}{" "}
+                              Browse
+                            </Button>
                           </div>
-                        </FieldContent>
+                        ) : (
+                          <div className="mt-2 flex gap-2">
+                            <Button
+                              className="h-7 text-[11.5px]"
+                              disabled={coverLibraryLoading || isCoverUploading}
+                              size="sm"
+                              type="button"
+                              variant="outline"
+                              onClick={() => void openCoverLibrary()}
+                            >
+                              {coverLibraryLoading ? (
+                                <Loader2 className="mr-1 size-3 animate-spin" />
+                              ) : (
+                                <Search className="mr-1 size-3" />
+                              )}{" "}
+                              Browse library
+                            </Button>
+                          </div>
+                        )}
+                        <input
+                          className="sr-only"
+                          type="text"
+                          {...form.register("coverImage")}
+                        />
                         <FieldError
-                          errors={[form.formState.errors.meetingLink]}
+                          errors={[form.formState.errors.coverImage]}
                         />
                       </Field>
-                      <p className="text-[11.5px] text-zinc-400">
-                        Sent only to registered participants — not publicly
-                        visible.
-                      </p>
-                    </div>
-                  )}
-                </FieldSet>
-              )}
 
-              {/* ─────────────────────────────────────────────────────────
-                  §04  PRICING
-                  Free toggle · price (OMR) · payment methods
-              ───────────────────────────────────────────────────────── */}
-              {activeSection === "pricing" && (
-                <FieldSet className="">
-                  <SectionHeader
-                    description="Fees and accepted payment methods"
-                    icon={CircleDollarSign}
-                    number="04"
-                    title="Pricing"
-                  />
-                  <Note className="text-[11px]">
-                    Dependency: `Registration Type` controls internal form
-                    section visibility. `Mark as free event` controls payment
-                    field visibility.
-                  </Note>
-                  <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field className="grid gap-2">
-                      <EnumSelect
-                        label="Registration Type"
-                        onChange={(value) =>
-                          form.setValue("registrationType", value, {
-                            shouldDirty: true,
-                          })
-                        }
-                        options={registrationTypeLabels}
-                        value={form.watch("registrationType")}
-                      />
-                      <FieldError
-                        errors={[form.formState.errors.registrationType]}
-                      />
-                    </Field>
-                    {visibility.showExternalRegistrationUrl ? (
+                      <FieldGroup className="grid gap-3 md:grid-cols-2">
+                        <Field className="grid gap-2">
+                          <FieldLabel htmlFor={heroProgramLogoInputId}>
+                            Hero Program Logo
+                          </FieldLabel>
+                          <input
+                            ref={heroProgramLogoInputRef}
+                            accept="image/*"
+                            className="sr-only"
+                            id={heroProgramLogoInputId}
+                            type="file"
+                            onChange={(e) =>
+                              void uploadHeroProgramLogo(e.target.files?.[0])
+                            }
+                          />
+                          <div className="rounded-md border border-zinc-200 bg-white p-2">
+                            {heroProgramLogo ? (
+                              <div className="relative h-16 w-40 overflow-hidden rounded bg-zinc-50">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  alt="Hero program logo"
+                                  className="h-full w-full object-contain p-2"
+                                  src={heroProgramLogo}
+                                />
+                              </div>
+                            ) : (
+                              <p className="text-xs text-zinc-400">
+                                No logo selected
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              className="h-7 text-[11.5px]"
+                              size="sm"
+                              type="button"
+                              variant="outline"
+                              onClick={() =>
+                                heroProgramLogoInputRef.current?.click()
+                              }
+                            >
+                              <Upload className="mr-1 size-3" /> Replace
+                            </Button>
+                            <Button
+                              className="h-7 text-[11.5px]"
+                              size="sm"
+                              type="button"
+                              variant="outline"
+                              onClick={() =>
+                                void openCoverLibrary("heroProgram")
+                              }
+                            >
+                              <Search className="mr-1 size-3" /> Browse
+                            </Button>
+                            <Button
+                              className="h-7 text-[11.5px] text-red-500 hover:text-red-600"
+                              size="sm"
+                              type="button"
+                              variant="outline"
+                              onClick={() =>
+                                form.setValue("heroProgramLogo", "", {
+                                  shouldDirty: true,
+                                })
+                              }
+                            >
+                              <X className="mr-1 size-3" /> Remove
+                            </Button>
+                          </div>
+                          <FieldDescription>
+                            Shown beside the featured hero title.
+                          </FieldDescription>
+                        </Field>
+                        <Field className="grid gap-2">
+                          <FieldLabel htmlFor={heroCollaboratorLogosInputId}>
+                            Collaborator Logos
+                          </FieldLabel>
+                          <input
+                            ref={heroCollaboratorLogosInputRef}
+                            accept="image/*"
+                            className="sr-only"
+                            id={heroCollaboratorLogosInputId}
+                            multiple
+                            type="file"
+                            onChange={(e) =>
+                              void uploadHeroCollaboratorLogos(e.target.files)
+                            }
+                          />
+                          <div className="rounded-md border border-zinc-200 bg-white p-2">
+                            {heroCollaboratorLogos.length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {heroCollaboratorLogos.map((url) => (
+                                  <div
+                                    className="group relative h-12 w-24 overflow-hidden rounded border border-zinc-200 bg-zinc-50"
+                                    key={url}
+                                  >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      alt="Collaborator logo"
+                                      className="h-full w-full object-contain p-1"
+                                      src={url}
+                                    />
+                                    <button
+                                      className="absolute right-0 top-0 hidden bg-black/65 px-1 py-0.5 text-[10px] text-white group-hover:block"
+                                      type="button"
+                                      onClick={() =>
+                                        form.setValue(
+                                          "heroCollaboratorLogos",
+                                          heroCollaboratorLogos
+                                            .filter((item) => item !== url)
+                                            .join("\n"),
+                                          { shouldDirty: true },
+                                        )
+                                      }
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-zinc-400">
+                                No collaborator logos selected
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              className="h-7 text-[11.5px]"
+                              size="sm"
+                              type="button"
+                              variant="outline"
+                              onClick={() =>
+                                heroCollaboratorLogosInputRef.current?.click()
+                              }
+                            >
+                              <Upload className="mr-1 size-3" /> Replace
+                            </Button>
+                            <Button
+                              className="h-7 text-[11.5px]"
+                              size="sm"
+                              type="button"
+                              variant="outline"
+                              onClick={() =>
+                                void openCoverLibrary("heroCollaborators")
+                              }
+                            >
+                              <Search className="mr-1 size-3" /> Browse
+                            </Button>
+                            <Button
+                              className="h-7 text-[11.5px] text-red-500 hover:text-red-600"
+                              size="sm"
+                              type="button"
+                              variant="outline"
+                              onClick={() =>
+                                form.setValue("heroCollaboratorLogos", "", {
+                                  shouldDirty: true,
+                                })
+                              }
+                            >
+                              <X className="mr-1 size-3" /> Remove
+                            </Button>
+                          </div>
+                          <FieldDescription>
+                            These render in the featured hero as partner logos.
+                          </FieldDescription>
+                        </Field>
+                      </FieldGroup>
                       <Field className="grid gap-2">
-                        <FieldLabel
-                          htmlFor={`${idPrefix}-external-registration-url`}
-                        >
-                          External Registration URL
+                        <FieldLabel>
+                          People Label ({activeLocale.toUpperCase()})
                         </FieldLabel>
-                        <FieldContent>
+                        <Input
+                          className={inputCls}
+                          dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                          placeholder={
+                            activeLocale === "ar" ? "المدربون" : "Trainers"
+                          }
+                          value={form.watch(
+                            activeLocale === "en"
+                              ? "heroPeopleLabelEn"
+                              : "heroPeopleLabelAr",
+                          )}
+                          onChange={(e) =>
+                            form.setValue(
+                              activeLocale === "en"
+                                ? "heroPeopleLabelEn"
+                                : "heroPeopleLabelAr",
+                              e.target.value,
+                              { shouldDirty: true },
+                            )
+                          }
+                        />
+                        <FieldDescription>
+                          If empty, default label is used automatically.
+                        </FieldDescription>
+                      </Field>
+                      <FieldGroup className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <Field className="grid gap-2">
+                          <FieldLabel
+                            htmlFor={`${idPrefix}-featured-sessions-stat`}
+                          >
+                            Featured Sessions Stat
+                          </FieldLabel>
                           <Input
                             className={inputCls}
-                            id={`${idPrefix}-external-registration-url`}
-                            placeholder="https://..."
-                            type="url"
-                            {...form.register("externalRegistrationUrl")}
+                            id={`${idPrefix}-featured-sessions-stat`}
+                            placeholder="8+"
+                            {...form.register("featuredSessionsStat")}
+                          />
+                          <FieldDescription>
+                            Value shown for the Sessions stat on featured
+                            program pages.
+                          </FieldDescription>
+                        </Field>
+                        <Field className="grid gap-2">
+                          <FieldLabel
+                            htmlFor={`${idPrefix}-featured-full-day-stat`}
+                          >
+                            Featured Full Day Stat
+                          </FieldLabel>
+                          <Input
+                            className={inputCls}
+                            id={`${idPrefix}-featured-full-day-stat`}
+                            placeholder="2 Days"
+                            {...form.register("featuredFullDayStat")}
+                          />
+                          <FieldDescription>
+                            Value shown for the Full Day stat on featured
+                            program pages.
+                          </FieldDescription>
+                        </Field>
+                      </FieldGroup>
+                      <Field className="grid gap-2">
+                        <FieldLabel>
+                          Hero Tags ({activeLocale.toUpperCase()}, one per line)
+                        </FieldLabel>
+                        <Textarea
+                          className={cn(inputCls, "min-h-24 py-2")}
+                          dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                          placeholder={
+                            activeLocale === "ar"
+                              ? "القيادة\nعلم النفس"
+                              : "Leadership\nPsychology"
+                          }
+                          value={form.watch(
+                            activeLocale === "en" ? "heroTagsEn" : "heroTagsAr",
+                          )}
+                          onChange={(e) =>
+                            form.setValue(
+                              activeLocale === "en"
+                                ? "heroTagsEn"
+                                : "heroTagsAr",
+                              e.target.value,
+                              { shouldDirty: true },
+                            )
+                          }
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          {form
+                            .watch(
+                              activeLocale === "en"
+                                ? "heroTagsEn"
+                                : "heroTagsAr",
+                            )
+                            .split("\n")
+                            .map((item) => item.trim())
+                            .filter(Boolean)
+                            .map((tag) => (
+                              <Badge
+                                className="border-teal-200 bg-teal-50 text-teal-700"
+                                key={tag}
+                                variant="outline"
+                              >
+                                {tag}
+                              </Badge>
+                            ))}
+                        </div>
+                        <FieldDescription>
+                          Locale-aware tags. Switch EN/AR above to edit each
+                          locale.
+                        </FieldDescription>
+                      </Field>
+
+                      {/* Title + inline editable slug */}
+                      <Field className="grid gap-2">
+                        <FieldLabel htmlFor={titleInputId}>Title</FieldLabel>
+                        <FieldContent>
+                          <Input
+                            className={cn(
+                              inputCls,
+                              "text-[15px] font-semibold",
+                            )}
+                            dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                            id={titleInputId}
+                            placeholder={
+                              activeLocale === "en"
+                                ? "Event title in English"
+                                : "عنوان الفعالية بالعربية"
+                            }
+                            value={
+                              form.watch(
+                                activeLocale === "en" ? "titleEn" : "titleAr",
+                              ) ?? ""
+                            }
+                            onChange={(e) => {
+                              form.setValue(
+                                activeLocale === "en" ? "titleEn" : "titleAr",
+                                e.target.value,
+                                { shouldDirty: true },
+                              );
+                              const cur = form.getValues("slug");
+                              const auto = toSlug(form.getValues("titleEn"));
+                              if (!cur || cur === auto) {
+                                form.setValue("slug", toSlug(e.target.value), {
+                                  shouldDirty: true,
+                                });
+                              }
+                            }}
                           />
                         </FieldContent>
                         <FieldError
                           errors={[
-                            form.formState.errors.externalRegistrationUrl,
+                            activeLocale === "en"
+                              ? form.formState.errors.titleEn
+                              : form.formState.errors.titleAr,
                           ]}
                         />
+                        {/* Inline slug — directly beneath title */}
+
+                        <div className="mt-1.5 flex items-stretch overflow-hidden rounded-md border border-zinc-200 bg-zinc-50 text-[11.5px] shadow-xs focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-500/10">
+                          <span className="flex items-center border-r border-zinc-200 bg-zinc-100 px-2.5 font-medium text-zinc-400 select-none whitespace-nowrap">
+                            kayan.om/events/
+                          </span>
+                          <input
+                            className="flex-1 min-w-0 bg-transparent px-2.5 py-1.5 font-mono font-semibold text-teal-600! outline-none placeholder:text-zinc-300"
+                            id={slugInputId}
+                            placeholder="event-slug"
+                            spellCheck={false}
+                            {...form.register("slug")}
+                            onBlur={(e) => {
+                              form.setValue(
+                                "slug",
+                                toSlug(e.target.value) || "event-slug",
+                                { shouldDirty: true },
+                              );
+                            }}
+                          />
+                          <span className="flex items-center px-2 text-zinc-300">
+                            <Pencil className="size-3" />
+                          </span>
+                        </div>
+                        <FieldError errors={[form.formState.errors.slug]} />
                       </Field>
-                    ) : (
-                      <div />
-                    )}
-                  </FieldGroup>
-                  <Field className="grid gap-2">
-                    <ToggleControl
-                      checked={form.watch("isFree")}
-                      description="Hides the price and removes payment requirement entirely"
-                      iconBg="bg-teal-50"
-                      iconEl={
-                        <CircleDollarSign className="size-4 text-teal-600" />
-                      }
-                      title="Mark as free event"
-                      onCheckedChange={(v) =>
-                        form.setValue("isFree", v, {
-                          shouldDirty: true,
-                        })
-                      }
-                    />
-                  </Field>
-                  <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field className="grid gap-2">
-                      <ToggleControl
-                        checked={showSidebarSeatsFulfillment}
-                        description="Controls the seats progress bar on the public page sidebar"
-                        iconBg="bg-cyan-50"
-                        iconEl={<Users className="size-4 text-cyan-600" />}
-                        title="Show seats fulfillment bar"
-                        onCheckedChange={(v) =>
-                          form.setValue("showSidebarSeatsFulfillment", v, {
-                            shouldDirty: true,
-                            shouldTouch: true,
-                          })
-                        }
-                      />
-                    </Field>
-                    <Field className="grid gap-2">
-                      <ToggleControl
-                        checked={showSidebarPayment}
-                        description="Controls the price/payment summary visibility in the sidebar card"
-                        iconBg="bg-emerald-50"
-                        iconEl={
-                          <CircleDollarSign className="size-4 text-emerald-600" />
-                        }
-                        title="Show payment summary"
-                        onCheckedChange={(v) =>
-                          form.setValue("showSidebarPayment", v, {
-                            shouldDirty: true,
-                            shouldTouch: true,
-                          })
-                        }
-                      />
-                    </Field>
-                  </FieldGroup>
-                  {!visibility.showPriceAndPayments ? (
-                    <Note>
-                      This event is free — price and payment fields are hidden
-                      from learners.
-                      {(form.watch("price") ||
-                        form.watch("bankName") ||
-                        form.watch("bankIban")) && (
-                        <> Hidden values are retained and will reappear if you turn pricing back on.</>
-                      )}
-                    </Note>
-                  ) : (
-                    <div className="space-y-4">
+
+                      {/* Short description */}
+                      {(() => {
+                        const count =
+                          activeLocale === "en" ? shortEnLen : shortArLen;
+                        return (
+                          <Field className="grid gap-2">
+                            <div className="mb-1.5 flex items-center justify-between">
+                              <FieldLabel htmlFor={shortDescriptionInputId}>
+                                Short Description
+                                <span className="ml-1.5 font-normal normal-case tracking-normal text-zinc-400">
+                                  shown in listings
+                                </span>
+                              </FieldLabel>
+                              <span
+                                className={cn(
+                                  "font-mono text-[10.5px] font-semibold",
+                                  count > 144
+                                    ? "text-red-500"
+                                    : count > 120
+                                      ? "text-amber-500"
+                                      : "text-zinc-300",
+                                )}
+                              >
+                                {count} / 160
+                              </span>
+                            </div>
+                            <FieldContent>
+                              <Textarea
+                                className={cn(
+                                  inputCls,
+                                  "h-auto resize-none py-2",
+                                )}
+                                dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                                id={shortDescriptionInputId}
+                                maxLength={160}
+                                placeholder={
+                                  activeLocale === "en"
+                                    ? "A concise summary shown in event cards…"
+                                    : "ملخص قصير يظهر في بطاقات الفعاليات…"
+                                }
+                                rows={2}
+                                value={
+                                  form.watch(
+                                    activeLocale === "en"
+                                      ? "shortEn"
+                                      : "shortAr",
+                                  ) ?? ""
+                                }
+                                onChange={(e) =>
+                                  form.setValue(
+                                    activeLocale === "en"
+                                      ? "shortEn"
+                                      : "shortAr",
+                                    e.target.value,
+                                    { shouldDirty: true },
+                                  )
+                                }
+                              />
+                            </FieldContent>
+                            <FieldError
+                              errors={[
+                                activeLocale === "en"
+                                  ? form.formState.errors.shortEn
+                                  : form.formState.errors.shortAr,
+                              ]}
+                            />
+                          </Field>
+                        );
+                      })()}
+
+                      {/* Delivery mode + language */}
                       <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <Field className="grid gap-2">
-                          <FieldLabel htmlFor={`${idPrefix}-price`}>
-                            Price
-                          </FieldLabel>
-                          <div className="flex h-9 overflow-hidden rounded-md border border-zinc-200 bg-white shadow-xs focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/10">
-                            <span className="flex items-center border-r border-zinc-200 bg-zinc-50 px-3 text-[11px] font-bold text-zinc-500">
-                              OMR
-                            </span>
-                            <input
-                              className="flex-1 min-w-0 bg-transparent px-3 text-sm text-zinc-900 outline-none"
-                              id={`${idPrefix}-price`}
-                              min={0}
-                              step="0.001"
-                              type="number"
-                              {...form.register("price")}
-                            />
-                          </div>
-                          <FieldError errors={[form.formState.errors.price]} />
-                        </Field>
-                        <Field className="grid gap-2">
                           <EnumSelect
-                            label="Payment Methods"
+                            label="Delivery Mode"
                             onChange={(value) =>
-                              form.setValue("paymentMethods", value, {
+                              form.setValue("type", value, {
                                 shouldDirty: true,
                               })
                             }
-                            options={paymentLabels}
-                            value={form.watch("paymentMethods")}
+                            options={eventTypeLabels}
+                            value={form.watch("type")}
+                          />
+                          <FieldError errors={[form.formState.errors.type]} />
+                        </Field>
+                        <Field className="grid gap-2">
+                          <EnumSelect
+                            label="Language of Instruction"
+                            onChange={(value) =>
+                              form.setValue("language", value, {
+                                shouldDirty: true,
+                              })
+                            }
+                            options={languageLabels}
+                            value={form.watch("language")}
                           />
                           <FieldError
-                            errors={[form.formState.errors.paymentMethods]}
+                            errors={[form.formState.errors.language]}
                           />
                         </Field>
                       </FieldGroup>
-                      {visibility.showBankDetails && (
-                        <FieldSet className="rounded-xl border border-zinc-200 bg-white p-4">
-                          <FieldLegend>Bank Transfer Details</FieldLegend>
-                          <FieldGroup className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                            <Field className="grid gap-2">
-                              <FieldLabel htmlFor={`${idPrefix}-bank-name`}>
-                                Bank Name
-                              </FieldLabel>
-                              <FieldContent>
+
+                      <div className="h-px border-0 bg-zinc-100" />
+
+                      {/* SEO moved from right sidebar into Identity tab */}
+                      <FieldSet className="">
+                        <FieldLegend variant="label">SEO Metadata</FieldLegend>
+                        <Field className="grid gap-2">
+                          <FieldLabel htmlFor={seoTitleInputId}>
+                            <FieldTitle>
+                              SEO Title ({activeLocale.toUpperCase()})
+                            </FieldTitle>
+                          </FieldLabel>
+                          <FieldContent>
+                            <Input
+                              className={inputCls}
+                              dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                              id={seoTitleInputId}
+                              value={
+                                form.watch(
+                                  activeLocale === "en"
+                                    ? "seoTitleEn"
+                                    : "seoTitleAr",
+                                ) ?? ""
+                              }
+                              onChange={(e) =>
+                                form.setValue(
+                                  activeLocale === "en"
+                                    ? "seoTitleEn"
+                                    : "seoTitleAr",
+                                  e.target.value,
+                                  { shouldDirty: true },
+                                )
+                              }
+                            />
+                          </FieldContent>
+                          <FieldError
+                            errors={[
+                              activeLocale === "en"
+                                ? form.formState.errors.seoTitleEn
+                                : form.formState.errors.seoTitleAr,
+                            ]}
+                          />
+                          <FieldDescription>
+                            Prefer 50-60 characters for search result titles.
+                          </FieldDescription>
+                        </Field>
+                        <Field className="grid gap-2">
+                          <FieldLabel htmlFor={seoDescriptionInputId}>
+                            SEO Description ({activeLocale.toUpperCase()})
+                          </FieldLabel>
+                          <FieldContent>
+                            <Textarea
+                              className={cn(
+                                inputCls,
+                                "h-auto resize-none py-2",
+                              )}
+                              dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                              id={seoDescriptionInputId}
+                              rows={3}
+                              value={
+                                form.watch(
+                                  activeLocale === "en"
+                                    ? "seoDescriptionEn"
+                                    : "seoDescriptionAr",
+                                ) ?? ""
+                              }
+                              onChange={(e) =>
+                                form.setValue(
+                                  activeLocale === "en"
+                                    ? "seoDescriptionEn"
+                                    : "seoDescriptionAr",
+                                  e.target.value,
+                                  { shouldDirty: true },
+                                )
+                              }
+                            />
+                          </FieldContent>
+                          <FieldError
+                            errors={[
+                              activeLocale === "en"
+                                ? form.formState.errors.seoDescriptionEn
+                                : form.formState.errors.seoDescriptionAr,
+                            ]}
+                          />
+                          <FieldDescription>
+                            Keep this concise for better click-through in
+                            listings.
+                          </FieldDescription>
+                        </Field>
+                      </FieldSet>
+                    </FieldSet>
+                  )}
+
+                  {/* ─────────────────────────────────────────────────────────
+                  §02  SCHEDULE
+                  Start · end · registration deadline · capacity
+              ───────────────────────────────────────────────────────── */}
+                  {activeSection === "schedule" && (
+                    <FieldSet className="">
+                      <SectionHeader
+                        description="Dates, capacity and registration window"
+                        icon={CalendarDays}
+                        number="02"
+                        title="Schedule"
+                      />
+                      <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <Field className="grid gap-2">
+                          <FieldLabel htmlFor={`${idPrefix}-start-date`}>
+                            Start Date
+                          </FieldLabel>
+                          <FieldContent>
+                            <Input
+                              className={inputCls}
+                              id={`${idPrefix}-start-date`}
+                              type="date"
+                              {...form.register("startDate")}
+                            />
+                          </FieldContent>
+                          <FieldError
+                            errors={[form.formState.errors.startDate]}
+                          />
+                        </Field>
+                        <Field className="grid gap-2">
+                          <FieldLabel htmlFor={`${idPrefix}-end-date`}>
+                            End Date
+                          </FieldLabel>
+                          <FieldContent>
+                            <Input
+                              className={inputCls}
+                              id={`${idPrefix}-end-date`}
+                              type="date"
+                              {...form.register("endDate")}
+                            />
+                          </FieldContent>
+                          <FieldError
+                            errors={[form.formState.errors.endDate]}
+                          />
+                        </Field>
+                        <Field className="grid gap-2">
+                          <div className="mb-1.5 flex items-center justify-between">
+                            <FieldLabel
+                              htmlFor={`${idPrefix}-registration-deadline`}
+                            >
+                              Registration Deadline
+                            </FieldLabel>
+                            <span className="text-[11px] text-zinc-400">
+                              optional
+                            </span>
+                          </div>
+                          <FieldContent>
+                            <Input
+                              className={inputCls}
+                              id={`${idPrefix}-registration-deadline`}
+                              type="date"
+                              {...form.register("registrationDeadline")}
+                            />
+                          </FieldContent>
+                          <FieldError
+                            errors={[
+                              form.formState.errors.registrationDeadline,
+                            ]}
+                          />
+                        </Field>
+                        <Field className="grid gap-2">
+                          <div className="mb-1.5 flex items-center justify-between">
+                            <FieldLabel htmlFor={`${idPrefix}-capacity`}>
+                              Capacity
+                            </FieldLabel>
+                            <span className="text-[11px] text-zinc-400">
+                              max seats
+                            </span>
+                          </div>
+                          <FieldContent>
+                            <Input
+                              className={inputCls}
+                              id={`${idPrefix}-capacity`}
+                              min={1}
+                              placeholder="e.g. 40"
+                              type="number"
+                              {...form.register("capacity")}
+                            />
+                          </FieldContent>
+                          <FieldError
+                            errors={[form.formState.errors.capacity]}
+                          />
+                        </Field>
+                      </FieldGroup>
+                      <Note>
+                        Capacity is enforced automatically — registrations close
+                        once the limit is reached, without any manual action
+                        needed.
+                      </Note>
+                    </FieldSet>
+                  )}
+
+                  {/* ─────────────────────────────────────────────────────────
+                  §03  LOCATION
+                  Conditional blocks: onsite / online / hybrid
+              ───────────────────────────────────────────────────────── */}
+                  {activeSection === "location" && (
+                    <FieldSet className="">
+                      <SectionHeader
+                        description={
+                          eventType === "online"
+                            ? "Meeting platform and join link"
+                            : eventType === "hybrid"
+                              ? "Venue address plus online delivery link"
+                              : "Venue details and map embed settings"
+                        }
+                        icon={MapPin}
+                        number="03"
+                        title={locationLabel}
+                      />
+                      <Note className="mb-2 text-[11px]">
+                        Visibility rule: location fields adapt to `Delivery
+                        Mode` in Schedule. On-site/Hybrid shows venue data;
+                        Online/Hybrid shows meeting setup.
+                      </Note>
+
+                      {/* Onsite / Hybrid: venue + map */}
+                      {visibility.showVenueFields && (
+                        <>
+                          <Field className="grid gap-2">
+                            <FieldLabel htmlFor={`${idPrefix}-location`}>
+                              {locale === "ar"
+                                ? "اسم / عنوان المكان"
+                                : "Venue Name / Address"}
+                            </FieldLabel>
+                            <FieldContent>
+                              <div className="relative">
+                                <MapPin className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-zinc-400" />
                                 <Input
-                                  className={inputCls}
-                                  id={`${idPrefix}-bank-name`}
-                                  {...form.register("bankName")}
+                                  className={cn(inputCls, "pl-8")}
+                                  dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                                  id={`${idPrefix}-location`}
+                                  placeholder={
+                                    activeLocale === "ar"
+                                      ? "جراند حياة مسقط، شارع الشاطئ"
+                                      : "Grand Hyatt Muscat, Al Shati Street"
+                                  }
+                                  value={localizedVenueValue}
+                                  onChange={(event) =>
+                                    form.setValue(
+                                      activeLocale === "en"
+                                        ? "locationEn"
+                                        : "locationAr",
+                                      event.target.value,
+                                      { shouldDirty: true },
+                                    )
+                                  }
                                 />
-                              </FieldContent>
-                              <FieldError
-                                errors={[form.formState.errors.bankName]}
-                              />
-                            </Field>
+                              </div>
+                            </FieldContent>
+                            <FieldError
+                              errors={[
+                                activeLocale === "en"
+                                  ? form.formState.errors.locationEn
+                                  : form.formState.errors.locationAr,
+                              ]}
+                            />
+                          </Field>
+                          <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <Field className="grid gap-2">
                               <FieldLabel
-                                htmlFor={`${idPrefix}-bank-account-name`}
+                                htmlFor={`${idPrefix}-google-maps-link`}
                               >
-                                Account Name
+                                Google Maps Link
                               </FieldLabel>
                               <FieldContent>
-                                <Input
-                                  className={inputCls}
-                                  id={`${idPrefix}-bank-account-name`}
-                                  {...form.register("bankAccountName")}
-                                />
+                                <div className="relative">
+                                  <Link2 className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-zinc-400" />
+                                  <Input
+                                    className={cn(inputCls, "pl-8")}
+                                    id={`${idPrefix}-google-maps-link`}
+                                    placeholder="https://maps.google.com/…"
+                                    type="url"
+                                    {...form.register("googleMapsLink")}
+                                  />
+                                </div>
                               </FieldContent>
                               <FieldError
-                                errors={[form.formState.errors.bankAccountName]}
+                                errors={[form.formState.errors.googleMapsLink]}
                               />
                             </Field>
                             <Field className="grid gap-2">
-                              <FieldLabel htmlFor={`${idPrefix}-bank-iban`}>
-                                IBAN
-                              </FieldLabel>
-                              <FieldContent>
-                                <Input
-                                  className={inputCls}
-                                  id={`${idPrefix}-bank-iban`}
-                                  {...form.register("bankIban")}
-                                />
-                              </FieldContent>
-                              <FieldError
-                                errors={[form.formState.errors.bankIban]}
+                              <FieldLabel>Map Embed</FieldLabel>
+                              <ToggleControl
+                                checked={form.watch("showMapEmbed")}
+                                description="Show interactive map on event page"
+                                iconBg="bg-teal-50"
+                                iconEl={
+                                  <MapPin className="size-4 text-teal-600" />
+                                }
+                                title="Show map embed"
+                                onCheckedChange={(v) =>
+                                  form.setValue("showMapEmbed", v, {
+                                    shouldDirty: true,
+                                  })
+                                }
                               />
-                            </Field>
-                            <Field className="grid gap-2">
-                              <FieldLabel htmlFor={`${idPrefix}-bank-swift`}>
-                                SWIFT
-                              </FieldLabel>
-                              <FieldContent>
-                                <Input
-                                  className={inputCls}
-                                  id={`${idPrefix}-bank-swift`}
-                                  {...form.register("bankSwift")}
-                                />
-                              </FieldContent>
                               <FieldError
-                                errors={[form.formState.errors.bankSwift]}
-                              />
-                            </Field>
-                            <Field className="col-span-2 grid gap-2">
-                              <FieldLabel
-                                htmlFor={`${idPrefix}-bank-instructions-en`}
-                              >
-                                Instructions (EN)
-                              </FieldLabel>
-                              <FieldContent>
-                                <Textarea
-                                  className={cn(inputCls, "h-auto py-2")}
-                                  id={`${idPrefix}-bank-instructions-en`}
-                                  rows={2}
-                                  {...form.register("bankInstructionsEn")}
-                                />
-                              </FieldContent>
-                              <FieldError
-                                errors={[
-                                  form.formState.errors.bankInstructionsEn,
-                                ]}
-                              />
-                            </Field>
-                            <Field className="col-span-2 grid gap-2">
-                              <FieldLabel
-                                htmlFor={`${idPrefix}-bank-instructions-ar`}
-                              >
-                                Instructions (AR)
-                              </FieldLabel>
-                              <FieldContent>
-                                <Textarea
-                                  className={cn(inputCls, "h-auto py-2")}
-                                  dir="rtl"
-                                  id={`${idPrefix}-bank-instructions-ar`}
-                                  rows={2}
-                                  {...form.register("bankInstructionsAr")}
-                                />
-                              </FieldContent>
-                              <FieldError
-                                errors={[
-                                  form.formState.errors.bankInstructionsAr,
-                                ]}
+                                errors={[form.formState.errors.showMapEmbed]}
                               />
                             </Field>
                           </FieldGroup>
-                        </FieldSet>
+                        </>
                       )}
-                    </div>
-                  )}
-                </FieldSet>
-              )}
 
-              {/* ─────────────────────────────────────────────────────────
+                      {/* Online / Hybrid: meeting platform + link */}
+                      {visibility.showOnlineFields && (
+                        <div className="space-y-4 rounded-xl border border-zinc-200 bg-white p-5">
+                          <div className="flex items-center gap-2">
+                            <Video className="size-4 text-teal-600" />
+                            <p className="text-[13px] font-semibold text-zinc-700">
+                              Online Delivery
+                            </p>
+                          </div>
+                          <Field className="grid gap-2">
+                            <FieldLabel>Platform</FieldLabel>
+                            <div className="flex flex-wrap gap-2">
+                              {(
+                                Object.entries(platformLabels) as [
+                                  keyof typeof platformLabels,
+                                  string,
+                                ][]
+                              ).map(([v, lbl]) => (
+                                <button
+                                  className={cn(
+                                    "rounded-md border px-3 py-1.5 text-[12px] font-semibold transition-all",
+                                    form.watch("meetingPlatform") === v
+                                      ? "border-teal-500 bg-teal-50 text-teal-700"
+                                      : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300",
+                                  )}
+                                  key={v}
+                                  type="button"
+                                  onClick={() =>
+                                    form.setValue("meetingPlatform", v, {
+                                      shouldDirty: true,
+                                    })
+                                  }
+                                >
+                                  {lbl}
+                                </button>
+                              ))}
+                            </div>
+                            <FieldError
+                              errors={[form.formState.errors.meetingPlatform]}
+                            />
+                          </Field>
+                          <Field className="grid gap-2">
+                            <FieldLabel htmlFor={`${idPrefix}-meeting-link`}>
+                              Meeting Link
+                            </FieldLabel>
+                            <FieldContent>
+                              <div className="relative">
+                                <Link2 className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-zinc-400" />
+                                <Input
+                                  className={cn(inputCls, "pl-8")}
+                                  id={`${idPrefix}-meeting-link`}
+                                  placeholder="https://zoom.us/j/…"
+                                  type="url"
+                                  {...form.register("meetingLink")}
+                                />
+                              </div>
+                            </FieldContent>
+                            <FieldError
+                              errors={[form.formState.errors.meetingLink]}
+                            />
+                          </Field>
+                          <p className="text-[11.5px] text-zinc-400">
+                            Sent only to registered participants — not publicly
+                            visible.
+                          </p>
+                        </div>
+                      )}
+                    </FieldSet>
+                  )}
+
+                  {/* ─────────────────────────────────────────────────────────
+                  §04  PRICING
+                  Free toggle · price (OMR) · payment methods
+              ───────────────────────────────────────────────────────── */}
+                  {activeSection === "pricing" && (
+                    <FieldSet className="">
+                      <SectionHeader
+                        description="Fees and accepted payment methods"
+                        icon={CircleDollarSign}
+                        number="04"
+                        title="Pricing"
+                      />
+                      <Note className="text-[11px]">
+                        Dependency: `Registration Type` controls internal form
+                        section visibility. `Mark as free event` controls
+                        payment field visibility.
+                      </Note>
+                      <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <Field className="grid gap-2">
+                          <EnumSelect
+                            label="Registration Type"
+                            onChange={(value) =>
+                              form.setValue("registrationType", value, {
+                                shouldDirty: true,
+                              })
+                            }
+                            options={registrationTypeLabels}
+                            value={form.watch("registrationType")}
+                          />
+                          <FieldError
+                            errors={[form.formState.errors.registrationType]}
+                          />
+                        </Field>
+                        {visibility.showExternalRegistrationUrl ? (
+                          <Field className="grid gap-2">
+                            <FieldLabel
+                              htmlFor={`${idPrefix}-external-registration-url`}
+                            >
+                              External Registration URL
+                            </FieldLabel>
+                            <FieldContent>
+                              <Input
+                                className={inputCls}
+                                id={`${idPrefix}-external-registration-url`}
+                                placeholder="https://..."
+                                type="url"
+                                {...form.register("externalRegistrationUrl")}
+                              />
+                            </FieldContent>
+                            <FieldError
+                              errors={[
+                                form.formState.errors.externalRegistrationUrl,
+                              ]}
+                            />
+                          </Field>
+                        ) : (
+                          <div />
+                        )}
+                      </FieldGroup>
+                      <Field className="grid gap-2">
+                        <ToggleControl
+                          checked={form.watch("isFree")}
+                          description="Hides the price and removes payment requirement entirely"
+                          iconBg="bg-teal-50"
+                          iconEl={
+                            <CircleDollarSign className="size-4 text-teal-600" />
+                          }
+                          title="Mark as free event"
+                          onCheckedChange={(v) =>
+                            form.setValue("isFree", v, {
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                      </Field>
+                      <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <Field className="grid gap-2">
+                          <ToggleControl
+                            checked={showSidebarSeatsFulfillment}
+                            description="Controls the seats progress bar on the public page sidebar"
+                            iconBg="bg-cyan-50"
+                            iconEl={<Users className="size-4 text-cyan-600" />}
+                            title="Show seats fulfillment bar"
+                            onCheckedChange={(v) =>
+                              form.setValue("showSidebarSeatsFulfillment", v, {
+                                shouldDirty: true,
+                                shouldTouch: true,
+                              })
+                            }
+                          />
+                        </Field>
+                        <Field className="grid gap-2">
+                          <ToggleControl
+                            checked={showSidebarPayment}
+                            description="Controls the price/payment summary visibility in the sidebar card"
+                            iconBg="bg-emerald-50"
+                            iconEl={
+                              <CircleDollarSign className="size-4 text-emerald-600" />
+                            }
+                            title="Show payment summary"
+                            onCheckedChange={(v) =>
+                              form.setValue("showSidebarPayment", v, {
+                                shouldDirty: true,
+                                shouldTouch: true,
+                              })
+                            }
+                          />
+                        </Field>
+                      </FieldGroup>
+                      {!visibility.showPriceAndPayments ? (
+                        <Note>
+                          This event is free — price and payment fields are
+                          hidden from learners.
+                          {(form.watch("price") ||
+                            form.watch("bankName") ||
+                            form.watch("bankIban")) && (
+                            <>
+                              {" "}
+                              Hidden values are retained and will reappear if
+                              you turn pricing back on.
+                            </>
+                          )}
+                        </Note>
+                      ) : (
+                        <div className="space-y-4">
+                          <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <Field className="grid gap-2">
+                              <FieldLabel htmlFor={`${idPrefix}-price`}>
+                                Price
+                              </FieldLabel>
+                              <div className="flex h-9 overflow-hidden rounded-md border border-zinc-200 bg-white shadow-xs focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/10">
+                                <span className="flex items-center border-r border-zinc-200 bg-zinc-50 px-3 text-[11px] font-bold text-zinc-500">
+                                  OMR
+                                </span>
+                                <input
+                                  className="flex-1 min-w-0 bg-transparent px-3 text-sm text-zinc-900 outline-none"
+                                  id={`${idPrefix}-price`}
+                                  min={0}
+                                  step="0.001"
+                                  type="number"
+                                  {...form.register("price")}
+                                />
+                              </div>
+                              <FieldError
+                                errors={[form.formState.errors.price]}
+                              />
+                            </Field>
+                            <Field className="grid gap-2">
+                              <EnumSelect
+                                label="Payment Methods"
+                                onChange={(value) =>
+                                  form.setValue("paymentMethods", value, {
+                                    shouldDirty: true,
+                                  })
+                                }
+                                options={paymentLabels}
+                                value={form.watch("paymentMethods")}
+                              />
+                              <FieldError
+                                errors={[form.formState.errors.paymentMethods]}
+                              />
+                            </Field>
+                          </FieldGroup>
+                          {visibility.showBankDetails && (
+                            <FieldSet className="rounded-xl border border-zinc-200 bg-white p-4">
+                              <FieldLegend>Bank Transfer Details</FieldLegend>
+                              <FieldGroup className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                <Field className="grid gap-2">
+                                  <FieldLabel htmlFor={`${idPrefix}-bank-name`}>
+                                    Bank Name
+                                  </FieldLabel>
+                                  <FieldContent>
+                                    <Input
+                                      className={inputCls}
+                                      id={`${idPrefix}-bank-name`}
+                                      {...form.register("bankName")}
+                                    />
+                                  </FieldContent>
+                                  <FieldError
+                                    errors={[form.formState.errors.bankName]}
+                                  />
+                                </Field>
+                                <Field className="grid gap-2">
+                                  <FieldLabel
+                                    htmlFor={`${idPrefix}-bank-account-name`}
+                                  >
+                                    Account Name
+                                  </FieldLabel>
+                                  <FieldContent>
+                                    <Input
+                                      className={inputCls}
+                                      id={`${idPrefix}-bank-account-name`}
+                                      {...form.register("bankAccountName")}
+                                    />
+                                  </FieldContent>
+                                  <FieldError
+                                    errors={[
+                                      form.formState.errors.bankAccountName,
+                                    ]}
+                                  />
+                                </Field>
+                                <Field className="grid gap-2">
+                                  <FieldLabel htmlFor={`${idPrefix}-bank-iban`}>
+                                    IBAN
+                                  </FieldLabel>
+                                  <FieldContent>
+                                    <Input
+                                      className={inputCls}
+                                      id={`${idPrefix}-bank-iban`}
+                                      {...form.register("bankIban")}
+                                    />
+                                  </FieldContent>
+                                  <FieldError
+                                    errors={[form.formState.errors.bankIban]}
+                                  />
+                                </Field>
+                                <Field className="grid gap-2">
+                                  <FieldLabel
+                                    htmlFor={`${idPrefix}-bank-swift`}
+                                  >
+                                    SWIFT
+                                  </FieldLabel>
+                                  <FieldContent>
+                                    <Input
+                                      className={inputCls}
+                                      id={`${idPrefix}-bank-swift`}
+                                      {...form.register("bankSwift")}
+                                    />
+                                  </FieldContent>
+                                  <FieldError
+                                    errors={[form.formState.errors.bankSwift]}
+                                  />
+                                </Field>
+                                <Field className="col-span-2 grid gap-2">
+                                  <FieldLabel
+                                    htmlFor={`${idPrefix}-bank-instructions-en`}
+                                  >
+                                    Instructions (EN)
+                                  </FieldLabel>
+                                  <FieldContent>
+                                    <Textarea
+                                      className={cn(inputCls, "h-auto py-2")}
+                                      id={`${idPrefix}-bank-instructions-en`}
+                                      rows={2}
+                                      {...form.register("bankInstructionsEn")}
+                                    />
+                                  </FieldContent>
+                                  <FieldError
+                                    errors={[
+                                      form.formState.errors.bankInstructionsEn,
+                                    ]}
+                                  />
+                                </Field>
+                                <Field className="col-span-2 grid gap-2">
+                                  <FieldLabel
+                                    htmlFor={`${idPrefix}-bank-instructions-ar`}
+                                  >
+                                    Instructions (AR)
+                                  </FieldLabel>
+                                  <FieldContent>
+                                    <Textarea
+                                      className={cn(inputCls, "h-auto py-2")}
+                                      dir="rtl"
+                                      id={`${idPrefix}-bank-instructions-ar`}
+                                      rows={2}
+                                      {...form.register("bankInstructionsAr")}
+                                    />
+                                  </FieldContent>
+                                  <FieldError
+                                    errors={[
+                                      form.formState.errors.bankInstructionsAr,
+                                    ]}
+                                  />
+                                </Field>
+                              </FieldGroup>
+                            </FieldSet>
+                          )}
+                        </div>
+                      )}
+                    </FieldSet>
+                  )}
+
+                  {/* ─────────────────────────────────────────────────────────
                   §05  CONTENT
                   Short description (bilingual) + Tiptap rich text
                   IMPORTANT: RichTextEditor is NOT wrapped in any container
                   that would clip or resize it. Props are passed directly.
               ───────────────────────────────────────────────────────── */}
-              {activeSection === "content" && (
-                <FieldSet className="">
-                  <SectionHeader
-                    description="Rich text content shown on the public event detail page"
-                    icon={AlignLeft}
-                    number="05"
-                    title="Content"
-                  />
+                  {activeSection === "content" && (
+                    <FieldSet className="">
+                      <SectionHeader
+                        description="Rich text content shown on the public event detail page"
+                        icon={AlignLeft}
+                        number="05"
+                        title="Content"
+                      />
 
-                  {/* Short description */}
-                  {(() => {
-                    const count =
-                      activeLocale === "en" ? shortEnLen : shortArLen;
-                    return (
+                      {/* Short description */}
+                      {(() => {
+                        const count =
+                          activeLocale === "en" ? shortEnLen : shortArLen;
+                        return (
+                          <Field className="grid gap-2">
+                            <div className="mb-1.5 flex items-center justify-between">
+                              <FieldLabel htmlFor={`${idPrefix}-content-short`}>
+                                Short Description
+                                <span className="ml-1.5 font-normal normal-case tracking-normal text-zinc-400">
+                                  shown in listings
+                                </span>
+                              </FieldLabel>
+                              <span
+                                className={cn(
+                                  "font-mono text-[10.5px] font-semibold",
+                                  count > 144
+                                    ? "text-red-500"
+                                    : count > 120
+                                      ? "text-amber-500"
+                                      : "text-zinc-300",
+                                )}
+                              >
+                                {count} / 160
+                              </span>
+                            </div>
+                            <FieldContent>
+                              <Textarea
+                                className={cn(
+                                  inputCls,
+                                  "h-auto resize-none py-2",
+                                )}
+                                dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                                id={`${idPrefix}-content-short`}
+                                maxLength={160}
+                                placeholder={
+                                  activeLocale === "en"
+                                    ? "A concise summary shown in event cards and search results…"
+                                    : "ملخص قصير يظهر في بطاقات الفعاليات…"
+                                }
+                                rows={2}
+                                value={
+                                  form.watch(
+                                    activeLocale === "en"
+                                      ? "shortEn"
+                                      : "shortAr",
+                                  ) ?? ""
+                                }
+                                onChange={(e) =>
+                                  form.setValue(
+                                    activeLocale === "en"
+                                      ? "shortEn"
+                                      : "shortAr",
+                                    e.target.value,
+                                    { shouldDirty: true },
+                                  )
+                                }
+                              />
+                            </FieldContent>
+                            <FieldError
+                              errors={[
+                                activeLocale === "en"
+                                  ? form.formState.errors.shortEn
+                                  : form.formState.errors.shortAr,
+                              ]}
+                            />
+                          </Field>
+                        );
+                      })()}
+
+                      {/* Long description — Tiptap (unwrapped) */}
                       <Field className="grid gap-2">
                         <div className="mb-1.5 flex items-center justify-between">
-                          <FieldLabel htmlFor={`${idPrefix}-content-short`}>
-                            Short Description
+                          <FieldLabel>
+                            Long Description
                             <span className="ml-1.5 font-normal normal-case tracking-normal text-zinc-400">
-                              shown in listings
+                              Powered by Tiptap
                             </span>
                           </FieldLabel>
-                          <span
-                            className={cn(
-                              "font-mono text-[10.5px] font-semibold",
-                              count > 144
-                                ? "text-red-500"
-                                : count > 120
-                                  ? "text-amber-500"
-                                  : "text-zinc-300",
-                            )}
-                          >
-                            {count} / 160
-                          </span>
                         </div>
-                        <FieldContent>
-                          <Textarea
-                            className={cn(inputCls, "h-auto resize-none py-2")}
-                            dir={activeLocale === "ar" ? "rtl" : "ltr"}
-                            id={`${idPrefix}-content-short`}
-                            maxLength={160}
-                            placeholder={
-                              activeLocale === "en"
-                                ? "A concise summary shown in event cards and search results…"
-                                : "ملخص قصير يظهر في بطاقات الفعاليات…"
-                            }
-                            rows={2}
-                            value={
-                              form.watch(
-                                activeLocale === "en" ? "shortEn" : "shortAr",
-                              ) ?? ""
-                            }
-                            onChange={(e) =>
-                              form.setValue(
-                                activeLocale === "en" ? "shortEn" : "shortAr",
-                                e.target.value,
-                                { shouldDirty: true },
-                              )
-                            }
-                          />
-                        </FieldContent>
+                        {/* RichTextEditor manages its own border/toolbar — no wrapper */}
+                        <RichTextEditor
+                          dir={activeLocale === "ar" ? "rtl" : "ltr"}
+                          onChange={(value) =>
+                            form.setValue(
+                              activeLocale === "en" ? "contentEn" : "contentAr",
+                              value,
+                              { shouldDirty: true },
+                            )
+                          }
+                          placeholder="Build the full event page content — headings, lists, tables, images…"
+                          value={
+                            form.watch(
+                              activeLocale === "en" ? "contentEn" : "contentAr",
+                            ) ?? ""
+                          }
+                        />
                         <FieldError
                           errors={[
                             activeLocale === "en"
-                              ? form.formState.errors.shortEn
-                              : form.formState.errors.shortAr,
+                              ? form.formState.errors.contentEn
+                              : form.formState.errors.contentAr,
                           ]}
                         />
                       </Field>
-                    );
-                  })()}
 
-                  {/* Long description — Tiptap (unwrapped) */}
-                  <Field className="grid gap-2">
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <FieldLabel>
-                        Long Description
-                        <span className="ml-1.5 font-normal normal-case tracking-normal text-zinc-400">
-                          Powered by Tiptap
-                        </span>
-                      </FieldLabel>
-                    </div>
-                    {/* RichTextEditor manages its own border/toolbar — no wrapper */}
-                    <RichTextEditor
-                      dir={activeLocale === "ar" ? "rtl" : "ltr"}
-                      onChange={(value) =>
-                        form.setValue(
-                          activeLocale === "en" ? "contentEn" : "contentAr",
-                          value,
-                          { shouldDirty: true },
-                        )
-                      }
-                      placeholder="Build the full event page content — headings, lists, tables, images…"
-                      value={
-                        form.watch(
-                          activeLocale === "en" ? "contentEn" : "contentAr",
-                        ) ?? ""
-                      }
-                    />
-                    <FieldError
-                      errors={[
-                        activeLocale === "en"
-                          ? form.formState.errors.contentEn
-                          : form.formState.errors.contentAr,
-                      ]}
-                    />
-                  </Field>
+                      <Note>
+                        Gallery media and visibility are managed in the
+                        dedicated{" "}
+                        <button
+                          className="font-semibold underline underline-offset-2 hover:text-teal-800"
+                          type="button"
+                          onClick={() => setActiveSection("gallery")}
+                        >
+                          Gallery
+                        </button>{" "}
+                        section.
+                      </Note>
+                    </FieldSet>
+                  )}
 
-                  <Note>
-                    Gallery media and visibility are managed in the dedicated{" "}
-                    <button
-                      className="font-semibold underline underline-offset-2 hover:text-teal-800"
-                      type="button"
-                      onClick={() => setActiveSection("gallery")}
-                    >
-                      Gallery
-                    </button>{" "}
-                    section.
-                  </Note>
-                </FieldSet>
-              )}
-
-              {/* ─────────────────────────────────────────────────────────
+                  {/* ─────────────────────────────────────────────────────────
                   §06  GALLERY
                   Media visibility + upload + selection
               ───────────────────────────────────────────────────────── */}
-              {activeSection === "gallery" && (
-                <FieldSet className="">
-                  <SectionHeader
-                    description="Photos and videos shown on the public program page"
-                    icon={ImageIcon}
-                    number="06"
-                    title="Gallery"
-                  />
-                  <Note className="text-[11px]">
-                    Dependency: `Gallery Visibility` controls public display timing only.
-                    Media selection is preserved even when set to hidden.
-                  </Note>
-
-                  <div className="rounded-xl border border-zinc-200 bg-white p-4">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-[13px] font-semibold text-zinc-800">
-                          Program Gallery
-                        </p>
-                        <p className="text-[11.5px] text-zinc-400">
-                          Configure visibility and manage all gallery media.
-                        </p>
-                      </div>
-                      <Badge variant="outline">
-                        {galleryMediaIds.length} items
-                      </Badge>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <Field className="grid gap-2">
-                        <EnumSelect
-                          label="Gallery Visibility"
-                          onChange={(value) =>
-                            form.setValue("galleryMode", value, {
-                              shouldDirty: true,
-                            })
-                          }
-                          options={{
-                            always: "Show always",
-                            after_passed: "Show only after program ends",
-                            hidden: "Hide gallery",
-                          }}
-                          value={form.watch("galleryMode")}
-                        />
-                        <FieldError
-                          errors={[form.formState.errors.galleryMode]}
-                        />
-                      </Field>
-                      <Field className="space-y-1.5">
-                        <FieldLabel>Add Media</FieldLabel>
-                        <div className="flex flex-wrap gap-2">
-                          <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-600 hover:border-zinc-300 hover:text-zinc-900">
-                            <Upload className="size-3.5" />
-                            Upload Files
-                            <input
-                              accept="image/*,video/*"
-                              className="hidden"
-                              multiple
-                              type="file"
-                              onChange={(e) =>
-                                void uploadGalleryFiles(e.target.files)
-                              }
-                            />
-                          </label>
-                          <Button
-                            className="h-9 gap-1.5 text-xs"
-                            disabled={galleryLibraryLoading}
-                            size="sm"
-                            type="button"
-                            variant="outline"
-                            onClick={() => void openGalleryLibrary()}
-                          >
-                            {galleryLibraryLoading ? (
-                              <Loader2 className="size-3.5 animate-spin" />
-                            ) : (
-                              <Search className="size-3.5" />
-                            )}
-                            Browse Library
-                          </Button>
-                        </div>
-                        <UploadProgress
-                          className="mt-1"
-                          isActive={isGalleryUploading}
-                          percent={galleryUploadProgress}
-                          status={galleryUploadStatus}
-                        />
-                      </Field>
-                    </div>
-                    {visibility.showGalleryHiddenNote ? (
-                      <Note className="mt-3">
-                        Gallery is currently hidden on the frontend.
+                  {activeSection === "gallery" && (
+                    <FieldSet className="">
+                      <SectionHeader
+                        description="Photos and videos shown on the public program page"
+                        icon={ImageIcon}
+                        number="06"
+                        title="Gallery"
+                      />
+                      <Note className="text-[11px]">
+                        Dependency: `Gallery Visibility` controls public display
+                        timing only. Media selection is preserved even when set
+                        to hidden.
                       </Note>
-                    ) : null}
-                    {galleryMediaIds.length > 0 ? (
-                      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                        {galleryMediaIds.map((id) => {
-                          const media = galleryLibraryItems.find(
-                            (m) => m.id === id,
-                          );
-                          return (
-                            <div
-                              className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50"
-                              key={id}
-                            >
-                              {media ? (
-                                media.mimeType.startsWith("image/") ? (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img
-                                    alt={media.originalName}
-                                    className="h-full w-full object-cover"
-                                    src={media.url}
-                                  />
-                                ) : (
-                                  <video
-                                    className="h-full w-full object-cover"
-                                    muted
-                                    preload="metadata"
-                                    src={media.url}
-                                  />
-                                )
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center text-[11px] text-zinc-400">
-                                  Media
-                                </div>
-                              )}
-                              <button
-                                className="absolute right-1 top-1 inline-flex size-6 items-center justify-center rounded-md bg-black/70 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                                type="button"
-                                onClick={() =>
-                                  form.setValue(
-                                    "galleryMediaIds",
-                                    galleryMediaIds.filter(
-                                      (itemId) => itemId !== id,
-                                    ),
-                                    { shouldDirty: true },
-                                  )
-                                }
-                              >
-                                <X className="size-3.5" />
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="mt-3 text-[12px] text-zinc-400">
-                        No gallery media selected yet.
-                      </p>
-                    )}
-                  </div>
-                </FieldSet>
-              )}
 
-              {/* ─────────────────────────────────────────────────────────
+                      <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[13px] font-semibold text-zinc-800">
+                              Program Gallery
+                            </p>
+                            <p className="text-[11.5px] text-zinc-400">
+                              Configure visibility and manage all gallery media.
+                            </p>
+                          </div>
+                          <Badge variant="outline">
+                            {galleryMediaIds.length} items
+                          </Badge>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <Field className="grid gap-2">
+                            <EnumSelect
+                              label="Gallery Visibility"
+                              onChange={(value) =>
+                                form.setValue("galleryMode", value, {
+                                  shouldDirty: true,
+                                })
+                              }
+                              options={{
+                                always: "Show always",
+                                after_passed: "Show only after program ends",
+                                hidden: "Hide gallery",
+                              }}
+                              value={form.watch("galleryMode")}
+                            />
+                            <FieldError
+                              errors={[form.formState.errors.galleryMode]}
+                            />
+                          </Field>
+                          <Field className="space-y-1.5">
+                            <FieldLabel>Add Media</FieldLabel>
+                            <div className="flex flex-wrap gap-2">
+                              <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-600 hover:border-zinc-300 hover:text-zinc-900">
+                                <Upload className="size-3.5" />
+                                Upload Files
+                                <input
+                                  accept="image/*,video/*"
+                                  className="hidden"
+                                  multiple
+                                  type="file"
+                                  onChange={(e) =>
+                                    void uploadGalleryFiles(e.target.files)
+                                  }
+                                />
+                              </label>
+                              <Button
+                                className="h-9 gap-1.5 text-xs"
+                                disabled={galleryLibraryLoading}
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                                onClick={() => void openGalleryLibrary()}
+                              >
+                                {galleryLibraryLoading ? (
+                                  <Loader2 className="size-3.5 animate-spin" />
+                                ) : (
+                                  <Search className="size-3.5" />
+                                )}
+                                Browse Library
+                              </Button>
+                            </div>
+                            <UploadProgress
+                              className="mt-1"
+                              isActive={isGalleryUploading}
+                              percent={galleryUploadProgress}
+                              status={galleryUploadStatus}
+                            />
+                          </Field>
+                        </div>
+                        {visibility.showGalleryHiddenNote ? (
+                          <Note className="mt-3">
+                            Gallery is currently hidden on the frontend.
+                          </Note>
+                        ) : null}
+                        {galleryMediaIds.length > 0 ? (
+                          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                            {galleryMediaIds.map((id) => {
+                              const media = galleryLibraryItems.find(
+                                (m) => m.id === id,
+                              );
+                              return (
+                                <div
+                                  className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50"
+                                  key={id}
+                                >
+                                  {media ? (
+                                    media.mimeType.startsWith("image/") ? (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img
+                                        alt={media.originalName}
+                                        className="h-full w-full object-cover"
+                                        src={media.url}
+                                      />
+                                    ) : (
+                                      <video
+                                        className="h-full w-full object-cover"
+                                        muted
+                                        preload="metadata"
+                                        src={media.url}
+                                      />
+                                    )
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-[11px] text-zinc-400">
+                                      Media
+                                    </div>
+                                  )}
+                                  <button
+                                    className="absolute right-1 top-1 inline-flex size-6 items-center justify-center rounded-md bg-black/70 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                                    type="button"
+                                    onClick={() =>
+                                      form.setValue(
+                                        "galleryMediaIds",
+                                        galleryMediaIds.filter(
+                                          (itemId) => itemId !== id,
+                                        ),
+                                        { shouldDirty: true },
+                                      )
+                                    }
+                                  >
+                                    <X className="size-3.5" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-[12px] text-zinc-400">
+                            No gallery media selected yet.
+                          </p>
+                        )}
+                      </div>
+                    </FieldSet>
+                  )}
+
+                  {/* ─────────────────────────────────────────────────────────
                   §07  AGENDA
                   Day tabs ·  table (time / title / type / speaker)
               ───────────────────────────────────────────────────────── */}
-              {activeSection === "agenda" && (
-                <FieldSet className="">
-                  <SectionHeader
-                    description="Displayed as a timetable on the public event page"
-                    icon={LayoutList}
-                    number="07"
-                    title="Agenda"
-                  />
+                  {activeSection === "agenda" && (
+                    <FieldSet className="">
+                      <SectionHeader
+                        description="Displayed as a timetable on the public event page"
+                        icon={LayoutList}
+                        number="07"
+                        title="Agenda"
+                      />
 
-                  {/* Day tabs */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {agendaDays.map((day) => (
-                        <button
-                          className={cn(
-                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11.5px] font-semibold transition-all",
-                            activeDay === day
-                              ? "border-teal-500 bg-teal-500 text-white"
-                              : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300",
-                          )}
-                          key={day}
-                          type="button"
-                          onClick={() => setActiveDay(day)}
-                        >
-                          {formatDayLabel(day, startDate)}
-                          {day > 1 && (
-                            <span
+                      {/* Day tabs */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {agendaDays.map((day) => (
+                            <button
                               className={cn(
-                                "ml-0.5 flex size-3.5 items-center justify-center rounded-full text-[10px] leading-none",
+                                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11.5px] font-semibold transition-all",
                                 activeDay === day
-                                  ? "bg-white/25 hover:bg-white/40"
-                                  : "bg-zinc-100 hover:bg-red-100 hover:text-red-500",
+                                  ? "border-teal-500 bg-teal-500 text-white"
+                                  : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300",
                               )}
-                              role="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                agenda.fields
-                                  .map((f, i) => (f.day === day ? i : -1))
-                                  .filter((i) => i !== -1)
-                                  .reverse()
-                                  .forEach((i) => agenda.remove(i));
-                                setManualDays((p) =>
-                                  p.filter((d) => d !== day),
-                                );
-                                if (activeDay === day)
-                                  setActiveDay(agendaDays[0] ?? 1);
-                              }}
+                              key={day}
+                              type="button"
+                              onClick={() => setActiveDay(day)}
                             >
-                              ×
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                      <button
-                        className="inline-flex items-center gap-1 rounded-full border border-dashed border-zinc-300 px-3 py-1 text-[11.5px] font-semibold text-zinc-400 transition-colors hover:border-teal-400 hover:text-teal-600"
-                        type="button"
-                        onClick={() => {
-                          const next = Math.max(...agendaDays) + 1;
-                          setManualDays((p) => [...p, next]);
-                          setActiveDay(next);
-                        }}
-                      >
-                        <Plus className="size-3" /> Add Day
-                      </button>
-                    </div>
-                    {agendaInvalidTitleCount > 0 ? (
-                      <p className="mt-1 text-right text-[11px] font-medium text-amber-600">
-                        {agendaInvalidTitleCount} session(s) missing EN/AR
-                        title.
-                      </p>
-                    ) : null}
-                  </div>
-
-                  {/* Session table */}
-                  <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
-                    {/* Table header */}
-                    <div className="grid grid-cols-[110px_minmax(220px,1fr)_96px_240px_72px] border-b border-zinc-100 bg-zinc-50">
-                      {["Time", "Session", "Type", "Speaker", ""].map((h) => (
-                        <div
-                          className="border-r border-zinc-100 px-3 py-2 text-[9.5px] font-bold uppercase tracking-widest text-zinc-400 last:border-none"
-                          key={h}
-                        >
-                          {h}
-                        </div>
-                      ))}
-                    </div>
-                    {/* Rows for active day */}
-                    {agenda.fields
-                      .map((item, index) => ({ index, item }))
-                      .filter(({ item }) => item.day === activeDay)
-                      .map(({ index, item }) => {
-                        const rowValue = watchedAgenda?.[index];
-                        const isMissingLocalizedTitle =
-                          !(rowValue?.titleEn ?? "").trim().length &&
-                          !(rowValue?.titleAr ?? "").trim().length;
-                        const rowErrorPrefix = `agenda.${index}.`;
-                        const rowHasError = formErrorPaths.some((p) =>
-                          p.startsWith(rowErrorPrefix),
-                        );
-                        const timeHasError = formErrorPaths.includes(
-                          `agenda.${index}.time`,
-                        );
-                        const titleEnHasError = formErrorPaths.includes(
-                          `agenda.${index}.titleEn`,
-                        );
-                        const titleArHasError = formErrorPaths.includes(
-                          `agenda.${index}.titleAr`,
-                        );
-                        const typeHasError = formErrorPaths.includes(
-                          `agenda.${index}.type`,
-                        );
-                        const speakersHasError = formErrorPaths.some(
-                          (p) =>
-                            p.startsWith(`agenda.${index}.speakerNamesEn`) ||
-                            p.startsWith(`agenda.${index}.speakerNamesAr`),
-                        );
-                        return (
-                          <div
-                            className={cn(
-                              "grid grid-cols-[110px_minmax(220px,1fr)_96px_240px_72px] border-b border-zinc-100 last:border-none hover:bg-zinc-50/60",
-                              isMissingLocalizedTitle && "bg-amber-50/40",
-                              rowHasError && "bg-destructive/5",
-                            )}
-                            key={item.id}
-                          >
-                            <div className="border-r border-zinc-100">
-                              <input
-                                className={cn(
-                                  "h-10 w-full bg-transparent px-3 font-mono text-[11.5px] text-zinc-700 outline-none focus:bg-teal-50/40",
-                                  timeHasError &&
-                                    "ring-1 ring-inset ring-destructive/70 bg-destructive/5",
-                                )}
-                                type="time"
-                                {...form.register(
-                                  `agenda.${index}.time` as const,
-                                )}
-                              />
-                            </div>
-                            <div className="border-r border-zinc-100">
-                              <input
-                                className={cn(
-                                  "h-10 w-full bg-transparent px-3 text-[13px] text-zinc-800 outline-none placeholder:text-zinc-300 focus:bg-teal-50/40",
-                                  isMissingLocalizedTitle &&
-                                    "ring-1 ring-inset ring-amber-400 focus:ring-2 focus:ring-amber-500/40",
-                                  (titleEnHasError || titleArHasError) &&
-                                    "ring-1 ring-inset ring-destructive/70 bg-destructive/5",
-                                )}
-                                placeholder={
-                                  activeLocale === "ar"
-                                    ? "عنوان الجلسة…"
-                                    : "Session title…"
-                                }
-                                value={
-                                  (activeLocale === "ar"
-                                    ? rowValue?.titleAr
-                                    : rowValue?.titleEn) ?? ""
-                                }
-                                onChange={(e) => {
-                                  const nextValue = e.target.value;
-                                  if (activeLocale === "ar") {
-                                    form.setValue(
-                                      `agenda.${index}.titleAr`,
-                                      nextValue,
-                                      { shouldDirty: true },
-                                    );
-                                  } else {
-                                    form.setValue(
-                                      `agenda.${index}.titleEn`,
-                                      nextValue,
-                                      { shouldDirty: true },
-                                    );
-                                  }
-                                  form.setValue(
-                                    `agenda.${index}.title`,
-                                    nextValue,
-                                    { shouldDirty: true },
-                                  );
-                                }}
-                              />
-                            </div>
-                            <div className="border-r border-zinc-100">
-                              <Select
-                                value={rowValue?.type ?? "talk"}
-                                onValueChange={(v) =>
-                                  form.setValue(
-                                    `agenda.${index}.type`,
-                                    (v ?? "talk") as
-                                      | "talk"
-                                      | "break"
-                                      | "workshop"
-                                      | "panel",
-                                    {
-                                      shouldDirty: true,
-                                    },
-                                  )
-                                }
-                              >
-                                <SelectTrigger
+                              {formatDayLabel(day, startDate)}
+                              {day > 1 && (
+                                <span
                                   className={cn(
-                                    "!h-10 w-full rounded-none border-0 bg-transparent px-3 text-[12px] font-medium text-zinc-600 shadow-none focus:ring-0",
-                                    typeHasError &&
-                                      "bg-destructive/5 ring-1 ring-inset ring-destructive/70",
+                                    "ml-0.5 flex size-3.5 items-center justify-center rounded-full text-[10px] leading-none",
+                                    activeDay === day
+                                      ? "bg-white/25 hover:bg-white/40"
+                                      : "bg-zinc-100 hover:bg-red-100 hover:text-red-500",
                                   )}
+                                  role="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    agenda.fields
+                                      .map((f, i) => (f.day === day ? i : -1))
+                                      .filter((i) => i !== -1)
+                                      .reverse()
+                                      .forEach((i) => agenda.remove(i));
+                                    setManualDays((p) =>
+                                      p.filter((d) => d !== day),
+                                    );
+                                    if (activeDay === day)
+                                      setActiveDay(agendaDays[0] ?? 1);
+                                  }}
                                 >
-                                  <span>
-                                    {agendaTypeLabels[
-                                      (rowValue?.type ??
-                                        "talk") as keyof typeof agendaTypeLabels
-                                    ] ?? "Talk"}
-                                  </span>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Object.entries(agendaTypeLabels).map(
-                                    ([v, l]) => (
-                                      <SelectItem key={v} value={v}>
-                                        {l}
-                                      </SelectItem>
-                                    ),
-                                  )}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="border-r border-zinc-100">
-                              <AgendaSpeakersCombobox
-                                invalid={speakersHasError}
-                                options={trainerOptions.map((t) => t.label)}
-                                value={
-                                  activeLocale === "ar"
-                                    ? (rowValue?.speakerNamesAr ?? [])
-                                    : (rowValue?.speakerNamesEn ?? [])
-                                }
-                                onChange={(next) =>
-                                  form.setValue(
-                                    `agenda.${index}.${activeLocale === "ar" ? "speakerNamesAr" : "speakerNamesEn"}`,
-                                    next,
-                                    {
-                                      shouldDirty: true,
-                                    },
-                                  )
-                                }
-                              />
-                            </div>
-                            <div className="flex items-center justify-center gap-1 px-1">
-                              <button
+                                  ×
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                          <button
+                            className="inline-flex items-center gap-1 rounded-full border border-dashed border-zinc-300 px-3 py-1 text-[11.5px] font-semibold text-zinc-400 transition-colors hover:border-teal-400 hover:text-teal-600"
+                            type="button"
+                            onClick={() => {
+                              const next = Math.max(...agendaDays) + 1;
+                              setManualDays((p) => [...p, next]);
+                              setActiveDay(next);
+                            }}
+                          >
+                            <Plus className="size-3" /> Add Day
+                          </button>
+                        </div>
+                        {agendaInvalidTitleCount > 0 ? (
+                          <p className="mt-1 text-right text-[11px] font-medium text-amber-600">
+                            {agendaInvalidTitleCount} session(s) missing EN/AR
+                            title.
+                          </p>
+                        ) : null}
+                      </div>
+
+                      {/* Session table */}
+                      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
+                        {/* Table header */}
+                        <div className="grid grid-cols-[110px_minmax(220px,1fr)_96px_240px_72px] border-b border-zinc-100 bg-zinc-50">
+                          {["Time", "Session", "Type", "Speaker", ""].map(
+                            (h) => (
+                              <div
+                                className="border-r border-zinc-100 px-3 py-2 text-[9.5px] font-bold uppercase tracking-widest text-zinc-400 last:border-none"
+                                key={h}
+                              >
+                                {h}
+                              </div>
+                            ),
+                          )}
+                        </div>
+                        {/* Rows for active day */}
+                        {agenda.fields
+                          .map((item, index) => ({ index, item }))
+                          .filter(({ item }) => item.day === activeDay)
+                          .map(({ index, item }) => {
+                            const rowValue = watchedAgenda?.[index];
+                            const isMissingLocalizedTitle =
+                              !(rowValue?.titleEn ?? "").trim().length &&
+                              !(rowValue?.titleAr ?? "").trim().length;
+                            const rowErrorPrefix = `agenda.${index}.`;
+                            const rowHasError = formErrorPaths.some((p) =>
+                              p.startsWith(rowErrorPrefix),
+                            );
+                            const timeHasError = formErrorPaths.includes(
+                              `agenda.${index}.time`,
+                            );
+                            const titleEnHasError = formErrorPaths.includes(
+                              `agenda.${index}.titleEn`,
+                            );
+                            const titleArHasError = formErrorPaths.includes(
+                              `agenda.${index}.titleAr`,
+                            );
+                            const typeHasError = formErrorPaths.includes(
+                              `agenda.${index}.type`,
+                            );
+                            const speakersHasError = formErrorPaths.some(
+                              (p) =>
+                                p.startsWith(
+                                  `agenda.${index}.speakerNamesEn`,
+                                ) ||
+                                p.startsWith(`agenda.${index}.speakerNamesAr`),
+                            );
+                            return (
+                              <div
                                 className={cn(
-                                  "flex size-7 items-center justify-center rounded-md border transition-colors",
-                                  rowValue?.highlighted
-                                    ? "border-amber-300 bg-amber-50 text-amber-500"
-                                    : "border-zinc-200 text-zinc-300 hover:border-zinc-300 hover:text-zinc-500",
+                                  "grid grid-cols-[110px_minmax(220px,1fr)_96px_240px_72px] border-b border-zinc-100 last:border-none hover:bg-zinc-50/60",
+                                  isMissingLocalizedTitle && "bg-amber-50/40",
+                                  rowHasError && "bg-destructive/5",
                                 )}
-                                type="button"
-                                onClick={() =>
-                                  form.setValue(
-                                    `agenda.${index}.highlighted`,
-                                    !form.watch(`agenda.${index}.highlighted`),
-                                    { shouldDirty: true },
-                                  )
-                                }
+                                key={item.id}
                               >
-                                <Star
-                                  className={cn(
-                                    "size-3.5",
-                                    rowValue?.highlighted && "fill-current",
-                                  )}
-                                />
-                              </button>
-                              <Button
-                                className="cursor-pointer rounded"
-                                size="icon-sm"
-                                variant="destructive"
-                                onClick={() => agenda.remove(index)}
-                              >
-                                <HugeiconsIcon
-                                  icon={Delete02Icon}
-                                  className="text-destructive"
-                                />
-                              </Button>
-                              {/* <button
+                                <div className="border-r border-zinc-100">
+                                  <input
+                                    className={cn(
+                                      "h-10 w-full bg-transparent px-3 font-mono text-[11.5px] text-zinc-700 outline-none focus:bg-teal-50/40",
+                                      timeHasError &&
+                                        "ring-1 ring-inset ring-destructive/70 bg-destructive/5",
+                                    )}
+                                    type="time"
+                                    {...form.register(
+                                      `agenda.${index}.time` as const,
+                                    )}
+                                  />
+                                </div>
+                                <div className="border-r border-zinc-100">
+                                  <input
+                                    className={cn(
+                                      "h-10 w-full bg-transparent px-3 text-[13px] text-zinc-800 outline-none placeholder:text-zinc-300 focus:bg-teal-50/40",
+                                      isMissingLocalizedTitle &&
+                                        "ring-1 ring-inset ring-amber-400 focus:ring-2 focus:ring-amber-500/40",
+                                      (titleEnHasError || titleArHasError) &&
+                                        "ring-1 ring-inset ring-destructive/70 bg-destructive/5",
+                                    )}
+                                    placeholder={
+                                      activeLocale === "ar"
+                                        ? "عنوان الجلسة…"
+                                        : "Session title…"
+                                    }
+                                    value={
+                                      (activeLocale === "ar"
+                                        ? rowValue?.titleAr
+                                        : rowValue?.titleEn) ?? ""
+                                    }
+                                    onChange={(e) => {
+                                      const nextValue = e.target.value;
+                                      if (activeLocale === "ar") {
+                                        form.setValue(
+                                          `agenda.${index}.titleAr`,
+                                          nextValue,
+                                          { shouldDirty: true },
+                                        );
+                                      } else {
+                                        form.setValue(
+                                          `agenda.${index}.titleEn`,
+                                          nextValue,
+                                          { shouldDirty: true },
+                                        );
+                                      }
+                                      form.setValue(
+                                        `agenda.${index}.title`,
+                                        nextValue,
+                                        { shouldDirty: true },
+                                      );
+                                    }}
+                                  />
+                                </div>
+                                <div className="border-r border-zinc-100">
+                                  <Select
+                                    value={rowValue?.type ?? "talk"}
+                                    onValueChange={(v) =>
+                                      form.setValue(
+                                        `agenda.${index}.type`,
+                                        (v ?? "talk") as
+                                          | "talk"
+                                          | "break"
+                                          | "workshop"
+                                          | "panel",
+                                        {
+                                          shouldDirty: true,
+                                        },
+                                      )
+                                    }
+                                  >
+                                    <SelectTrigger
+                                      className={cn(
+                                        "!h-10 w-full rounded-none border-0 bg-transparent px-3 text-[12px] font-medium text-zinc-600 shadow-none focus:ring-0",
+                                        typeHasError &&
+                                          "bg-destructive/5 ring-1 ring-inset ring-destructive/70",
+                                      )}
+                                    >
+                                      <span>
+                                        {agendaTypeLabels[
+                                          (rowValue?.type ??
+                                            "talk") as keyof typeof agendaTypeLabels
+                                        ] ?? "Talk"}
+                                      </span>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {Object.entries(agendaTypeLabels).map(
+                                        ([v, l]) => (
+                                          <SelectItem key={v} value={v}>
+                                            {l}
+                                          </SelectItem>
+                                        ),
+                                      )}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="border-r border-zinc-100">
+                                  <AgendaSpeakersCombobox
+                                    invalid={speakersHasError}
+                                    options={trainerOptions.map((t) => t.label)}
+                                    value={
+                                      activeLocale === "ar"
+                                        ? (rowValue?.speakerNamesAr ?? [])
+                                        : (rowValue?.speakerNamesEn ?? [])
+                                    }
+                                    onChange={(next) =>
+                                      form.setValue(
+                                        `agenda.${index}.${activeLocale === "ar" ? "speakerNamesAr" : "speakerNamesEn"}`,
+                                        next,
+                                        {
+                                          shouldDirty: true,
+                                        },
+                                      )
+                                    }
+                                  />
+                                </div>
+                                <div className="flex items-center justify-center gap-1 px-1">
+                                  <button
+                                    className={cn(
+                                      "flex size-7 items-center justify-center rounded-md border transition-colors",
+                                      rowValue?.highlighted
+                                        ? "border-amber-300 bg-amber-50 text-amber-500"
+                                        : "border-zinc-200 text-zinc-300 hover:border-zinc-300 hover:text-zinc-500",
+                                    )}
+                                    type="button"
+                                    onClick={() =>
+                                      form.setValue(
+                                        `agenda.${index}.highlighted`,
+                                        !form.watch(
+                                          `agenda.${index}.highlighted`,
+                                        ),
+                                        { shouldDirty: true },
+                                      )
+                                    }
+                                  >
+                                    <Star
+                                      className={cn(
+                                        "size-3.5",
+                                        rowValue?.highlighted && "fill-current",
+                                      )}
+                                    />
+                                  </button>
+                                  <Button
+                                    className="cursor-pointer rounded"
+                                    size="icon-sm"
+                                    variant="destructive"
+                                    onClick={() => agenda.remove(index)}
+                                  >
+                                    <HugeiconsIcon
+                                      icon={Delete02Icon}
+                                      className="text-destructive"
+                                    />
+                                  </Button>
+                                  {/* <button
                               className="flex size-7 items-center justify-center rounded text-zinc-300 transition-colors hover:bg-red-50 hover:text-red-500"
                               type="button"
                               onClick={() => agenda.remove(index)}
                             >
                               <Trash2 className="size-3.5" />
                             </button> */}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    {/* Empty state */}
-                    {agenda.fields.filter((f) => f.day === activeDay).length ===
-                      0 && (
-                      <div className="flex flex-col items-center gap-1.5 py-10 text-center">
-                        <LayoutList className="size-5 text-zinc-200" />
-                        <p className="text-[13px] text-zinc-400">
-                          No sessions for this day yet
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  <Button
-                    className="h-9 border-dashed text-zinc-500 hover:border-teal-400 hover:text-teal-600"
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      agenda.append({
-                        day: activeDay,
-                        time: "",
-                        title: "",
-                        titleEn: "",
-                        titleAr: "",
-                        trainerId: "",
-                        speakerNamesEn: [],
-                        speakerNamesAr: [],
-                        highlighted: false,
-                        type: "talk",
-                      })
-                    }
-                  >
-                    <Plus className="mr-1.5 size-3.5" /> Add session
-                  </Button>
-                </FieldSet>
-              )}
-
-              {/* ─────────────────────────────────────────────────────────
-                  §08  TRAINERS
-                  Select from existing trainers · displayed as grid cards
-              ───────────────────────────────────────────────────────── */}
-              {activeSection === "trainers" && (
-                <FieldSet className="">
-                  <SectionHeader
-                    description="People leading this event"
-                    icon={Users}
-                    number="08"
-                    title="Trainers"
-                  />
-
-                  {/* Search + add */}
-                  <div className="flex gap-2">
-                    <Select
-                      value={trainerCandidate}
-                      onValueChange={(v) => setTrainerCandidate(v ?? "")}
-                    >
-                      <SelectTrigger
-                        className={cn(inputCls, "flex-1 cursor-pointer h-9!")}
-                      >
-                        <span
-                          className={
-                            trainerCandidate ? "text-zinc-900" : "text-zinc-400"
-                          }
-                        >
-                          {trainerCandidate
-                            ? trainerOptions.find(
-                                (t) => t.value === trainerCandidate,
-                              )?.label
-                            : "Search existing trainers…"}
-                        </span>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {availableTrainers.length === 0 ? (
-                            <div className="px-3 py-2 text-[12px] text-zinc-400">
-                              All trainers already added
-                            </div>
-                          ) : (
-                            availableTrainers.map((t) => (
-                              <SelectItem key={t.value} value={t.value}>
-                                {t.label}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      className="h-9 shrink-0 bg-teal-600 text-[13px] hover:bg-teal-700"
-                      disabled={
-                        !trainerCandidate && availableTrainers.length === 0
-                      }
-                      type="button"
-                      onClick={addTrainer}
-                    >
-                      <Plus className="mr-1.5 size-3.5" /> Add trainer
-                    </Button>
-                  </div>
-
-                  {/* Cards */}
-                  <DndContext
-                    sensors={dndSensors}
-                    onDragEnd={handleTrainerDragEnd}
-                  >
-                    <SortableContext
-                      items={chosenTrainers.map((t) => t.value)}
-                      strategy={rectSortingStrategy}
-                    >
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {chosenTrainers.map((trainer) => (
-                          <SortableTrainerItem
-                            id={trainer.value}
-                            key={trainer.value}
-                          >
-                            {(dragHandleProps) => (
-                              <div className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs transition-shadow hover:shadow-sm">
-                                <button
-                                  aria-label={`Remove ${trainer.label}`}
-                                  className="absolute right-2 top-2 z-10 flex size-5 items-center justify-center rounded-full bg-white/90 text-zinc-400 opacity-0 shadow-xs transition-all group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
-                                  type="button"
-                                  onClick={() => removeTrainer(trainer.value)}
-                                >
-                                  <X className="size-2.5" />
-                                </button>
-                                <div className="flex h-20 items-center justify-center bg-gradient-to-br from-teal-50 to-zinc-100">
-                                  <Users className="size-7 text-zinc-200" />
                                 </div>
-                                <div className="px-3 pb-3 pt-2.5">
-                                  <p className="truncate text-[13px] font-semibold text-zinc-800">
-                                    {trainer.label}
-                                  </p>
-                                  <p className="mt-0.5 text-[11.5px] text-zinc-400">
-                                    Trainer
-                                  </p>
-                                </div>
-                                <button
-                                  {...dragHandleProps}
-                                  aria-label="Drag to reorder"
-                                  className="absolute bottom-2 right-2 cursor-grab text-zinc-300 hover:text-zinc-500 active:cursor-grabbing"
-                                  type="button"
-                                >
-                                  <GripVertical className="size-3.5" />
-                                </button>
                               </div>
-                            )}
-                          </SortableTrainerItem>
-                        ))}
-                        {chosenTrainers.length === 0 && (
-                          <div className="col-span-3 flex flex-col items-center gap-2 rounded-xl border border-dashed border-zinc-200 py-10 text-center">
-                            <Users className="size-6 text-zinc-200" />
+                            );
+                          })}
+                        {/* Empty state */}
+                        {agenda.fields.filter((f) => f.day === activeDay)
+                          .length === 0 && (
+                          <div className="flex flex-col items-center gap-1.5 py-10 text-center">
+                            <LayoutList className="size-5 text-zinc-200" />
                             <p className="text-[13px] text-zinc-400">
-                              No trainers assigned yet
+                              No sessions for this day yet
                             </p>
                           </div>
                         )}
                       </div>
-                    </SortableContext>
-                  </DndContext>
-                </FieldSet>
-              )}
 
-              {/* ─────────────────────────────────────────────────────────
+                      <Button
+                        className="h-9 border-dashed text-zinc-500 hover:border-teal-400 hover:text-teal-600"
+                        type="button"
+                        variant="outline"
+                        onClick={() =>
+                          agenda.append({
+                            day: activeDay,
+                            time: "",
+                            title: "",
+                            titleEn: "",
+                            titleAr: "",
+                            trainerId: "",
+                            speakerNamesEn: [],
+                            speakerNamesAr: [],
+                            highlighted: false,
+                            type: "talk",
+                          })
+                        }
+                      >
+                        <Plus className="mr-1.5 size-3.5" /> Add session
+                      </Button>
+                    </FieldSet>
+                  )}
+
+                  {/* ─────────────────────────────────────────────────────────
+                  §08  TRAINERS
+                  Select from existing trainers · displayed as grid cards
+              ───────────────────────────────────────────────────────── */}
+                  {activeSection === "trainers" && (
+                    <FieldSet className="">
+                      <SectionHeader
+                        description="People leading this event"
+                        icon={Users}
+                        number="08"
+                        title="Trainers"
+                      />
+
+                      {/* Search + add */}
+                      <div className="flex gap-2">
+                        <Select
+                          value={trainerCandidate}
+                          onValueChange={(v) => setTrainerCandidate(v ?? "")}
+                        >
+                          <SelectTrigger
+                            className={cn(
+                              inputCls,
+                              "flex-1 cursor-pointer h-9!",
+                            )}
+                          >
+                            <span
+                              className={
+                                trainerCandidate
+                                  ? "text-zinc-900"
+                                  : "text-zinc-400"
+                              }
+                            >
+                              {trainerCandidate
+                                ? trainerOptions.find(
+                                    (t) => t.value === trainerCandidate,
+                                  )?.label
+                                : "Search existing trainers…"}
+                            </span>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {availableTrainers.length === 0 ? (
+                                <div className="px-3 py-2 text-[12px] text-zinc-400">
+                                  All trainers already added
+                                </div>
+                              ) : (
+                                availableTrainers.map((t) => (
+                                  <SelectItem key={t.value} value={t.value}>
+                                    {t.label}
+                                  </SelectItem>
+                                ))
+                              )}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          className="h-9 shrink-0 bg-teal-600 text-[13px] hover:bg-teal-700"
+                          disabled={
+                            !trainerCandidate && availableTrainers.length === 0
+                          }
+                          type="button"
+                          onClick={addTrainer}
+                        >
+                          <Plus className="mr-1.5 size-3.5" /> Add trainer
+                        </Button>
+                      </div>
+
+                      {/* Cards */}
+                      <DndContext
+                        sensors={dndSensors}
+                        onDragEnd={handleTrainerDragEnd}
+                      >
+                        <SortableContext
+                          items={chosenTrainers.map((t) => t.value)}
+                          strategy={rectSortingStrategy}
+                        >
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {chosenTrainers.map((trainer) => (
+                              <SortableTrainerItem
+                                id={trainer.value}
+                                key={trainer.value}
+                              >
+                                {(dragHandleProps) => (
+                                  <div className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs transition-shadow hover:shadow-sm">
+                                    <button
+                                      aria-label={`Remove ${trainer.label}`}
+                                      className="absolute right-2 top-2 z-10 flex size-5 items-center justify-center rounded-full bg-white/90 text-zinc-400 opacity-0 shadow-xs transition-all group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
+                                      type="button"
+                                      onClick={() =>
+                                        removeTrainer(trainer.value)
+                                      }
+                                    >
+                                      <X className="size-2.5" />
+                                    </button>
+                                    <div className="flex h-20 items-center justify-center bg-gradient-to-br from-teal-50 to-zinc-100">
+                                      <Users className="size-7 text-zinc-200" />
+                                    </div>
+                                    <div className="px-3 pb-3 pt-2.5">
+                                      <p className="truncate text-[13px] font-semibold text-zinc-800">
+                                        {trainer.label}
+                                      </p>
+                                      <p className="mt-0.5 text-[11.5px] text-zinc-400">
+                                        Trainer
+                                      </p>
+                                    </div>
+                                    <button
+                                      {...dragHandleProps}
+                                      aria-label="Drag to reorder"
+                                      className="absolute bottom-2 right-2 cursor-grab text-zinc-300 hover:text-zinc-500 active:cursor-grabbing"
+                                      type="button"
+                                    >
+                                      <GripVertical className="size-3.5" />
+                                    </button>
+                                  </div>
+                                )}
+                              </SortableTrainerItem>
+                            ))}
+                            {chosenTrainers.length === 0 && (
+                              <div className="col-span-3 flex flex-col items-center gap-2 rounded-xl border border-dashed border-zinc-200 py-10 text-center">
+                                <Users className="size-6 text-zinc-200" />
+                                <p className="text-[13px] text-zinc-400">
+                                  No trainers assigned yet
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </SortableContext>
+                      </DndContext>
+                    </FieldSet>
+                  )}
+
+                  {/* ─────────────────────────────────────────────────────────
                   §09  CATEGORIES
                   Toggle chips — selected = filled teal pill
               ───────────────────────────────────────────────────────── */}
-              {activeSection === "categories" && (
-                <FieldSet className="">
-                  <SectionHeader
-                    description="Tags that appear on the event page and in filters"
-                    icon={Tag}
-                    number="09"
-                    title="Categories"
-                  />
-                  <div className="flex flex-wrap gap-2">
-                    {categoryOptions.map((cat) => {
-                      const selected = selectedCategoryIds.includes(cat.value);
-                      return (
-                        <button
-                          className={cn(
-                            "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition-all",
-                            selected
-                              ? "border-teal-500 bg-teal-500 text-white"
-                              : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300",
-                          )}
-                          key={cat.value}
-                          type="button"
-                          onClick={() => toggleCategory(cat.value)}
-                        >
-                          {selected && (
-                            <span className="size-1.5 rounded-full bg-white/60" />
-                          )}
-                          {cat.label}
-                        </button>
-                      );
-                    })}
-                    {categoryOptions.length === 0 && (
-                      <p className="text-[13px] text-zinc-400">
-                        No categories configured yet.
-                      </p>
-                    )}
-                  </div>
-                </FieldSet>
-              )}
+                  {activeSection === "categories" && (
+                    <FieldSet className="">
+                      <SectionHeader
+                        description="Tags that appear on the event page and in filters"
+                        icon={Tag}
+                        number="09"
+                        title="Categories"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        {categoryOptions.map((cat) => {
+                          const selected = selectedCategoryIds.includes(
+                            cat.value,
+                          );
+                          return (
+                            <button
+                              className={cn(
+                                "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition-all",
+                                selected
+                                  ? "border-teal-500 bg-teal-500 text-white"
+                                  : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300",
+                              )}
+                              key={cat.value}
+                              type="button"
+                              onClick={() => toggleCategory(cat.value)}
+                            >
+                              {selected && (
+                                <span className="size-1.5 rounded-full bg-white/60" />
+                              )}
+                              {cat.label}
+                            </button>
+                          );
+                        })}
+                        {categoryOptions.length === 0 && (
+                          <p className="text-[13px] text-zinc-400">
+                            No categories configured yet.
+                          </p>
+                        )}
+                      </div>
+                    </FieldSet>
+                  )}
 
-              {/* ─────────────────────────────────────────────────────────
+                  {/* ─────────────────────────────────────────────────────────
                   §10  REGISTRATION FORM
                   Add custom fields · accordion per field
               ───────────────────────────────────────────────────────── */}
-              {activeSection === "registrationForm" &&
-                visibility.showRegistrationFormSection && (
-                  <FieldSet className="">
-                    <SectionHeader
-                      description="Custom inputs shown to learners during sign-up"
-                      icon={ClipboardList}
-                      number="10"
-                      title="Registration Form"
-                    />
-
-                    {/* Add field row */}
-                    <div className="flex gap-2">
-                      <div className="w-48">
-                        <EnumSelect
-                          onChange={setNewFieldType}
-                          options={fieldTypeLabels}
-                          value={newFieldType}
+                  {activeSection === "registrationForm" &&
+                    visibility.showRegistrationFormSection && (
+                      <FieldSet className="">
+                        <SectionHeader
+                          description="Custom inputs shown to learners during sign-up"
+                          icon={ClipboardList}
+                          number="10"
+                          title="Registration Form"
                         />
-                      </div>
-                      <Button
-                        className="h-9 bg-teal-600 text-[13px] hover:bg-teal-700"
-                        type="button"
-                        onClick={() => addRegistrationField(newFieldType)}
-                      >
-                        <Plus className="mr-1.5 size-3.5" /> Add field
-                      </Button>
-                    </div>
 
-                    {regFields.fields.length === 0 ? (
-                      <Note>
-                        No registration fields yet. Add fields to configure what
-                        learners fill out during sign-up.
-                      </Note>
-                    ) : (
-                      <DndContext
-                        modifiers={[restrictToVerticalAxis]}
-                        sensors={dndSensors}
-                        onDragEnd={handleFieldDragEnd}
-                      >
-                        <SortableContext
-                          items={regFields.fields.map((f) => f.id)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          <FieldGroup className="">
-                            {regFields.fields.map((regField, index) => {
-                              const isOpen = openFieldId === regField.id;
-                              const cur = form.getValues(
-                                `registrationFields.${index}`,
-                              );
-                              const activeLabel =
-                                activeLocale === "en"
-                                  ? cur.labelEn
-                                  : cur.labelAr;
+                        {/* Add field row */}
+                        <div className="flex gap-2">
+                          <div className="w-48">
+                            <EnumSelect
+                              onChange={setNewFieldType}
+                              options={fieldTypeLabels}
+                              value={newFieldType}
+                            />
+                          </div>
+                          <Button
+                            className="h-9 bg-teal-600 text-[13px] hover:bg-teal-700"
+                            type="button"
+                            onClick={() => addRegistrationField(newFieldType)}
+                          >
+                            <Plus className="mr-1.5 size-3.5" /> Add field
+                          </Button>
+                        </div>
 
-                              return (
-                                <SortableFieldItem
-                                  id={regField.id}
-                                  key={regField.id}
-                                >
-                                  {(dragHandleProps) => (
-                                    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
-                                      {/* Header */}
-                                      <div className="flex w-full items-center gap-2 px-2 py-3">
-                                        <button
-                                          {...dragHandleProps}
-                                          aria-label="Drag to reorder field"
-                                          className="shrink-0 cursor-grab p-1 text-zinc-300 hover:text-zinc-500 active:cursor-grabbing"
-                                          type="button"
-                                        >
-                                          <GripVertical className="size-4" />
-                                        </button>
-                                        <button
-                                          className="flex flex-1 items-center gap-3 text-left"
-                                          type="button"
-                                          onClick={() =>
-                                            setOpenFieldId(
-                                              isOpen ? null : regField.id,
-                                            )
-                                          }
-                                        >
-                                          <Badge
-                                            className="shrink-0 rounded-full bg-zinc-100 text-[11px] font-bold text-zinc-500"
-                                            variant="secondary"
-                                          >
-                                            Field {index + 1}
-                                          </Badge>
-                                          <span className="flex-1 truncate text-[13px] font-medium text-zinc-700">
-                                            {activeLabel || (
-                                              <span className="italic text-zinc-400">
-                                                Untitled field
+                        {regFields.fields.length === 0 ? (
+                          <Note>
+                            No registration fields yet. Add fields to configure
+                            what learners fill out during sign-up.
+                          </Note>
+                        ) : (
+                          <DndContext
+                            modifiers={[restrictToVerticalAxis]}
+                            sensors={dndSensors}
+                            onDragEnd={handleFieldDragEnd}
+                          >
+                            <SortableContext
+                              items={regFields.fields.map((f) => f.id)}
+                              strategy={verticalListSortingStrategy}
+                            >
+                              <FieldGroup className="">
+                                {regFields.fields.map((regField, index) => {
+                                  const isOpen = openFieldId === regField.id;
+                                  const cur = form.getValues(
+                                    `registrationFields.${index}`,
+                                  );
+                                  const activeLabel =
+                                    activeLocale === "en"
+                                      ? cur.labelEn
+                                      : cur.labelAr;
+
+                                  return (
+                                    <SortableFieldItem
+                                      id={regField.id}
+                                      key={regField.id}
+                                    >
+                                      {(dragHandleProps) => (
+                                        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
+                                          {/* Header */}
+                                          <div className="flex w-full items-center gap-2 px-2 py-3">
+                                            <button
+                                              {...dragHandleProps}
+                                              aria-label="Drag to reorder field"
+                                              className="shrink-0 cursor-grab p-1 text-zinc-300 hover:text-zinc-500 active:cursor-grabbing"
+                                              type="button"
+                                            >
+                                              <GripVertical className="size-4" />
+                                            </button>
+                                            <button
+                                              className="flex flex-1 items-center gap-3 text-left"
+                                              type="button"
+                                              onClick={() =>
+                                                setOpenFieldId(
+                                                  isOpen ? null : regField.id,
+                                                )
+                                              }
+                                            >
+                                              <Badge
+                                                className="shrink-0 rounded-full bg-zinc-100 text-[11px] font-bold text-zinc-500"
+                                                variant="secondary"
+                                              >
+                                                Field {index + 1}
+                                              </Badge>
+                                              <span className="flex-1 truncate text-[13px] font-medium text-zinc-700">
+                                                {activeLabel || (
+                                                  <span className="italic text-zinc-400">
+                                                    Untitled field
+                                                  </span>
+                                                )}
                                               </span>
-                                            )}
-                                          </span>
-                                          <Badge
-                                            className="shrink-0 text-[11px]"
-                                            variant="outline"
-                                          >
-                                            {cur.type}
-                                          </Badge>
-                                          <ChevronDown
-                                            className={cn(
-                                              "size-4 shrink-0 text-zinc-400 transition-transform",
-                                              isOpen && "rotate-180",
-                                            )}
-                                          />
-                                        </button>
-                                      </div>
-
-                                      {/* Body */}
-                                      {isOpen && (
-                                        <div className="border-t border-zinc-100 px-4 pb-4 pt-4">
-                                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                            <Field className="grid gap-2">
-                                              <EnumSelect
-                                                label="Field Type"
-                                                onChange={(value) =>
-                                                  form.setValue(
-                                                    `registrationFields.${index}.type`,
-                                                    value,
-                                                    { shouldDirty: true },
-                                                  )
-                                                }
-                                                options={fieldTypeLabels}
-                                                value={
-                                                  form.watch(
-                                                    `registrationFields.${index}.type`,
-                                                  ) ?? "text"
-                                                }
+                                              <Badge
+                                                className="shrink-0 text-[11px]"
+                                                variant="outline"
+                                              >
+                                                {cur.type}
+                                              </Badge>
+                                              <ChevronDown
+                                                className={cn(
+                                                  "size-4 shrink-0 text-zinc-400 transition-transform",
+                                                  isOpen && "rotate-180",
+                                                )}
                                               />
-                                            </Field>
-                                            <Field className="grid gap-2">
-                                              <FieldLabel>Required</FieldLabel>
-                                              <div className="flex h-9 items-center gap-2.5 rounded-md border border-zinc-200 bg-zinc-50 px-3">
-                                                <Switch
-                                                  checked={
-                                                    form.watch(
-                                                      `registrationFields.${index}.required`,
-                                                    ) ?? false
-                                                  }
-                                                  className="shrink-0 data-[state=checked]:bg-teal-600"
-                                                  onCheckedChange={(value) =>
-                                                    form.setValue(
-                                                      `registrationFields.${index}.required`,
-                                                      value,
-                                                      { shouldDirty: true },
+                                            </button>
+                                          </div>
+
+                                          {/* Body */}
+                                          {isOpen && (
+                                            <div className="border-t border-zinc-100 px-4 pb-4 pt-4">
+                                              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                <Field className="grid gap-2">
+                                                  <EnumSelect
+                                                    label="Field Type"
+                                                    onChange={(value) =>
+                                                      form.setValue(
+                                                        `registrationFields.${index}.type`,
+                                                        value,
+                                                        { shouldDirty: true },
+                                                      )
+                                                    }
+                                                    options={fieldTypeLabels}
+                                                    value={
+                                                      form.watch(
+                                                        `registrationFields.${index}.type`,
+                                                      ) ?? "text"
+                                                    }
+                                                  />
+                                                </Field>
+                                                <Field className="grid gap-2">
+                                                  <FieldLabel>
+                                                    Required
+                                                  </FieldLabel>
+                                                  <div className="flex h-9 items-center gap-2.5 rounded-md border border-zinc-200 bg-zinc-50 px-3">
+                                                    <Switch
+                                                      checked={
+                                                        form.watch(
+                                                          `registrationFields.${index}.required`,
+                                                        ) ?? false
+                                                      }
+                                                      className="shrink-0 data-[state=checked]:bg-teal-600"
+                                                      onCheckedChange={(
+                                                        value,
+                                                      ) =>
+                                                        form.setValue(
+                                                          `registrationFields.${index}.required`,
+                                                          value,
+                                                          { shouldDirty: true },
+                                                        )
+                                                      }
+                                                    />
+                                                    <Label className="cursor-pointer text-[13px] font-medium text-zinc-700">
+                                                      Required field
+                                                    </Label>
+                                                  </div>
+                                                </Field>
+                                                <Field className="grid gap-2">
+                                                  <FieldLabel
+                                                    htmlFor={`${idPrefix}-rf-${index}-label-en`}
+                                                  >
+                                                    Label (EN)
+                                                  </FieldLabel>
+                                                  <FieldContent>
+                                                    <Input
+                                                      className={inputCls}
+                                                      id={`${idPrefix}-rf-${index}-label-en`}
+                                                      {...form.register(
+                                                        `registrationFields.${index}.labelEn` as const,
+                                                      )}
+                                                    />
+                                                  </FieldContent>
+                                                  <FieldError
+                                                    errors={[
+                                                      form.formState.errors
+                                                        .registrationFields?.[
+                                                        index
+                                                      ]?.labelEn,
+                                                    ]}
+                                                  />
+                                                </Field>
+                                                <Field className="grid gap-2">
+                                                  <FieldLabel
+                                                    htmlFor={`${idPrefix}-rf-${index}-label-ar`}
+                                                  >
+                                                    Label (AR)
+                                                  </FieldLabel>
+                                                  <FieldContent>
+                                                    <Input
+                                                      className={inputCls}
+                                                      dir="rtl"
+                                                      id={`${idPrefix}-rf-${index}-label-ar`}
+                                                      {...form.register(
+                                                        `registrationFields.${index}.labelAr` as const,
+                                                      )}
+                                                    />
+                                                  </FieldContent>
+                                                  <FieldError
+                                                    errors={[
+                                                      form.formState.errors
+                                                        .registrationFields?.[
+                                                        index
+                                                      ]?.labelAr,
+                                                    ]}
+                                                  />
+                                                </Field>
+                                                <Field className="grid gap-2">
+                                                  <FieldLabel
+                                                    htmlFor={`${idPrefix}-rf-${index}-placeholder-en`}
+                                                  >
+                                                    Placeholder (EN)
+                                                  </FieldLabel>
+                                                  <FieldContent>
+                                                    <Input
+                                                      className={inputCls}
+                                                      id={`${idPrefix}-rf-${index}-placeholder-en`}
+                                                      {...form.register(
+                                                        `registrationFields.${index}.placeholderEn` as const,
+                                                      )}
+                                                    />
+                                                  </FieldContent>
+                                                  <FieldError
+                                                    errors={[
+                                                      form.formState.errors
+                                                        .registrationFields?.[
+                                                        index
+                                                      ]?.placeholderEn,
+                                                    ]}
+                                                  />
+                                                </Field>
+                                                <Field className="grid gap-2">
+                                                  <FieldLabel
+                                                    htmlFor={`${idPrefix}-rf-${index}-placeholder-ar`}
+                                                  >
+                                                    Placeholder (AR)
+                                                  </FieldLabel>
+                                                  <FieldContent>
+                                                    <Input
+                                                      className={inputCls}
+                                                      dir="rtl"
+                                                      id={`${idPrefix}-rf-${index}-placeholder-ar`}
+                                                      {...form.register(
+                                                        `registrationFields.${index}.placeholderAr` as const,
+                                                      )}
+                                                    />
+                                                  </FieldContent>
+                                                  <FieldError
+                                                    errors={[
+                                                      form.formState.errors
+                                                        .registrationFields?.[
+                                                        index
+                                                      ]?.placeholderAr,
+                                                    ]}
+                                                  />
+                                                </Field>
+                                                {cur.type === "select" && (
+                                                  <>
+                                                    <Field className="grid gap-2">
+                                                      <div className="mb-1.5 flex items-center justify-between">
+                                                        <FieldLabel
+                                                          htmlFor={`${idPrefix}-rf-${index}-options-en`}
+                                                        >
+                                                          Options (EN)
+                                                        </FieldLabel>
+                                                        <span className="text-[11px] text-zinc-400">
+                                                          comma-separated
+                                                        </span>
+                                                      </div>
+                                                      <FieldContent>
+                                                        <Textarea
+                                                          className={cn(
+                                                            inputCls,
+                                                            "h-auto py-2",
+                                                          )}
+                                                          id={`${idPrefix}-rf-${index}-options-en`}
+                                                          rows={2}
+                                                          {...form.register(
+                                                            `registrationFields.${index}.optionsEn` as const,
+                                                          )}
+                                                        />
+                                                      </FieldContent>
+                                                      <FieldError
+                                                        errors={[
+                                                          form.formState.errors
+                                                            .registrationFields?.[
+                                                            index
+                                                          ]?.optionsEn,
+                                                        ]}
+                                                      />
+                                                    </Field>
+                                                    <Field className="grid gap-2">
+                                                      <div className="mb-1.5 flex items-center justify-between">
+                                                        <FieldLabel
+                                                          htmlFor={`${idPrefix}-rf-${index}-options-ar`}
+                                                        >
+                                                          Options (AR)
+                                                        </FieldLabel>
+                                                        <span className="text-[11px] text-zinc-400">
+                                                          comma-separated
+                                                        </span>
+                                                      </div>
+                                                      <FieldContent>
+                                                        <Textarea
+                                                          className={cn(
+                                                            inputCls,
+                                                            "h-auto py-2",
+                                                          )}
+                                                          dir="rtl"
+                                                          id={`${idPrefix}-rf-${index}-options-ar`}
+                                                          rows={2}
+                                                          {...form.register(
+                                                            `registrationFields.${index}.optionsAr` as const,
+                                                          )}
+                                                        />
+                                                      </FieldContent>
+                                                      <FieldError
+                                                        errors={[
+                                                          form.formState.errors
+                                                            .registrationFields?.[
+                                                            index
+                                                          ]?.optionsAr,
+                                                        ]}
+                                                      />
+                                                    </Field>
+                                                  </>
+                                                )}
+                                              </div>
+                                              {/* Field actions */}
+                                              <div className="mt-4 flex items-center gap-2 border-t border-zinc-100 pt-4">
+                                                <Button
+                                                  className="h-7 text-[11.5px]"
+                                                  disabled={index === 0}
+                                                  size="sm"
+                                                  type="button"
+                                                  variant="outline"
+                                                  onClick={() =>
+                                                    index > 0 &&
+                                                    regFields.move(
+                                                      index,
+                                                      index - 1,
                                                     )
                                                   }
-                                                />
-                                                <Label className="cursor-pointer text-[13px] font-medium text-zinc-700">
-                                                  Required field
-                                                </Label>
+                                                >
+                                                  ↑ Up
+                                                </Button>
+                                                <Button
+                                                  className="h-7 text-[11.5px]"
+                                                  disabled={
+                                                    index ===
+                                                    regFields.fields.length - 1
+                                                  }
+                                                  size="sm"
+                                                  type="button"
+                                                  variant="outline"
+                                                  onClick={() =>
+                                                    index <
+                                                      regFields.fields.length -
+                                                        1 &&
+                                                    regFields.move(
+                                                      index,
+                                                      index + 1,
+                                                    )
+                                                  }
+                                                >
+                                                  ↓ Down
+                                                </Button>
+                                                <Button
+                                                  className="ml-auto h-7 text-[11.5px] text-red-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                                  size="sm"
+                                                  type="button"
+                                                  variant="outline"
+                                                  onClick={() => {
+                                                    regFields.remove(index);
+                                                    setOpenFieldId(null);
+                                                  }}
+                                                >
+                                                  <Trash2 className="mr-1 size-3" />{" "}
+                                                  Remove
+                                                </Button>
                                               </div>
-                                            </Field>
-                                            <Field className="grid gap-2">
-                                              <FieldLabel
-                                                htmlFor={`${idPrefix}-rf-${index}-label-en`}
-                                              >
-                                                Label (EN)
-                                              </FieldLabel>
-                                              <FieldContent>
-                                                <Input
-                                                  className={inputCls}
-                                                  id={`${idPrefix}-rf-${index}-label-en`}
-                                                  {...form.register(
-                                                    `registrationFields.${index}.labelEn` as const,
-                                                  )}
-                                                />
-                                              </FieldContent>
-                                              <FieldError
-                                                errors={[
-                                                  form.formState.errors
-                                                    .registrationFields?.[index]
-                                                    ?.labelEn,
-                                                ]}
-                                              />
-                                            </Field>
-                                            <Field className="grid gap-2">
-                                              <FieldLabel
-                                                htmlFor={`${idPrefix}-rf-${index}-label-ar`}
-                                              >
-                                                Label (AR)
-                                              </FieldLabel>
-                                              <FieldContent>
-                                                <Input
-                                                  className={inputCls}
-                                                  dir="rtl"
-                                                  id={`${idPrefix}-rf-${index}-label-ar`}
-                                                  {...form.register(
-                                                    `registrationFields.${index}.labelAr` as const,
-                                                  )}
-                                                />
-                                              </FieldContent>
-                                              <FieldError
-                                                errors={[
-                                                  form.formState.errors
-                                                    .registrationFields?.[index]
-                                                    ?.labelAr,
-                                                ]}
-                                              />
-                                            </Field>
-                                            <Field className="grid gap-2">
-                                              <FieldLabel
-                                                htmlFor={`${idPrefix}-rf-${index}-placeholder-en`}
-                                              >
-                                                Placeholder (EN)
-                                              </FieldLabel>
-                                              <FieldContent>
-                                                <Input
-                                                  className={inputCls}
-                                                  id={`${idPrefix}-rf-${index}-placeholder-en`}
-                                                  {...form.register(
-                                                    `registrationFields.${index}.placeholderEn` as const,
-                                                  )}
-                                                />
-                                              </FieldContent>
-                                              <FieldError
-                                                errors={[
-                                                  form.formState.errors
-                                                    .registrationFields?.[index]
-                                                    ?.placeholderEn,
-                                                ]}
-                                              />
-                                            </Field>
-                                            <Field className="grid gap-2">
-                                              <FieldLabel
-                                                htmlFor={`${idPrefix}-rf-${index}-placeholder-ar`}
-                                              >
-                                                Placeholder (AR)
-                                              </FieldLabel>
-                                              <FieldContent>
-                                                <Input
-                                                  className={inputCls}
-                                                  dir="rtl"
-                                                  id={`${idPrefix}-rf-${index}-placeholder-ar`}
-                                                  {...form.register(
-                                                    `registrationFields.${index}.placeholderAr` as const,
-                                                  )}
-                                                />
-                                              </FieldContent>
-                                              <FieldError
-                                                errors={[
-                                                  form.formState.errors
-                                                    .registrationFields?.[index]
-                                                    ?.placeholderAr,
-                                                ]}
-                                              />
-                                            </Field>
-                                            {cur.type === "select" && (
-                                              <>
-                                                <Field className="grid gap-2">
-                                                  <div className="mb-1.5 flex items-center justify-between">
-                                                    <FieldLabel
-                                                      htmlFor={`${idPrefix}-rf-${index}-options-en`}
-                                                    >
-                                                      Options (EN)
-                                                    </FieldLabel>
-                                                    <span className="text-[11px] text-zinc-400">
-                                                      comma-separated
-                                                    </span>
-                                                  </div>
-                                                  <FieldContent>
-                                                    <Textarea
-                                                      className={cn(
-                                                        inputCls,
-                                                        "h-auto py-2",
-                                                      )}
-                                                      id={`${idPrefix}-rf-${index}-options-en`}
-                                                      rows={2}
-                                                      {...form.register(
-                                                        `registrationFields.${index}.optionsEn` as const,
-                                                      )}
-                                                    />
-                                                  </FieldContent>
-                                                  <FieldError
-                                                    errors={[
-                                                      form.formState.errors
-                                                        .registrationFields?.[
-                                                        index
-                                                      ]?.optionsEn,
-                                                    ]}
-                                                  />
-                                                </Field>
-                                                <Field className="grid gap-2">
-                                                  <div className="mb-1.5 flex items-center justify-between">
-                                                    <FieldLabel
-                                                      htmlFor={`${idPrefix}-rf-${index}-options-ar`}
-                                                    >
-                                                      Options (AR)
-                                                    </FieldLabel>
-                                                    <span className="text-[11px] text-zinc-400">
-                                                      comma-separated
-                                                    </span>
-                                                  </div>
-                                                  <FieldContent>
-                                                    <Textarea
-                                                      className={cn(
-                                                        inputCls,
-                                                        "h-auto py-2",
-                                                      )}
-                                                      dir="rtl"
-                                                      id={`${idPrefix}-rf-${index}-options-ar`}
-                                                      rows={2}
-                                                      {...form.register(
-                                                        `registrationFields.${index}.optionsAr` as const,
-                                                      )}
-                                                    />
-                                                  </FieldContent>
-                                                  <FieldError
-                                                    errors={[
-                                                      form.formState.errors
-                                                        .registrationFields?.[
-                                                        index
-                                                      ]?.optionsAr,
-                                                    ]}
-                                                  />
-                                                </Field>
-                                              </>
-                                            )}
-                                          </div>
-                                          {/* Field actions */}
-                                          <div className="mt-4 flex items-center gap-2 border-t border-zinc-100 pt-4">
-                                            <Button
-                                              className="h-7 text-[11.5px]"
-                                              disabled={index === 0}
-                                              size="sm"
-                                              type="button"
-                                              variant="outline"
-                                              onClick={() =>
-                                                index > 0 &&
-                                                regFields.move(index, index - 1)
-                                              }
-                                            >
-                                              ↑ Up
-                                            </Button>
-                                            <Button
-                                              className="h-7 text-[11.5px]"
-                                              disabled={
-                                                index ===
-                                                regFields.fields.length - 1
-                                              }
-                                              size="sm"
-                                              type="button"
-                                              variant="outline"
-                                              onClick={() =>
-                                                index <
-                                                  regFields.fields.length - 1 &&
-                                                regFields.move(index, index + 1)
-                                              }
-                                            >
-                                              ↓ Down
-                                            </Button>
-                                            <Button
-                                              className="ml-auto h-7 text-[11.5px] text-red-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                                              size="sm"
-                                              type="button"
-                                              variant="outline"
-                                              onClick={() => {
-                                                regFields.remove(index);
-                                                setOpenFieldId(null);
-                                              }}
-                                            >
-                                              <Trash2 className="mr-1 size-3" />{" "}
-                                              Remove
-                                            </Button>
-                                          </div>
+                                            </div>
+                                          )}
                                         </div>
                                       )}
-                                    </div>
-                                  )}
-                                </SortableFieldItem>
-                              );
-                            })}
-                          </FieldGroup>
-                        </SortableContext>
-                      </DndContext>
+                                    </SortableFieldItem>
+                                  );
+                                })}
+                              </FieldGroup>
+                            </SortableContext>
+                          </DndContext>
+                        )}
+                      </FieldSet>
                     )}
-                  </FieldSet>
-                )}
 
-              {/* ─────────────────────────────────────────────────────────
+                  {/* ─────────────────────────────────────────────────────────
                   §11  REGISTRATIONS
                   Summary strip + inline table.
                   NOTE FOR DEVELOPER: pass a `registrations` prop to
                   populate the table rows. See comment inside table body.
               ───────────────────────────────────────────────────────── */}
-              {activeSection === "registrations" && (
-                <FieldSet className="">
-                  <SectionHeader
-                    description="Attendee submissions for this event"
-                    icon={ListChecks}
-                    number="11"
-                    title="Registrations"
-                  />
+                  {activeSection === "registrations" && (
+                    <FieldSet className="">
+                      <SectionHeader
+                        description="Attendee submissions for this event"
+                        icon={ListChecks}
+                        number="11"
+                        title="Registrations"
+                      />
 
-                  {!eventId ? (
-                    <Note>
-                      Registrations become available after the event is created
-                      and published.
-                    </Note>
-                  ) : (
-                    <>
-                      {/* Summary strip */}
-                      <div className="flex items-center gap-5 rounded-xl border border-zinc-200 bg-white px-5 py-4 shadow-xs">
-                        <div>
-                          <p className="text-2xl font-bold tabular-nums text-zinc-900">
-                            {registrationsCount}
-                          </p>
-                          <p className="mt-0.5 text-[11px] text-zinc-400">
-                            Registered
-                          </p>
-                        </div>
-                        <div className="h-8 w-px bg-zinc-100" />
-                        <div>
-                          <p className="text-2xl font-bold tabular-nums text-zinc-900">
-                            {capacity || "—"}
-                          </p>
-                          <p className="mt-0.5 text-[11px] text-zinc-400">
-                            Capacity
-                          </p>
-                        </div>
-                        <div className="h-8 w-px bg-zinc-100" />
-                        <div className="flex-1">
-                          <div className="mb-1.5 flex justify-between text-[11px] text-zinc-400">
-                            <span>Occupancy</span>
-                            <span>{occupancy}%</span>
-                          </div>
-                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
-                            <div
-                              className="h-full rounded-full bg-teal-500 transition-all"
-                              style={{ width: `${occupancy}%` }}
-                            />
-                          </div>
-                        </div>
-                        <div className="ml-auto flex items-center gap-2">
-                          <a
-                            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 px-3 text-[12px] font-semibold text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-900"
-                            href={`/api/admin/exports/registrations?eventId=${eventId}`}
-                          >
-                            <Download className="size-3.5" /> Export CSV
-                          </a>
-                          <Link
-                            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 px-3 text-[12px] font-semibold text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-900"
-                            href={`/${locale}/dashboard/registrations/${eventId}`}
-                          >
-                            <FileText className="size-3.5" /> Full page
-                          </Link>
-                        </div>
-                      </div>
-
-                      {/* Registrations table */}
-                      <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-xs">
-                        <div className="grid min-w-[620px] grid-cols-[1fr_140px_100px_44px] border-b border-zinc-100 bg-zinc-50">
-                          {["Learner", "Registered", "Status", ""].map((h) => (
-                            <div
-                              className="border-r border-zinc-100 px-3 py-2 text-[9.5px] font-bold uppercase tracking-widest text-zinc-400 last:border-none"
-                              key={h}
-                            >
-                              {h}
+                      {!eventId ? (
+                        <Note>
+                          Registrations become available after the event is
+                          created and published.
+                        </Note>
+                      ) : (
+                        <>
+                          {/* Summary strip */}
+                          <div className="flex items-center gap-5 rounded-xl border border-zinc-200 bg-white px-5 py-4 shadow-xs">
+                            <div>
+                              <p className="text-2xl font-bold tabular-nums text-zinc-900">
+                                {registrationsCount}
+                              </p>
+                              <p className="mt-0.5 text-[11px] text-zinc-400">
+                                Registered
+                              </p>
                             </div>
-                          ))}
-                        </div>
-                        {registrations.length === 0 ? (
-                          <div className="flex flex-col items-center gap-1.5 py-12 text-center">
-                            <ListChecks className="size-5 text-zinc-200" />
-                            <p className="text-[13px] font-medium text-zinc-400">
-                              No registrations yet
-                            </p>
-                            <p className="text-[11.5px] text-zinc-300">
-                              Registrations will appear here once learners sign
-                              up
-                            </p>
+                            <div className="h-8 w-px bg-zinc-100" />
+                            <div>
+                              <p className="text-2xl font-bold tabular-nums text-zinc-900">
+                                {capacity || "—"}
+                              </p>
+                              <p className="mt-0.5 text-[11px] text-zinc-400">
+                                Capacity
+                              </p>
+                            </div>
+                            <div className="h-8 w-px bg-zinc-100" />
+                            <div className="flex-1">
+                              <div className="mb-1.5 flex justify-between text-[11px] text-zinc-400">
+                                <span>Occupancy</span>
+                                <span>{occupancy}%</span>
+                              </div>
+                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
+                                <div
+                                  className="h-full rounded-full bg-teal-500 transition-all"
+                                  style={{ width: `${occupancy}%` }}
+                                />
+                              </div>
+                            </div>
+                            <div className="ml-auto flex items-center gap-2">
+                              <a
+                                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 px-3 text-[12px] font-semibold text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-900"
+                                href={`/api/admin/exports/registrations?eventId=${eventId}`}
+                              >
+                                <Download className="size-3.5" /> Export CSV
+                              </a>
+                              <Link
+                                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 px-3 text-[12px] font-semibold text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-900"
+                                href={`/${locale}/dashboard/registrations/${eventId}`}
+                              >
+                                <FileText className="size-3.5" /> Full page
+                              </Link>
+                            </div>
                           </div>
-                        ) : (
-                          registrations.map((r) => (
-                            <div
-                              className="grid min-w-[620px] grid-cols-[1fr_140px_100px_44px] border-b border-zinc-100 last:border-none"
-                              key={r.id}
-                            >
-                              <div className="border-r border-zinc-100 px-3 py-2.5">
-                                <p className="text-[13px] font-medium text-zinc-800">
-                                  {r.registrantName}
+
+                          {/* Registrations table */}
+                          <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-xs">
+                            <div className="grid min-w-[620px] grid-cols-[1fr_140px_100px_44px] border-b border-zinc-100 bg-zinc-50">
+                              {["Learner", "Registered", "Status", ""].map(
+                                (h) => (
+                                  <div
+                                    className="border-r border-zinc-100 px-3 py-2 text-[9.5px] font-bold uppercase tracking-widest text-zinc-400 last:border-none"
+                                    key={h}
+                                  >
+                                    {h}
+                                  </div>
+                                ),
+                              )}
+                            </div>
+                            {registrations.length === 0 ? (
+                              <div className="flex flex-col items-center gap-1.5 py-12 text-center">
+                                <ListChecks className="size-5 text-zinc-200" />
+                                <p className="text-[13px] font-medium text-zinc-400">
+                                  No registrations yet
                                 </p>
-                                <p className="text-[11px] text-zinc-400">
-                                  {r.registrantEmail}
+                                <p className="text-[11.5px] text-zinc-300">
+                                  Registrations will appear here once learners
+                                  sign up
                                 </p>
                               </div>
-                              <div className="border-r border-zinc-100 px-3 py-2.5 text-[12px] text-zinc-500">
-                                {r.createdAt}
-                              </div>
-                              <div className="border-r border-zinc-100 px-3 py-2.5">
-                                <Badge variant="outline" className="capitalize">
-                                  {r.status}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center justify-center">
-                                <Link
-                                  className="text-zinc-500 hover:text-zinc-800"
-                                  href={`/${locale}/dashboard/registrations/${eventId}`}
+                            ) : (
+                              registrations.map((r) => (
+                                <div
+                                  className="grid min-w-[620px] grid-cols-[1fr_140px_100px_44px] border-b border-zinc-100 last:border-none"
+                                  key={r.id}
                                 >
-                                  →
-                                </Link>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </>
+                                  <div className="border-r border-zinc-100 px-3 py-2.5">
+                                    <p className="text-[13px] font-medium text-zinc-800">
+                                      {r.registrantName}
+                                    </p>
+                                    <p className="text-[11px] text-zinc-400">
+                                      {r.registrantEmail}
+                                    </p>
+                                  </div>
+                                  <div className="border-r border-zinc-100 px-3 py-2.5 text-[12px] text-zinc-500">
+                                    {r.createdAt}
+                                  </div>
+                                  <div className="border-r border-zinc-100 px-3 py-2.5">
+                                    <Badge
+                                      variant="outline"
+                                      className="capitalize"
+                                    >
+                                      {r.status}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center justify-center">
+                                    <Link
+                                      className="text-zinc-500 hover:text-zinc-800"
+                                      href={`/${locale}/dashboard/registrations/${eventId}`}
+                                    >
+                                      →
+                                    </Link>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </FieldSet>
                   )}
-                </FieldSet>
-              )}
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -5277,6 +5631,7 @@ export function EventForm({
         <EventSettingsRail
           activeSection={activeSection}
           completedOverdriveStepIds={completedOverdriveStepIds}
+          deferredFixItemPaths={deferredFixItemPaths}
           enableOverdriveHints={enableOverdriveHints}
           fixQueue={fixQueue}
           form={form}
@@ -5285,6 +5640,7 @@ export function EventForm({
           inputCls={inputCls}
           onDismissSmartHint={() => setDismissSmartHint(true)}
           onFixItem={handleFixQueueItem}
+          onToggleDeferredFixItem={handleToggleDeferredFixItem}
           onToggleOverdriveStep={handleToggleOverdriveStep}
           onSectionChange={setActiveSection}
           overdrivePlan={overdrivePlan}
