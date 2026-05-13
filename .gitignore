@@ -41,6 +41,8 @@ TODO*
 ISSUES*
 tmp*
 BUG*
+.impeccable
+scripts
 
 # debug
 npm-debug.log*

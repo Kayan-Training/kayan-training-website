@@ -70,7 +70,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
+  memo,
+  useCallback,
   useEffect,
   useId,
   useMemo,
@@ -78,8 +81,8 @@ import {
   useState,
   useTransition,
 } from "react";
+import type { FieldErrors, UseFormReturn } from "react-hook-form";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
-import type { FieldErrors } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 // ── Lucide icons ──────────────────────────────────────────────────────────────
@@ -131,6 +134,22 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { UploadProgress } from "@/components/ui/upload-progress";
 import { uploadMediaFile } from "@/lib/client/media-upload";
+import {
+  computeHealthSummary,
+  computeSectionHealth,
+} from "@/lib/events/event-form-health";
+import { buildEventFormFixQueue } from "@/lib/events/event-form-fix-queue";
+import { buildOverdrivePlan } from "@/lib/events/event-form-overdrive";
+import {
+  buildEventFormRailGroups,
+  getGroupProgress,
+  getGroupSections,
+} from "@/lib/events/event-form-rail";
+import {
+  buildEventFormSidebarContext,
+  buildEventFormVisibility,
+  type EventFormSectionId,
+} from "@/lib/events/event-form-visibility";
 import { cn } from "@/lib/utils";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -277,17 +296,7 @@ const fieldTypeLabels = {
 // Section IDs
 // ─────────────────────────────────────────────────────────────────────────────
 
-type SectionId =
-  | "identity"
-  | "schedule"
-  | "location"
-  | "pricing"
-  | "content"
-  | "agenda"
-  | "trainers"
-  | "categories"
-  | "registrationForm"
-  | "registrations";
+type SectionId = EventFormSectionId;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -320,7 +329,9 @@ function flattenErrorPaths(
       continue;
     }
     if (typeof value === "object") {
-      out.push(...flattenErrorPaths(value as FieldErrors<EventFormValues>, path));
+      out.push(
+        ...flattenErrorPaths(value as FieldErrors<EventFormValues>, path),
+      );
     }
   }
   return out;
@@ -334,6 +345,846 @@ function formatDayLabel(day: number, startDate: string): string {
   return `Day ${day} · ${d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}`;
 }
 
+function getSectionDomId(id: SectionId) {
+  return `event-form-section-${id}`;
+}
+
+function handleSectionRailKeyDown(
+  event: React.KeyboardEvent<HTMLButtonElement>,
+  currentId: SectionId,
+  sections: Array<{ id: SectionId }>,
+  setActiveSection: (id: SectionId) => void,
+) {
+  const currentIndex = sections.findIndex((section) => section.id === currentId);
+  if (currentIndex < 0) return;
+  const focusSection = (nextIndex: number) => {
+    const next = sections[nextIndex];
+    if (!next) return;
+    setActiveSection(next.id);
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`section-tab-${next.id}`);
+      el?.focus();
+    });
+  };
+  if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+    event.preventDefault();
+    focusSection(Math.min(sections.length - 1, currentIndex + 1));
+    return;
+  }
+  if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+    event.preventDefault();
+    focusSection(Math.max(0, currentIndex - 1));
+    return;
+  }
+  if (event.key === "Home") {
+    event.preventDefault();
+    focusSection(0);
+    return;
+  }
+  if (event.key === "End") {
+    event.preventDefault();
+    focusSection(sections.length - 1);
+  }
+}
+
+function getFieldIdFromErrorPath(path: string, idPrefix: string) {
+  if (path.startsWith("titleEn") || path.startsWith("titleAr"))
+    return `${idPrefix}-title-input`;
+  if (path.startsWith("startDate")) return `${idPrefix}-start-date`;
+  if (path.startsWith("endDate")) return `${idPrefix}-end-date`;
+  if (path.startsWith("registrationDeadline"))
+    return `${idPrefix}-registration-deadline`;
+  if (path.startsWith("slug")) return `${idPrefix}-slug-input`;
+  if (path.startsWith("title")) return `${idPrefix}-title-input`;
+  if (path.startsWith("short")) return `${idPrefix}-short-description-input`;
+  if (path.startsWith("price")) return `${idPrefix}-price`;
+  if (path.startsWith("capacity")) return `${idPrefix}-capacity`;
+  if (path.startsWith("location")) return `${idPrefix}-location`;
+  if (path.startsWith("meetingLink")) return `${idPrefix}-meeting-link`;
+  if (path.startsWith("googleMapsLink")) return `${idPrefix}-google-maps-link`;
+  if (path.startsWith("bankName")) return `${idPrefix}-bank-name`;
+  if (path.startsWith("bankAccountName"))
+    return `${idPrefix}-bank-account-name`;
+  if (path.startsWith("bankIban")) return `${idPrefix}-bank-iban`;
+  if (path.startsWith("bankSwift")) return `${idPrefix}-bank-swift`;
+  if (path.startsWith("bankInstructionsEn"))
+    return `${idPrefix}-bank-instructions-en`;
+  if (path.startsWith("bankInstructionsAr"))
+    return `${idPrefix}-bank-instructions-ar`;
+  if (path.startsWith("externalRegistrationUrl"))
+    return `${idPrefix}-external-registration-url`;
+  if (path.startsWith("registrationOpenLabelEn"))
+    return `${idPrefix}-registration-open-label-en`;
+  if (path.startsWith("registrationOpenLabelAr"))
+    return `${idPrefix}-registration-open-label-ar`;
+  return null;
+}
+
+const InlineErrorSummary = memo(function InlineErrorSummary({
+  blockingItems,
+  errors,
+  onJump,
+}: {
+  blockingItems: Array<{ errors: number; id: SectionId; label: string }>;
+  errors: number;
+  onJump: (id: SectionId) => void;
+}) {
+  if (errors <= 0) return null;
+  return (
+    <div
+      aria-live="assertive"
+      className="mb-4 rounded-lg border border-red-200 bg-red-50/70 p-3"
+      role="alert"
+    >
+      <p className="text-[12px] font-semibold text-red-700">
+        {errors} blocking validation issue{errors > 1 ? "s" : ""} found.
+      </p>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {blockingItems.map((item) => (
+          <button
+            className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-2.5 py-1 text-[11.5px] font-medium text-red-700 transition-colors hover:border-red-300 hover:bg-red-50"
+            key={item.id}
+            type="button"
+            onClick={() => onJump(item.id)}
+          >
+            {item.label}
+            <span className="tabular-nums">({item.errors})</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+const SectionRailNav = memo(function SectionRailNav({
+  activeSection,
+  locale,
+  pageHeading,
+  railFilter,
+  sections,
+  sectionGroups,
+  sectionHealth,
+  setHeatMode,
+  setRailFilter,
+  setActiveSection,
+  status,
+  useHeatMode,
+}: {
+  activeSection: SectionId;
+  locale: string;
+  pageHeading: string;
+  railFilter: "all" | "blocking" | "done" | "incomplete";
+  sectionGroups: ReturnType<typeof buildEventFormRailGroups>;
+  sectionHealth: Record<
+    SectionId,
+    { completed: boolean; errors: number; status: "error" | "done" | "todo" }
+  >;
+  sections: Array<{ icon: React.ElementType; id: SectionId; label: string }>;
+  setHeatMode: (value: boolean) => void;
+  setRailFilter: (value: "all" | "blocking" | "done" | "incomplete") => void;
+  setActiveSection: (id: SectionId) => void;
+  status: "draft" | "published";
+  useHeatMode: boolean;
+}) {
+  const railSectionIds = sections.map((section) => ({ id: section.id }));
+  const filterMatches = (
+    health: { completed: boolean; errors: number; status: "error" | "done" | "todo" },
+  ) => {
+    if (railFilter === "all") return true;
+    if (railFilter === "blocking") return health.errors > 0;
+    if (railFilter === "done") return health.completed;
+    return !health.completed;
+  };
+  return (
+    <nav className="order-1 flex w-full shrink-0 flex-col border-b border-zinc-200 bg-white lg:h-full lg:w-52 lg:border-b-0 lg:border-r">
+      <div className="border-b border-zinc-100 px-4 py-4">
+        <Link
+          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-zinc-400 transition-colors hover:text-zinc-700"
+          href={`/${locale}/dashboard/programs`}
+        >
+          <ArrowLeft className="size-3" /> Programs
+        </Link>
+        <h1 className="mt-2 line-clamp-2 text-[13px] font-bold leading-snug text-zinc-800">
+          {pageHeading}
+        </h1>
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <span
+            className={cn(
+              "size-1.5 rounded-full",
+              status === "published" ? "animate-pulse bg-teal-500" : "bg-zinc-300",
+            )}
+          />
+          <span className="text-[11px] font-semibold text-zinc-400">
+            {statusLabels[status]}
+          </span>
+        </div>
+      </div>
+      <div className="overflow-x-hidden py-2 lg:flex-1 lg:overflow-y-auto">
+        <div className="mb-2 flex flex-wrap items-center gap-1 px-2 lg:px-4">
+          {(["all", "blocking", "incomplete", "done"] as const).map((mode) => (
+            <button
+              className={cn(
+                "rounded-full border px-2 py-0.5 text-[10px] font-semibold leading-none transition-colors",
+                railFilter === mode
+                  ? "border-teal-200 bg-teal-50 text-teal-700"
+                  : "border-zinc-200 text-zinc-500 hover:bg-zinc-50",
+              )}
+              key={mode}
+              type="button"
+              onClick={() => setRailFilter(mode)}
+            >
+              {mode}
+            </button>
+          ))}
+          <button
+            className={cn(
+              "rounded-full border px-2 py-0.5 text-[10px] font-semibold leading-none transition-colors",
+              useHeatMode
+                ? "border-red-200 bg-red-50 text-red-600"
+                : "border-zinc-200 text-zinc-500 hover:bg-zinc-50",
+            )}
+            type="button"
+            onClick={() => setHeatMode(!useHeatMode)}
+          >
+            Heat
+          </button>
+        </div>
+        <div className="flex min-w-max gap-3 px-2 pb-1 lg:block lg:min-w-0 lg:space-y-3 lg:gap-0 lg:px-0 lg:pb-0">
+          {sectionGroups.map((group) => {
+            let groupSections = getGroupSections(group, sections).filter((section) =>
+              filterMatches(sectionHealth[section.id]),
+            );
+            if (useHeatMode) {
+              groupSections = [...groupSections].sort(
+                (a, b) => sectionHealth[b.id].errors - sectionHealth[a.id].errors,
+              );
+            }
+            if (groupSections.length === 0) return null;
+            const groupProgress = getGroupProgress(groupSections, sectionHealth);
+            return (
+              <div className="min-w-[190px] lg:min-w-0" key={group.id}>
+                <div className="mb-1 flex items-center justify-between px-2 lg:px-4">
+                  <p className="text-[9.5px] font-bold uppercase tracking-widest text-zinc-300">
+                    {group.label}
+                  </p>
+                  <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-[9.5px] font-semibold tabular-nums text-zinc-500">
+                    {groupProgress.done}/{groupProgress.total}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  {groupSections.map(({ icon: Icon, id, label }) => {
+                    const health = sectionHealth[id];
+                    const isActive = activeSection === id;
+                    return (
+                      <button
+                        aria-controls={getSectionDomId(id)}
+                        aria-current={isActive ? "page" : undefined}
+                        className={cn(
+                          "flex w-full shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-left text-[12px] font-medium transition-all lg:rounded-none lg:border-0 lg:border-r-2 lg:px-4 lg:py-2 lg:text-[12.5px]",
+                          isActive
+                            ? "border-teal-200 bg-teal-50 text-teal-700 lg:border-teal-500"
+                            : "border-zinc-200 text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800 lg:border-transparent",
+                        )}
+                        id={`section-tab-${id}`}
+                        key={id}
+                        type="button"
+                        onClick={() => setActiveSection(id)}
+                        onKeyDown={(event) =>
+                          handleSectionRailKeyDown(
+                            event,
+                            id,
+                            railSectionIds,
+                            setActiveSection,
+                          )
+                        }
+                      >
+                        <Icon className="size-3.5 shrink-0" />
+                        <span className="truncate">{label}</span>
+                        <span
+                          className={cn(
+                            "ml-auto inline-flex min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums",
+                            health.status === "error"
+                              ? "bg-red-50 text-red-600"
+                              : health.status === "done"
+                                ? "bg-emerald-50 text-emerald-600"
+                                : "bg-zinc-100 text-zinc-500",
+                          )}
+                        >
+                          {health.status === "error"
+                            ? health.errors
+                            : health.completed
+                              ? "✓"
+                              : "·"}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </nav>
+  );
+});
+
+const EventSettingsRailShell = memo(function EventSettingsRailShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  return (
+    <aside
+      aria-label="Event settings"
+      className="order-3 flex w-full shrink-0 flex-col border-t border-zinc-200 bg-white lg:h-full lg:w-72 lg:overflow-y-auto lg:border-l lg:border-t-0"
+    >
+      <div className="relative border-b border-zinc-100 px-4 py-4 shadow-sm sm:px-5 lg:after:absolute lg:after:inset-x-0 lg:after:top-full lg:after:h-10 lg:after:bg-linear-to-b lg:after:from-background lg:after:to-transparent lg:shadow-lg">
+        <div className="flex items-center gap-2">
+          <Settings2 className="size-4 text-teal-600" />
+          <h2 className="text-[13px] font-bold text-zinc-800">Settings</h2>
+        </div>
+        <p className="mt-1 text-[11.5px] leading-relaxed text-zinc-400">
+          Publishing, placement, registration, and certification settings.
+        </p>
+        <button
+          className="mt-2 inline-flex items-center rounded-md border border-zinc-200 px-2.5 py-1 text-[11px] font-semibold text-zinc-600 lg:hidden"
+          type="button"
+          onClick={() => setMobileOpen((value) => !value)}
+        >
+          {mobileOpen ? "Hide settings panel" : "Show settings panel"}
+        </button>
+      </div>
+      <div
+        className={cn(
+          "space-y-4 px-4 py-4 sm:px-5 sm:py-5 lg:flex lg:flex-1 lg:flex-col lg:overflow-y-auto",
+          mobileOpen ? "block" : "hidden lg:flex",
+        )}
+      >
+        {children}
+      </div>
+    </aside>
+  );
+});
+
+type EventSettingsRailProps = {
+  activeSection: SectionId;
+  completedOverdriveStepIds: string[];
+  enableOverdriveHints: boolean;
+  fixQueue: Array<{
+    path: string;
+    reason: string;
+    sectionId: SectionId;
+    severity: "P0" | "P1" | "P2";
+    title: string;
+  }>;
+  form: UseFormReturn<EventFormValues>;
+  healthSummary: ReturnType<typeof computeHealthSummary>;
+  idPrefix: string;
+  inputCls: string;
+  onFixItem: (item: {
+    path: string;
+    sectionId: SectionId;
+  }) => void;
+  onDismissSmartHint: () => void;
+  onToggleOverdriveStep: (id: string) => void;
+  onSectionChange: (id: SectionId) => void;
+  overdrivePlan: ReturnType<typeof buildOverdrivePlan>;
+  sections: Array<{ icon: React.ElementType; id: SectionId; label: string }>;
+  sidebarContext: ReturnType<typeof buildEventFormSidebarContext>;
+  smartHintDismissed: boolean;
+  smartHint: { cta: string; description: string; target: SectionId; title: string };
+};
+
+const EventSettingsRail = memo(function EventSettingsRail({
+  activeSection,
+  completedOverdriveStepIds,
+  enableOverdriveHints,
+  fixQueue,
+  form,
+  healthSummary,
+  idPrefix,
+  inputCls,
+  onFixItem,
+  onDismissSmartHint,
+  onToggleOverdriveStep,
+  onSectionChange,
+  overdrivePlan,
+  sections,
+  sidebarContext,
+  smartHintDismissed,
+  smartHint,
+}: EventSettingsRailProps) {
+  const [expandedFixSections, setExpandedFixSections] = useState<SectionId[]>([
+    activeSection,
+  ]);
+  const groupedFixQueue = useMemo(() => {
+    const map = new Map<SectionId, typeof fixQueue>();
+    for (const item of fixQueue) {
+      const list = map.get(item.sectionId) ?? [];
+      list.push(item);
+      map.set(item.sectionId, list);
+    }
+    return Array.from(map.entries());
+  }, [fixQueue]);
+  return (
+    <EventSettingsRailShell>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-300">
+        Operational Controls
+      </p>
+      <p className="text-[10.5px] font-semibold uppercase tracking-wider text-zinc-400">
+        Context: {sections.find((s) => s.id === activeSection)?.label}
+      </p>
+      {fixQueue.length > 0 && (
+        <FieldSet>
+          <div className="mb-1 flex items-center justify-between">
+            <FieldLegend variant="label">Decision Support</FieldLegend>
+            <Button
+              className="h-6 px-2 text-[10.5px]"
+              size="sm"
+              type="button"
+              variant="outline"
+              onClick={() => onFixItem(fixQueue[0])}
+            >
+              Fix next
+            </Button>
+          </div>
+          <div className="space-y-1.5">
+            {groupedFixQueue.map(([sectionId, items]) => (
+              <div
+                className="overflow-hidden rounded-md border border-zinc-200 bg-white"
+                key={sectionId}
+              >
+                <button
+                  className="flex w-full items-center justify-between px-2.5 py-1.5 text-left hover:bg-zinc-50"
+                  type="button"
+                  onClick={() =>
+                    setExpandedFixSections((prev) =>
+                      prev.includes(sectionId)
+                        ? prev.filter((id) => id !== sectionId)
+                        : [...prev, sectionId],
+                    )
+                  }
+                >
+                  <span className="text-[11px] font-semibold text-zinc-700">
+                    {sections.find((section) => section.id === sectionId)?.label}
+                  </span>
+                  <span className="text-[10px] tabular-nums text-zinc-500">
+                    {items.length}
+                  </span>
+                </button>
+                {expandedFixSections.includes(sectionId) && (
+                  <div className="space-y-1 border-t border-zinc-100 p-1.5">
+                    {items.map((item) => (
+                      <button
+                        className="flex w-full items-start justify-between gap-2 rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-left hover:border-zinc-300 hover:bg-zinc-50"
+                        key={`${item.path}-${item.severity}`}
+                        type="button"
+                        onClick={() => onFixItem(item)}
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-[11px] font-semibold text-zinc-800">
+                            {item.title}
+                          </p>
+                          <p className="truncate text-[10.5px] text-zinc-500">
+                            {item.reason}
+                          </p>
+                        </div>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                            severityPillClasses[item.severity],
+                          )}
+                        >
+                          {item.severity}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </FieldSet>
+      )}
+      <FieldSet>
+        <FieldLegend variant="label">Form Health</FieldLegend>
+        <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-[12px] font-semibold text-zinc-800">Completion</p>
+            <p className="text-[11px] font-semibold tabular-nums text-zinc-500">
+              {healthSummary.completed}/{healthSummary.total}
+            </p>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-200">
+            <div
+              className="h-full rounded-full bg-teal-500 transition-all"
+              style={{ width: `${healthSummary.completionPercent}%` }}
+            />
+          </div>
+          <div className="mt-3 flex items-center justify-between text-[11px]">
+            <span className="text-zinc-500">Blocking errors</span>
+            <span
+              className={cn(
+                "font-semibold tabular-nums",
+                healthSummary.errors > 0 ? "text-red-600" : "text-emerald-600",
+              )}
+            >
+              {healthSummary.errors}
+            </span>
+          </div>
+          <div className="mt-2 flex items-center justify-between text-[11px]">
+            <span className="text-zinc-500">Publish readiness</span>
+            <span
+              className={cn(
+                "font-semibold",
+                healthSummary.publishReady ? "text-emerald-600" : "text-amber-600",
+              )}
+            >
+              {healthSummary.publishReady ? "Ready" : "Needs attention"}
+            </span>
+          </div>
+        </div>
+        {healthSummary.blockingItems.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-[10.5px] font-semibold uppercase tracking-wider text-zinc-400">
+              Top Blocking Sections
+            </p>
+            {healthSummary.blockingItems.map((item) => (
+              <button
+                className="flex w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-left text-[11.5px] text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50"
+                key={item.id}
+                type="button"
+                onClick={() => onSectionChange(item.id)}
+              >
+                <span className="truncate">{item.label}</span>
+                <span className="font-semibold tabular-nums text-red-600">
+                  {item.errors}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </FieldSet>
+
+      {enableOverdriveHints && !smartHintDismissed && (
+        <FieldSet>
+          <FieldLegend variant="label">Smart Hint</FieldLegend>
+          <div className="rounded-lg border border-indigo-200 bg-indigo-50/60 p-3">
+            <p className="text-[12px] font-semibold text-indigo-900">
+              {smartHint.title}
+            </p>
+            <p className="mt-1 text-[11.5px] leading-relaxed text-indigo-700">
+              {smartHint.description}
+            </p>
+            <p className="mt-1 text-[10.5px] text-indigo-600">
+              Confidence reason:{" "}
+              {healthSummary.errors > 0
+                ? "blocking errors remain"
+                : "no blockers, now optimizing quality"}.
+            </p>
+            <Button
+              className="mt-2 h-8 bg-indigo-600 px-3 text-[11.5px] font-semibold hover:bg-indigo-700"
+              type="button"
+              onClick={() => onSectionChange(smartHint.target)}
+            >
+              {smartHint.cta}
+            </Button>
+            <Button
+              className="ml-2 mt-2 h-8 px-3 text-[11.5px]"
+              type="button"
+              variant="outline"
+              onClick={onDismissSmartHint}
+            >
+              Skip for now
+            </Button>
+            <div className="mt-2 rounded-md border border-indigo-100 bg-white/70 px-2.5 py-2">
+              <p className="text-[11px] font-semibold text-indigo-800">
+                Overdrive Plan · Confidence {overdrivePlan.confidence}%
+              </p>
+              <p className="mt-0.5 text-[10.5px] text-indigo-700">
+                {overdrivePlan.summary}
+              </p>
+              <p className="mt-0.5 text-[10px] font-medium text-indigo-600">
+                Progress {completedOverdriveStepIds.length}/
+                {overdrivePlan.steps.length}
+              </p>
+              <div className="mt-1.5 space-y-1">
+                {overdrivePlan.steps.slice(0, 3).map((step) => (
+                  <div
+                    className="rounded border border-indigo-100 bg-white px-2 py-1.5"
+                    key={step.id}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <button
+                        className="text-left text-[10.5px] text-indigo-900 hover:underline"
+                        type="button"
+                        onClick={() => onSectionChange(step.sectionId)}
+                      >
+                        {step.title}
+                      </button>
+                      <span className="rounded-full bg-indigo-100 px-1.5 py-0.5 text-[9.5px] font-semibold text-indigo-700">
+                        P{step.priority}
+                      </span>
+                    </div>
+                    <button
+                      aria-pressed={completedOverdriveStepIds.includes(step.id)}
+                      className={cn(
+                        "mt-1 inline-flex items-center rounded px-1.5 py-0.5 text-[9.5px] font-semibold transition-colors",
+                        completedOverdriveStepIds.includes(step.id)
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-indigo-100 text-indigo-700 hover:bg-indigo-200",
+                      )}
+                      type="button"
+                      onClick={() => onToggleOverdriveStep(step.id)}
+                    >
+                      {completedOverdriveStepIds.includes(step.id)
+                        ? "Completed"
+                        : "Mark complete"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </FieldSet>
+      )}
+
+      {sidebarContext.showClassification && (
+        <FieldSet>
+          <FieldLegend variant="label">Program Classification</FieldLegend>
+          <Field className="grid gap-2">
+            <div className="grid gap-2">
+              <button
+                className={cn(
+                  "rounded-lg border px-3 py-2.5 text-left transition-colors",
+                  form.watch("eventKind") === "event"
+                    ? "border-emerald-300 bg-emerald-50"
+                    : "border-zinc-200 bg-white hover:bg-zinc-50",
+                )}
+                type="button"
+                onClick={() =>
+                  form.setValue("eventKind", "event", {
+                    shouldDirty: true,
+                  })
+                }
+              >
+                <p className="text-[12px] font-semibold text-zinc-900">Event</p>
+                <p className="mt-0.5 text-[11px] text-zinc-500">
+                  One-off or recurring event entry.
+                </p>
+              </button>
+              <button
+                className={cn(
+                  "rounded-lg border px-3 py-2.5 text-left transition-colors",
+                  form.watch("eventKind") === "training_course"
+                    ? "border-indigo-300 bg-indigo-50"
+                    : "border-zinc-200 bg-white hover:bg-zinc-50",
+                )}
+                type="button"
+                onClick={() =>
+                  form.setValue("eventKind", "training_course", {
+                    shouldDirty: true,
+                  })
+                }
+              >
+                <p className="text-[12px] font-semibold text-zinc-900">
+                  Training Course
+                </p>
+                <p className="mt-0.5 text-[11px] text-zinc-500">
+                  Course-focused program shown under training courses.
+                </p>
+              </button>
+            </div>
+            <FieldError errors={[form.formState.errors.eventKind]} />
+          </Field>
+        </FieldSet>
+      )}
+
+      {sidebarContext.showVisibility && (
+        <FieldSet>
+          <FieldLegend variant="label">Visibility</FieldLegend>
+          <Field className="grid gap-2">
+            <button
+              className={cn(
+                "flex w-full items-start gap-3 rounded-lg border px-3.5 py-3 text-left transition-colors",
+                form.watch("status") === "published"
+                  ? "border-teal-200 bg-teal-50/60"
+                  : "border-zinc-200 bg-white hover:bg-zinc-50/80",
+              )}
+              type="button"
+              onClick={() =>
+                form.setValue(
+                  "status",
+                  form.watch("status") === "published" ? "draft" : "published",
+                  { shouldDirty: true },
+                )
+              }
+            >
+              <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-zinc-100">
+                <FileText
+                  className={cn(
+                    "size-4",
+                    form.watch("status") === "published"
+                      ? "text-teal-600"
+                      : "text-zinc-400",
+                  )}
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-semibold text-zinc-800">
+                  {form.watch("status") === "published"
+                    ? statusLabels.published
+                    : statusLabels.draft}
+                </p>
+                <p className="mt-0.5 text-[11.5px] leading-relaxed text-zinc-400">
+                  {form.watch("status") === "published"
+                    ? "Visible to learners"
+                    : "Hidden from public"}
+                </p>
+              </div>
+              <div className="mt-0.5 shrink-0">
+                <Switch
+                  checked={form.watch("status") === "published"}
+                  className="pointer-events-none data-[state=checked]:bg-teal-600"
+                />
+              </div>
+            </button>
+            <FieldError errors={[form.formState.errors.status]} />
+          </Field>
+        </FieldSet>
+      )}
+
+      {sidebarContext.showPromotion && (
+        <FieldSet>
+          <FieldLegend variant="label">Promotion</FieldLegend>
+          <FieldGroup className="">
+            <Field className="grid gap-2">
+              <ToggleControl
+                checked={form.watch("isFeatured")}
+                description="Feature this item in homepage hero placements."
+                iconBg={
+                  form.watch("isFeatured") ? "bg-amber-50" : "bg-zinc-100"
+                }
+                iconEl={
+                  <Star
+                    className={cn(
+                      "size-4",
+                      form.watch("isFeatured")
+                        ? "fill-amber-400 text-amber-400"
+                        : "text-zinc-400",
+                    )}
+                  />
+                }
+                title="Featured event"
+                onCheckedChange={(v) =>
+                  form.setValue("isFeatured", v, { shouldDirty: true })
+                }
+              />
+            </Field>
+          </FieldGroup>
+        </FieldSet>
+      )}
+
+      {sidebarContext.showRegistrationState && (
+        <FieldSet>
+          <FieldLegend variant="label">Registration State</FieldLegend>
+          <FieldGroup className="">
+            <Field className="grid gap-2">
+              <ToggleControl
+                checked={form.watch("registrationsOpen")}
+                description="Allow new sign-ups while keeping current visibility."
+                iconBg="bg-teal-50"
+                iconEl={<Users className="size-4 text-teal-600" />}
+                title="Registrations open"
+                onCheckedChange={(v) =>
+                  form.setValue("registrationsOpen", v, {
+                    shouldDirty: true,
+                  })
+                }
+              />
+            </Field>
+            {form.watch("registrationsOpen") ? (
+              <>
+                <Field className="grid gap-2">
+                  <FieldLabel htmlFor={`${idPrefix}-registration-open-label-en`}>
+                    Open Label (English)
+                  </FieldLabel>
+                  <FieldContent>
+                    <Input
+                      className={inputCls}
+                      id={`${idPrefix}-registration-open-label-en`}
+                      placeholder="Registration Open"
+                      {...form.register("registrationOpenLabelEn")}
+                    />
+                  </FieldContent>
+                  <FieldError
+                    errors={[form.formState.errors.registrationOpenLabelEn]}
+                  />
+                </Field>
+                <Field className="grid gap-2">
+                  <FieldLabel htmlFor={`${idPrefix}-registration-open-label-ar`}>
+                    Open Label (Arabic)
+                  </FieldLabel>
+                  <FieldContent>
+                    <Input
+                      className={inputCls}
+                      dir="rtl"
+                      id={`${idPrefix}-registration-open-label-ar`}
+                      placeholder="الحجز متاح"
+                      {...form.register("registrationOpenLabelAr")}
+                    />
+                  </FieldContent>
+                  <FieldError
+                    errors={[form.formState.errors.registrationOpenLabelAr]}
+                  />
+                </Field>
+              </>
+            ) : (
+              <Note className="text-[11.5px]">
+                Registrations are currently closed. Open labels are hidden until
+                sign-ups are enabled.
+              </Note>
+            )}
+          </FieldGroup>
+        </FieldSet>
+      )}
+
+      {sidebarContext.showCertification && (
+        <FieldSet>
+          <FieldLegend variant="label">Certification</FieldLegend>
+          <FieldGroup className="">
+            <Field className="grid gap-2">
+              <ToggleControl
+                checked={form.watch("isCertified")}
+                description="Issue completion certificate for eligible attendees."
+                iconBg="bg-blue-50"
+                iconEl={<Award className="size-4 text-blue-600" />}
+                title="Issue certificate"
+                onCheckedChange={(v) =>
+                  form.setValue("isCertified", v, { shouldDirty: true })
+                }
+              />
+            </Field>
+          </FieldGroup>
+        </FieldSet>
+      )}
+
+      {!sidebarContext.showClassification &&
+        !sidebarContext.showVisibility &&
+        !sidebarContext.showPromotion &&
+        !sidebarContext.showRegistrationState &&
+        !sidebarContext.showCertification && (
+          <Note className="text-[11.5px]">
+            No section-specific settings in this panel. Continue editing the
+            current section content.
+          </Note>
+        )}
+    </EventSettingsRailShell>
+  );
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared style constants
 // ─────────────────────────────────────────────────────────────────────────────
@@ -345,6 +1196,28 @@ const inputCls =
 
 const labelCls =
   "text-[10.5px] font-semibold uppercase tracking-wider text-zinc-400";
+const motionTokens = {
+  easing: "easeOut" as const,
+  medium: 0.18,
+};
+const severityPillClasses: Record<"P0" | "P1" | "P2", string> = {
+  P0: "bg-red-50 text-red-600",
+  P1: "bg-amber-50 text-amber-600",
+  P2: "bg-zinc-100 text-zinc-600",
+};
+const sectionGoals: Record<SectionId, string[]> = {
+  agenda: ["At least one session", "Session time provided", "Titles are localized"],
+  categories: ["Relevant categories selected", "Tagging matches learner discovery"],
+  content: ["Short summary complete", "Main content complete", "Bilingual quality checked"],
+  gallery: ["Gallery visibility selected", "Media curated", "Post-event strategy decided"],
+  identity: ["Title and slug complete", "Cover image selected", "Program type set"],
+  location: ["Delivery channel complete", "Venue/link verified", "Public map behavior decided"],
+  pricing: ["Registration path chosen", "Price/payment validated", "Learner payment visibility checked"],
+  registrationForm: ["Required learner fields added", "Labels localized", "Field order validated"],
+  registrations: ["Registration state labels ready", "Open/close behavior verified", "Ops monitoring ready"],
+  schedule: ["Dates are valid", "Deadline aligns with start", "Language/type are set"],
+  trainers: ["Lead trainers selected", "Order is intentional", "No duplicates"],
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Primitive sub-components
@@ -683,23 +1556,23 @@ function AgendaSpeakersCombobox({
           )}
         >
           <div className="flex flex-wrap gap-1">
-          {value.map((speaker) => (
-            <Badge
-              className="inline-flex max-w-full items-center gap-1 border border-teal-300/70 bg-teal-100 px-2 py-0.5 text-[10px] text-teal-900"
-              key={speaker}
-              variant="outline"
-            >
-              <span className="max-w-[170px] truncate">{speaker}</span>
-              <button
-                aria-label={`Remove ${speaker}`}
-                className="rounded p-0.5 hover:bg-teal-200"
-                type="button"
-                onClick={() => removeSpeaker(speaker)}
+            {value.map((speaker) => (
+              <Badge
+                className="inline-flex max-w-full items-center gap-1 border border-teal-300/70 bg-teal-100 px-2 py-0.5 text-[10px] text-teal-900"
+                key={speaker}
+                variant="outline"
               >
-                <X className="size-2.5" />
-              </button>
-            </Badge>
-          ))}
+                <span className="max-w-[170px] truncate">{speaker}</span>
+                <button
+                  aria-label={`Remove ${speaker}`}
+                  className="rounded p-0.5 hover:bg-teal-200"
+                  type="button"
+                  onClick={() => removeSpeaker(speaker)}
+                >
+                  <X className="size-2.5" />
+                </button>
+              </Badge>
+            ))}
           </div>
         </div>
       ) : null}
@@ -774,7 +1647,10 @@ export function EventForm({
   submitLabel: string;
   trainerOptions: Array<{ label: string; value: string }>;
 }) {
+  const enableOverdriveHints =
+    process.env.NEXT_PUBLIC_EVENT_FORM_OVERDRIVE === "1";
   const router = useRouter();
+  const shouldReduceMotion = useReducedMotion();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
   const isSavingRef = useRef(false);
@@ -829,9 +1705,25 @@ export function EventForm({
     () => `event-form-draft:${eventId ?? "new"}:${locale}`,
     [eventId, locale],
   );
+  const overdriveStepStorageKey = useMemo(
+    () => `event-form-overdrive-steps:${eventId ?? "new"}:${locale}`,
+    [eventId, locale],
+  );
+  const [completedOverdriveStepIds, setCompletedOverdriveStepIds] = useState<
+    string[]
+  >([]);
+  const [railFilter, setRailFilter] = useState<
+    "all" | "blocking" | "done" | "incomplete"
+  >("all");
+  const [useHeatMode, setHeatMode] = useState(false);
+  const [dismissSmartHint, setDismissSmartHint] = useState(false);
+  const previousSectionRef = useRef<SectionId>(activeSection);
+  const [sectionDirection, setSectionDirection] = useState<1 | -1>(1);
 
   const normalizedAgendaDefaults = (defaultValues?.agenda ?? []).map((item) => {
-    const legacySpeakers = (item as EventFormValues["agenda"][number] & { speakerNames?: string[] }).speakerNames;
+    const legacySpeakers = (
+      item as EventFormValues["agenda"][number] & { speakerNames?: string[] }
+    ).speakerNames;
     return {
       ...item,
       titleEn: item.titleEn ?? item.title ?? "",
@@ -981,6 +1873,36 @@ export function EventForm({
       : eventType === "hybrid"
         ? "Venue & Delivery"
         : "Location";
+  const visibility = useMemo(
+    () =>
+      buildEventFormVisibility({
+        eventType,
+        galleryMode,
+        isFree,
+        paymentMethods,
+        registrationType,
+      }),
+    [eventType, galleryMode, isFree, paymentMethods, registrationType],
+  );
+  const sidebarContext = useMemo(
+    () =>
+      buildEventFormSidebarContext({
+        activeSection,
+        eventType,
+        galleryMode,
+        isFree,
+        paymentMethods,
+        registrationType,
+      }),
+    [
+      activeSection,
+      eventType,
+      galleryMode,
+      isFree,
+      paymentMethods,
+      registrationType,
+    ],
+  );
 
   const agendaDays = useMemo(() => {
     const days = Array.from(
@@ -1035,33 +1957,184 @@ export function EventForm({
     { icon: MapPin, id: "location", label: locationLabel },
     { icon: CircleDollarSign, id: "pricing", label: "Pricing" },
     { icon: AlignLeft, id: "content", label: "Content" },
+    { icon: ImageIcon, id: "gallery", label: "Gallery" },
     { icon: LayoutList, id: "agenda", label: "Agenda" },
     { icon: Users, id: "trainers", label: "Trainers" },
     { icon: Tag, id: "categories", label: "Categories" },
-    ...(registrationType === "internal"
+    ...(visibility.showRegistrationFormSection
       ? [
           {
             icon: ClipboardList,
             id: "registrationForm" as const,
-            label: "Reg. Form",
+            label: "Registration Questions",
           },
         ]
       : []),
     { icon: ListChecks, id: "registrations", label: "Registrations" },
   ];
+  const sectionGroups = useMemo(
+    () =>
+      buildEventFormRailGroups({
+        showRegistrationFormSection: visibility.showRegistrationFormSection,
+      }),
+    [visibility.showRegistrationFormSection],
+  );
+  const sectionHealth = useMemo(() => {
+    const isNonEmpty = (value: string | undefined | null) =>
+      Boolean(value && value.trim().length > 0);
+    return computeSectionHealth({
+      agendaCount: agenda.fields.length,
+      errorPaths: formErrorPaths,
+      eventType,
+      galleryMediaCount: galleryMediaIds.length,
+      galleryMode,
+      hasContentAr: isNonEmpty(form.getValues("contentAr")),
+      hasContentEn: isNonEmpty(form.getValues("contentEn")),
+      hasEndDate: isNonEmpty(form.getValues("endDate")),
+      hasExternalRegistrationUrl: isNonEmpty(
+        form.getValues("externalRegistrationUrl"),
+      ),
+      hasLocationAr: isNonEmpty(form.getValues("locationAr")),
+      hasLocationEn: isNonEmpty(form.getValues("locationEn")),
+      hasMeetingLink: isNonEmpty(form.getValues("meetingLink")),
+      hasPrice: isNonEmpty(form.getValues("price")),
+      hasShortAr: isNonEmpty(form.getValues("shortAr")),
+      hasShortEn: isNonEmpty(form.getValues("shortEn")),
+      hasSlug: isNonEmpty(form.getValues("slug")),
+      hasStartDate: isNonEmpty(form.getValues("startDate")),
+      hasTitleAr: isNonEmpty(form.getValues("titleAr")),
+      hasTitleEn: isNonEmpty(form.getValues("titleEn")),
+      isFree,
+      registrationFieldsCount: regFields.fields.length,
+      registrationType,
+      registrationsCount,
+      sections,
+      selectedCategoryCount: selectedCategoryIds.length,
+      selectedTrainerCount: selectedTrainerIds.length,
+      showRegistrationFormSection: visibility.showRegistrationFormSection,
+      status,
+    });
+  }, [
+    agenda.fields.length,
+    eventType,
+    form,
+    formErrorPaths,
+    galleryMediaIds.length,
+    galleryMode,
+    isFree,
+    regFields.fields.length,
+    registrationType,
+    registrationsCount,
+    sections,
+    selectedCategoryIds.length,
+    selectedTrainerIds.length,
+    visibility.showRegistrationFormSection,
+  ]);
 
   const sectionIdx = sections.findIndex((s) => s.id === activeSection);
   const prevSection = sections[sectionIdx - 1];
   const nextSection = sections[sectionIdx + 1];
+  const healthSummary = useMemo(
+    () => computeHealthSummary({ sectionHealth, sections, status }),
+    [sectionHealth, sections, status],
+  );
+  const fixQueue = useMemo(() => {
+    return buildEventFormFixQueue({
+      activeSection,
+      errorPaths: formErrorPaths,
+      limit: 6,
+    });
+  }, [activeSection, formErrorPaths]);
+  const smartHint = useMemo(() => {
+    if (healthSummary.errors > 0) {
+      const first = healthSummary.blockingItems[0];
+      if (first) {
+        return {
+          cta: "Fix top blocker",
+          description: `${first.label} has ${first.errors} blocking issue${first.errors > 1 ? "s" : ""}.`,
+          target: first.id,
+          title: "Resolve blockers first",
+        };
+      }
+    }
+    if (status !== "published") {
+      return {
+        cta: "Review visibility",
+        description:
+          "Switch to published only after reviewing section completeness.",
+        target: "identity" as SectionId,
+        title: "Draft is still active",
+      };
+    }
+    if (activeSection !== "registrations" && registrationsCount > 0) {
+      return {
+        cta: "Open registrations",
+        description:
+          "New submissions arrived. Review attendance health and statuses.",
+        target: "registrations" as SectionId,
+        title: "Monitor submissions",
+      };
+    }
+    return {
+      cta: "Review pricing",
+      description: "Sanity-check registration flow, pricing, and payment setup.",
+      target: "pricing" as SectionId,
+      title: "Final quality pass",
+    };
+  }, [activeSection, healthSummary, registrationsCount, status]);
+  const overdrivePlan = useMemo(
+    () =>
+      buildOverdrivePlan({
+        activeSection,
+        blockingErrors: healthSummary.errors,
+        hasPublishedStatus: status === "published",
+        registrationsCount,
+      }),
+    [activeSection, healthSummary.errors, registrationsCount, status],
+  );
+  const handleFixQueueItem = useCallback(
+    (item: { path: string; sectionId: SectionId }) => {
+      setActiveSection(item.sectionId);
+      const fieldId = getFieldIdFromErrorPath(item.path, idPrefix);
+      if (!fieldId) return;
+      requestAnimationFrame(() => {
+        const target = document.getElementById(fieldId);
+        if (!target) return;
+        target.focus();
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    },
+    [idPrefix],
+  );
+  const handleToggleOverdriveStep = useCallback((id: string) => {
+    setCompletedOverdriveStepIds((prev) =>
+      prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id],
+    );
+  }, []);
+
+  useEffect(() => {
+    const previous = previousSectionRef.current;
+    if (previous !== activeSection) {
+      const prevIndex = sections.findIndex((section) => section.id === previous);
+      const nextIndex = sections.findIndex(
+        (section) => section.id === activeSection,
+      );
+      if (prevIndex >= 0 && nextIndex >= 0) {
+        setSectionDirection(nextIndex >= prevIndex ? 1 : -1);
+      }
+      previousSectionRef.current = activeSection;
+      setDismissSmartHint(false);
+    }
+  }, [activeSection, sections]);
 
   useEffect(() => {
     if (
-      registrationType === "external" &&
+      !visibility.showRegistrationFormSection &&
       activeSection === "registrationForm"
     ) {
       setActiveSection("pricing");
     }
-  }, [activeSection, registrationType]);
+  }, [activeSection, visibility.showRegistrationFormSection]);
 
   useEffect(() => {
     form.register("showSidebarSeatsFulfillment");
@@ -1099,6 +2172,35 @@ export function EventForm({
     // run once for current record/locale key
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftStorageKey]);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(overdriveStepStorageKey);
+      if (!raw) {
+        setCompletedOverdriveStepIds([]);
+        return;
+      }
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) {
+        setCompletedOverdriveStepIds([]);
+        return;
+      }
+      setCompletedOverdriveStepIds(
+        parsed.filter((value): value is string => typeof value === "string"),
+      );
+    } catch {
+      setCompletedOverdriveStepIds([]);
+    }
+  }, [overdriveStepStorageKey]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        overdriveStepStorageKey,
+        JSON.stringify(completedOverdriveStepIds),
+      );
+    } catch {}
+  }, [completedOverdriveStepIds, overdriveStepStorageKey]);
 
   useEffect(() => {
     if (!form.formState.isDirty) return;
@@ -1404,7 +2506,7 @@ export function EventForm({
   return (
     <>
       <form
-        className="flex h-screen overflow-hidden bg-zinc-50"
+        className="flex min-h-screen flex-col bg-zinc-50 lg:h-screen lg:flex-row lg:overflow-hidden"
         onSubmit={form.handleSubmit(save, (errors) => {
           const paths = flattenErrorPaths(errors);
           const first = paths[0] ?? "";
@@ -1418,11 +2520,11 @@ export function EventForm({
           } else if (
             first.startsWith("title") ||
             first.startsWith("slug") ||
-            first.startsWith("short") ||
             first.startsWith("seo") ||
-            first.startsWith("content") ||
             first.startsWith("hero")
           ) {
+            setActiveSection("identity");
+          } else if (first.startsWith("short") || first.startsWith("content")) {
             setActiveSection("content");
           } else if (
             first.startsWith("startDate") ||
@@ -1447,12 +2549,21 @@ export function EventForm({
             first.startsWith("externalRegistrationUrl")
           ) {
             setActiveSection("pricing");
+          } else if (
+            first.startsWith("galleryMode") ||
+            first.startsWith("galleryMediaIds")
+          ) {
+            setActiveSection("gallery");
           } else if (first.startsWith("trainerIds")) {
             setActiveSection("trainers");
           } else if (first.startsWith("categories")) {
             setActiveSection("categories");
           } else if (first.startsWith("registrationFields")) {
-            setActiveSection("registrationForm");
+            setActiveSection(
+              visibility.showRegistrationFormSection
+                ? "registrationForm"
+                : "pricing",
+            );
           } else {
             setActiveSection("identity");
           }
@@ -1467,64 +2578,28 @@ export function EventForm({
         {/* ════════════════════════════════════════════════════════════════
             LEFT NAV RAIL  w-52
         ════════════════════════════════════════════════════════════════ */}
-        <nav className="flex h-full w-52 shrink-0 flex-col border-r border-zinc-200 bg-white">
-          {/* Top: back + event title + status */}
-          <div className="border-b border-zinc-100 px-4 py-4">
-            <Link
-              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-zinc-400 transition-colors hover:text-zinc-700"
-              href={`/${locale}/dashboard/programs`}
-            >
-              <ArrowLeft className="size-3" /> Programs
-            </Link>
-            <h1 className="mt-2 line-clamp-2 text-[13px] font-bold leading-snug text-zinc-800">
-              {pageHeading}
-            </h1>
-            <div className="mt-1.5 flex items-center gap-1.5">
-              <span
-                className={cn(
-                  "size-1.5 rounded-full",
-                  status === "published"
-                    ? "animate-pulse bg-teal-500"
-                    : "bg-zinc-300",
-                )}
-              />
-              <span className="text-[11px] font-semibold text-zinc-400">
-                {statusLabels[status]}
-              </span>
-            </div>
-          </div>
-
-          {/* Section nav */}
-          <div className="flex-1 overflow-y-auto py-2">
-            <p className="px-4 pb-1 pt-2 text-[9.5px] font-bold uppercase tracking-widest text-zinc-300">
-              Sections
-            </p>
-            {sections.map(({ icon: Icon, id, label }) => (
-              <button
-                className={cn(
-                  "flex w-full items-center gap-2.5 border-r-2 px-4 py-2 text-left text-[12.5px] font-medium transition-all",
-                  activeSection === id
-                    ? "border-teal-500 bg-teal-50 text-teal-700"
-                    : "border-transparent text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800",
-                )}
-                key={id}
-                type="button"
-                onClick={() => setActiveSection(id)}
-              >
-                <Icon className="size-3.5 shrink-0" />
-                <span className="truncate">{label}</span>
-              </button>
-            ))}
-          </div>
-        </nav>
+        <SectionRailNav
+          activeSection={activeSection}
+          locale={locale}
+          pageHeading={pageHeading}
+          railFilter={railFilter}
+          sectionGroups={sectionGroups}
+          sectionHealth={sectionHealth}
+          sections={sections}
+          setHeatMode={setHeatMode}
+          setRailFilter={setRailFilter}
+          setActiveSection={setActiveSection}
+          status={status}
+          useHeatMode={useHeatMode}
+        />
 
         {/* ════════════════════════════════════════════════════════════════
             MAIN PANEL  flex-1
             Only the active section renders (tabbed, not scroll)
         ════════════════════════════════════════════════════════════════ */}
-        <main className="flex h-full flex-1 min-w-0 flex-col overflow-hidden">
+        <main className="order-2 flex min-h-0 flex-1 flex-col overflow-hidden lg:h-full">
           {/* Breadcrumb bar */}
-          <div className="sticky top-0 z-10 flex shrink-0 items-center gap-2 border-b border-zinc-100 bg-white px-7 py-3 text-[12px]">
+          <div className="hidden shrink-0 items-center gap-2 border-b border-zinc-100 bg-white px-7 py-3 text-[12px] lg:flex">
             <span className="text-zinc-400">Programs</span>
             <ChevronRight className="size-3.5 text-zinc-300" />
             <span className="text-zinc-400">{pageHeading}</span>
@@ -1535,7 +2610,7 @@ export function EventForm({
           </div>
 
           {/* Sticky actions */}
-          <div className="sticky top-[45px] z-10 flex items-center justify-between gap-3 border-b border-zinc-100 bg-white/95 px-7 py-2.5 backdrop-blur-sm">
+          <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 bg-white/95 px-4 py-2.5 backdrop-blur-sm sm:px-5 lg:top-[45px] lg:flex-nowrap lg:px-7">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
                 Content
@@ -1558,7 +2633,7 @@ export function EventForm({
                 ))}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               <span
                 className={cn(
                   "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide",
@@ -1577,14 +2652,14 @@ export function EventForm({
               </span>
               <Link
                 className={cn(
-                  "inline-flex h-8 items-center justify-center rounded-md border border-zinc-200 px-3 text-[12px] font-medium text-zinc-500 transition-colors hover:border-zinc-300 hover:text-zinc-800",
+                  "inline-flex h-8 flex-1 items-center justify-center rounded-md border border-zinc-200 px-3 text-[12px] font-medium text-zinc-500 transition-colors hover:border-zinc-300 hover:text-zinc-800 sm:flex-none",
                 )}
                 href={`/${locale}/dashboard/programs`}
               >
                 Discard
               </Link>
               <Button
-                className="h-8 bg-teal-600 px-3 text-[12px] font-semibold hover:bg-teal-700"
+                className="h-8 flex-1 bg-teal-600 px-3 text-[12px] font-semibold hover:bg-teal-700 sm:flex-none"
                 disabled={isPending}
                 type="submit"
               >
@@ -1597,8 +2672,63 @@ export function EventForm({
           </div>
 
           {/* Section content — scrollable */}
-          <div className="flex-1 overflow-y-auto px-7 py-7">
+          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5 lg:px-7 lg:py-7">
             <div className="mx-auto max-w-4xl">
+              <InlineErrorSummary
+                blockingItems={healthSummary.blockingItems}
+                errors={healthSummary.errors}
+                onJump={setActiveSection}
+              />
+              <AnimatePresence initial={false} mode="wait">
+                <motion.div
+                  animate={{ opacity: 1, y: 0 }}
+                  aria-labelledby={`section-tab-${activeSection}`}
+                  id={getSectionDomId(activeSection)}
+                  role="region"
+                  exit={
+                    shouldReduceMotion
+                      ? { opacity: 1, x: 0, y: 0 }
+                      : { opacity: 0, x: sectionDirection > 0 ? -14 : 14, y: -2 }
+                  }
+                  initial={
+                    shouldReduceMotion
+                      ? { opacity: 1, x: 0, y: 0 }
+                      : { opacity: 0, x: sectionDirection > 0 ? 14 : -14, y: 6 }
+                  }
+                  key={activeSection}
+                  transition={{
+                    duration: shouldReduceMotion ? 0 : motionTokens.medium,
+                    ease: motionTokens.easing,
+                  }}
+                >
+                  <div className="mb-4 rounded-xl border border-zinc-200 bg-gradient-to-r from-zinc-50 to-white p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                      Current objective
+                    </p>
+                    <p className="mt-1 text-[12px] font-semibold text-zinc-800">
+                      {sections.find((section) => section.id === activeSection)?.label}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {sectionGoals[activeSection].map((goal) => (
+                        <span
+                          className="rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[10.5px] text-zinc-600"
+                          key={goal}
+                        >
+                          {goal}
+                        </span>
+                      ))}
+                    </div>
+                    {!healthSummary.publishReady && (
+                      <p className="mt-2 text-[10.5px] text-amber-700">
+                        Blocking reason:{" "}
+                        {healthSummary.blockingItems.find(
+                          (item) => item.id === activeSection,
+                        )?.errors
+                          ? `${healthSummary.blockingItems.find((item) => item.id === activeSection)?.errors} issues in this section`
+                          : "other sections still have blocking issues"}
+                      </p>
+                    )}
+                  </div>
               {/* ─────────────────────────────────────────────────────────
                   §01  IDENTITY
                   Cover image · title + inline slug · short description
@@ -2282,7 +3412,7 @@ export function EventForm({
                     number="02"
                     title="Schedule"
                   />
-                  <FieldGroup className="grid grid-cols-2 gap-4">
+                  <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <Field className="grid gap-2">
                       <FieldLabel htmlFor={`${idPrefix}-start-date`}>
                         Start Date
@@ -2381,9 +3511,14 @@ export function EventForm({
                     number="03"
                     title={locationLabel}
                   />
+                  <Note className="mb-2 text-[11px]">
+                    Visibility rule: location fields adapt to `Delivery Mode` in
+                    Schedule. On-site/Hybrid shows venue data; Online/Hybrid
+                    shows meeting setup.
+                  </Note>
 
                   {/* Onsite / Hybrid: venue + map */}
-                  {(eventType === "onsite" || eventType === "hybrid") && (
+                  {visibility.showVenueFields && (
                     <>
                       <Field className="grid gap-2">
                         <FieldLabel htmlFor={`${idPrefix}-location`}>
@@ -2424,7 +3559,7 @@ export function EventForm({
                           ]}
                         />
                       </Field>
-                      <FieldGroup className="grid grid-cols-2 gap-4">
+                      <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <Field className="grid gap-2">
                           <FieldLabel htmlFor={`${idPrefix}-google-maps-link`}>
                             Google Maps Link
@@ -2468,7 +3603,7 @@ export function EventForm({
                   )}
 
                   {/* Online / Hybrid: meeting platform + link */}
-                  {(eventType === "online" || eventType === "hybrid") && (
+                  {visibility.showOnlineFields && (
                     <div className="space-y-4 rounded-xl border border-zinc-200 bg-white p-5">
                       <div className="flex items-center gap-2">
                         <Video className="size-4 text-teal-600" />
@@ -2549,7 +3684,12 @@ export function EventForm({
                     number="04"
                     title="Pricing"
                   />
-                  <FieldGroup className="grid grid-cols-2 gap-4">
+                  <Note className="text-[11px]">
+                    Dependency: `Registration Type` controls internal form
+                    section visibility. `Mark as free event` controls payment
+                    field visibility.
+                  </Note>
+                  <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <Field className="grid gap-2">
                       <EnumSelect
                         label="Registration Type"
@@ -2565,7 +3705,7 @@ export function EventForm({
                         errors={[form.formState.errors.registrationType]}
                       />
                     </Field>
-                    {registrationType === "external" ? (
+                    {visibility.showExternalRegistrationUrl ? (
                       <Field className="grid gap-2">
                         <FieldLabel
                           htmlFor={`${idPrefix}-external-registration-url`}
@@ -2607,7 +3747,7 @@ export function EventForm({
                       }
                     />
                   </Field>
-                  <FieldGroup className="grid grid-cols-2 gap-4">
+                  <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <Field className="grid gap-2">
                       <ToggleControl
                         checked={showSidebarSeatsFulfillment}
@@ -2641,14 +3781,19 @@ export function EventForm({
                       />
                     </Field>
                   </FieldGroup>
-                  {isFree ? (
+                  {!visibility.showPriceAndPayments ? (
                     <Note>
                       This event is free — price and payment fields are hidden
                       from learners.
+                      {(form.watch("price") ||
+                        form.watch("bankName") ||
+                        form.watch("bankIban")) && (
+                        <> Hidden values are retained and will reappear if you turn pricing back on.</>
+                      )}
                     </Note>
                   ) : (
                     <div className="space-y-4">
-                      <FieldGroup className="grid grid-cols-2 gap-4">
+                      <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <Field className="grid gap-2">
                           <FieldLabel htmlFor={`${idPrefix}-price`}>
                             Price
@@ -2684,11 +3829,10 @@ export function EventForm({
                           />
                         </Field>
                       </FieldGroup>
-                      {(paymentMethods === "both" ||
-                        paymentMethods === "bank") && (
+                      {visibility.showBankDetails && (
                         <FieldSet className="rounded-xl border border-zinc-200 bg-white p-4">
                           <FieldLegend>Bank Transfer Details</FieldLegend>
-                          <FieldGroup className="grid grid-cols-2 gap-3">
+                          <FieldGroup className="grid grid-cols-1 gap-3 md:grid-cols-2">
                             <Field className="grid gap-2">
                               <FieldLabel htmlFor={`${idPrefix}-bank-name`}>
                                 Bank Name
@@ -2914,6 +4058,37 @@ export function EventForm({
                     />
                   </Field>
 
+                  <Note>
+                    Gallery media and visibility are managed in the dedicated{" "}
+                    <button
+                      className="font-semibold underline underline-offset-2 hover:text-teal-800"
+                      type="button"
+                      onClick={() => setActiveSection("gallery")}
+                    >
+                      Gallery
+                    </button>{" "}
+                    section.
+                  </Note>
+                </FieldSet>
+              )}
+
+              {/* ─────────────────────────────────────────────────────────
+                  §06  GALLERY
+                  Media visibility + upload + selection
+              ───────────────────────────────────────────────────────── */}
+              {activeSection === "gallery" && (
+                <FieldSet className="">
+                  <SectionHeader
+                    description="Photos and videos shown on the public program page"
+                    icon={ImageIcon}
+                    number="06"
+                    title="Gallery"
+                  />
+                  <Note className="text-[11px]">
+                    Dependency: `Gallery Visibility` controls public display timing only.
+                    Media selection is preserved even when set to hidden.
+                  </Note>
+
                   <div className="rounded-xl border border-zinc-200 bg-white p-4">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <div>
@@ -2921,7 +4096,7 @@ export function EventForm({
                           Program Gallery
                         </p>
                         <p className="text-[11.5px] text-zinc-400">
-                          Photos and videos shown on the public program page.
+                          Configure visibility and manage all gallery media.
                         </p>
                       </div>
                       <Badge variant="outline">
@@ -2988,7 +4163,7 @@ export function EventForm({
                         />
                       </Field>
                     </div>
-                    {galleryMode === "hidden" ? (
+                    {visibility.showGalleryHiddenNote ? (
                       <Note className="mt-3">
                         Gallery is currently hidden on the frontend.
                       </Note>
@@ -3054,7 +4229,7 @@ export function EventForm({
               )}
 
               {/* ─────────────────────────────────────────────────────────
-                  §06  AGENDA
+                  §07  AGENDA
                   Day tabs ·  table (time / title / type / speaker)
               ───────────────────────────────────────────────────────── */}
               {activeSection === "agenda" && (
@@ -3062,7 +4237,7 @@ export function EventForm({
                   <SectionHeader
                     description="Displayed as a timetable on the public event page"
                     icon={LayoutList}
-                    number="06"
+                    number="07"
                     title="Agenda"
                   />
 
@@ -3098,7 +4273,9 @@ export function EventForm({
                                   .filter((i) => i !== -1)
                                   .reverse()
                                   .forEach((i) => agenda.remove(i));
-                                setManualDays((p) => p.filter((d) => d !== day));
+                                setManualDays((p) =>
+                                  p.filter((d) => d !== day),
+                                );
                                 if (activeDay === day)
                                   setActiveDay(agendaDays[0] ?? 1);
                               }}
@@ -3122,7 +4299,8 @@ export function EventForm({
                     </div>
                     {agendaInvalidTitleCount > 0 ? (
                       <p className="mt-1 text-right text-[11px] font-medium text-amber-600">
-                        {agendaInvalidTitleCount} session(s) missing EN/AR title.
+                        {agendaInvalidTitleCount} session(s) missing EN/AR
+                        title.
                       </p>
                     ) : null}
                   </div>
@@ -3131,16 +4309,14 @@ export function EventForm({
                   <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
                     {/* Table header */}
                     <div className="grid grid-cols-[110px_minmax(220px,1fr)_96px_240px_72px] border-b border-zinc-100 bg-zinc-50">
-                      {["Time", "Session", "Type", "Speaker", ""].map(
-                        (h) => (
-                          <div
-                            className="border-r border-zinc-100 px-3 py-2 text-[9.5px] font-bold uppercase tracking-widest text-zinc-400 last:border-none"
-                            key={h}
-                          >
-                            {h}
-                          </div>
-                        ),
-                      )}
+                      {["Time", "Session", "Type", "Speaker", ""].map((h) => (
+                        <div
+                          className="border-r border-zinc-100 px-3 py-2 text-[9.5px] font-bold uppercase tracking-widest text-zinc-400 last:border-none"
+                          key={h}
+                        >
+                          {h}
+                        </div>
+                      ))}
                     </div>
                     {/* Rows for active day */}
                     {agenda.fields
@@ -3173,171 +4349,176 @@ export function EventForm({
                             p.startsWith(`agenda.${index}.speakerNamesAr`),
                         );
                         return (
-                        <div
-                          className={cn(
-                            "grid grid-cols-[110px_minmax(220px,1fr)_96px_240px_72px] border-b border-zinc-100 last:border-none hover:bg-zinc-50/60",
-                            isMissingLocalizedTitle && "bg-amber-50/40",
-                            rowHasError && "bg-destructive/5",
-                          )}
-                          key={item.id}
-                        >
-                          <div className="border-r border-zinc-100">
-                            <input
-                              className={cn(
-                                "h-10 w-full bg-transparent px-3 font-mono text-[11.5px] text-zinc-700 outline-none focus:bg-teal-50/40",
-                                timeHasError && "ring-1 ring-inset ring-destructive/70 bg-destructive/5",
-                              )}
-                              type="time"
-                              {...form.register(
-                                `agenda.${index}.time` as const,
-                              )}
-                            />
-                          </div>
-                          <div className="border-r border-zinc-100">
-                            <input
-                              className={cn(
-                                "h-10 w-full bg-transparent px-3 text-[13px] text-zinc-800 outline-none placeholder:text-zinc-300 focus:bg-teal-50/40",
-                                isMissingLocalizedTitle && "ring-1 ring-inset ring-amber-400 focus:ring-2 focus:ring-amber-500/40",
-                                (titleEnHasError || titleArHasError) && "ring-1 ring-inset ring-destructive/70 bg-destructive/5",
-                              )}
-                              placeholder={
-                                activeLocale === "ar"
-                                  ? "عنوان الجلسة…"
-                                  : "Session title…"
-                              }
-                              value={
-                                (activeLocale === "ar"
-                                  ? rowValue?.titleAr
-                                  : rowValue?.titleEn) ?? ""
-                              }
-                              onChange={(e) => {
-                                const nextValue = e.target.value;
-                                if (activeLocale === "ar") {
-                                  form.setValue(
-                                    `agenda.${index}.titleAr`,
-                                    nextValue,
-                                    { shouldDirty: true },
-                                  );
-                                } else {
-                                  form.setValue(
-                                    `agenda.${index}.titleEn`,
-                                    nextValue,
-                                    { shouldDirty: true },
-                                  );
-                                }
-                                form.setValue(
-                                  `agenda.${index}.title`,
-                                  nextValue,
-                                  { shouldDirty: true },
-                                );
-                              }}
-                            />
-                          </div>
-                          <div className="border-r border-zinc-100">
-                            <Select
-                              value={
-                                rowValue?.type ?? "talk"
-                              }
-                              onValueChange={(v) =>
-                                form.setValue(
-                                  `agenda.${index}.type`,
-                                  (v ?? "talk") as
-                                    | "talk"
-                                    | "break"
-                                    | "workshop"
-                                    | "panel",
-                                  {
-                                    shouldDirty: true,
-                                  },
-                                )
-                              }
-                            >
-                              <SelectTrigger
+                          <div
+                            className={cn(
+                              "grid grid-cols-[110px_minmax(220px,1fr)_96px_240px_72px] border-b border-zinc-100 last:border-none hover:bg-zinc-50/60",
+                              isMissingLocalizedTitle && "bg-amber-50/40",
+                              rowHasError && "bg-destructive/5",
+                            )}
+                            key={item.id}
+                          >
+                            <div className="border-r border-zinc-100">
+                              <input
                                 className={cn(
-                                  "!h-10 w-full rounded-none border-0 bg-transparent px-3 text-[12px] font-medium text-zinc-600 shadow-none focus:ring-0",
-                                  typeHasError && "bg-destructive/5 ring-1 ring-inset ring-destructive/70",
+                                  "h-10 w-full bg-transparent px-3 font-mono text-[11.5px] text-zinc-700 outline-none focus:bg-teal-50/40",
+                                  timeHasError &&
+                                    "ring-1 ring-inset ring-destructive/70 bg-destructive/5",
                                 )}
-                              >
-                                <span>
-                                  {agendaTypeLabels[
-                                    (rowValue?.type ??
-                                      "talk") as keyof typeof agendaTypeLabels
-                                  ] ?? "Talk"}
-                                </span>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Object.entries(agendaTypeLabels).map(
-                                  ([v, l]) => (
-                                    <SelectItem key={v} value={v}>
-                                      {l}
-                                    </SelectItem>
-                                  ),
-                                )}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="border-r border-zinc-100">
-                            <AgendaSpeakersCombobox
-                              invalid={speakersHasError}
-                              options={trainerOptions.map((t) => t.label)}
-                              value={
-                                activeLocale === "ar"
-                                  ? rowValue?.speakerNamesAr ?? []
-                                  : rowValue?.speakerNamesEn ?? []
-                              }
-                              onChange={(next) =>
-                                form.setValue(
-                                  `agenda.${index}.${activeLocale === "ar" ? "speakerNamesAr" : "speakerNamesEn"}`,
-                                  next,
-                                  {
-                                    shouldDirty: true,
-                                  },
-                                )
-                              }
-                            />
-                          </div>
-                          <div className="flex items-center justify-center gap-1 px-1">
-                            <button
-                              className={cn(
-                                "flex size-7 items-center justify-center rounded-md border transition-colors",
-                                rowValue?.highlighted
-                                  ? "border-amber-300 bg-amber-50 text-amber-500"
-                                  : "border-zinc-200 text-zinc-300 hover:border-zinc-300 hover:text-zinc-500",
-                              )}
-                              type="button"
-                              onClick={() =>
-                                form.setValue(
-                                  `agenda.${index}.highlighted`,
-                                  !form.watch(`agenda.${index}.highlighted`),
-                                  { shouldDirty: true },
-                                )
-                              }
-                            >
-                              <Star
-                                className={cn(
-                                  "size-3.5",
-                                  rowValue?.highlighted && "fill-current",
+                                type="time"
+                                {...form.register(
+                                  `agenda.${index}.time` as const,
                                 )}
                               />
-                            </button>
-                            <Button
-                              className="cursor-pointer rounded"
-                              size="icon-sm"
-                              variant="destructive"
-                              onClick={() => agenda.remove(index)}
-                            >
-                              <HugeiconsIcon icon={Delete02Icon} className="text-destructive" />
-                            </Button>
-                            {/* <button
+                            </div>
+                            <div className="border-r border-zinc-100">
+                              <input
+                                className={cn(
+                                  "h-10 w-full bg-transparent px-3 text-[13px] text-zinc-800 outline-none placeholder:text-zinc-300 focus:bg-teal-50/40",
+                                  isMissingLocalizedTitle &&
+                                    "ring-1 ring-inset ring-amber-400 focus:ring-2 focus:ring-amber-500/40",
+                                  (titleEnHasError || titleArHasError) &&
+                                    "ring-1 ring-inset ring-destructive/70 bg-destructive/5",
+                                )}
+                                placeholder={
+                                  activeLocale === "ar"
+                                    ? "عنوان الجلسة…"
+                                    : "Session title…"
+                                }
+                                value={
+                                  (activeLocale === "ar"
+                                    ? rowValue?.titleAr
+                                    : rowValue?.titleEn) ?? ""
+                                }
+                                onChange={(e) => {
+                                  const nextValue = e.target.value;
+                                  if (activeLocale === "ar") {
+                                    form.setValue(
+                                      `agenda.${index}.titleAr`,
+                                      nextValue,
+                                      { shouldDirty: true },
+                                    );
+                                  } else {
+                                    form.setValue(
+                                      `agenda.${index}.titleEn`,
+                                      nextValue,
+                                      { shouldDirty: true },
+                                    );
+                                  }
+                                  form.setValue(
+                                    `agenda.${index}.title`,
+                                    nextValue,
+                                    { shouldDirty: true },
+                                  );
+                                }}
+                              />
+                            </div>
+                            <div className="border-r border-zinc-100">
+                              <Select
+                                value={rowValue?.type ?? "talk"}
+                                onValueChange={(v) =>
+                                  form.setValue(
+                                    `agenda.${index}.type`,
+                                    (v ?? "talk") as
+                                      | "talk"
+                                      | "break"
+                                      | "workshop"
+                                      | "panel",
+                                    {
+                                      shouldDirty: true,
+                                    },
+                                  )
+                                }
+                              >
+                                <SelectTrigger
+                                  className={cn(
+                                    "!h-10 w-full rounded-none border-0 bg-transparent px-3 text-[12px] font-medium text-zinc-600 shadow-none focus:ring-0",
+                                    typeHasError &&
+                                      "bg-destructive/5 ring-1 ring-inset ring-destructive/70",
+                                  )}
+                                >
+                                  <span>
+                                    {agendaTypeLabels[
+                                      (rowValue?.type ??
+                                        "talk") as keyof typeof agendaTypeLabels
+                                    ] ?? "Talk"}
+                                  </span>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.entries(agendaTypeLabels).map(
+                                    ([v, l]) => (
+                                      <SelectItem key={v} value={v}>
+                                        {l}
+                                      </SelectItem>
+                                    ),
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="border-r border-zinc-100">
+                              <AgendaSpeakersCombobox
+                                invalid={speakersHasError}
+                                options={trainerOptions.map((t) => t.label)}
+                                value={
+                                  activeLocale === "ar"
+                                    ? (rowValue?.speakerNamesAr ?? [])
+                                    : (rowValue?.speakerNamesEn ?? [])
+                                }
+                                onChange={(next) =>
+                                  form.setValue(
+                                    `agenda.${index}.${activeLocale === "ar" ? "speakerNamesAr" : "speakerNamesEn"}`,
+                                    next,
+                                    {
+                                      shouldDirty: true,
+                                    },
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="flex items-center justify-center gap-1 px-1">
+                              <button
+                                className={cn(
+                                  "flex size-7 items-center justify-center rounded-md border transition-colors",
+                                  rowValue?.highlighted
+                                    ? "border-amber-300 bg-amber-50 text-amber-500"
+                                    : "border-zinc-200 text-zinc-300 hover:border-zinc-300 hover:text-zinc-500",
+                                )}
+                                type="button"
+                                onClick={() =>
+                                  form.setValue(
+                                    `agenda.${index}.highlighted`,
+                                    !form.watch(`agenda.${index}.highlighted`),
+                                    { shouldDirty: true },
+                                  )
+                                }
+                              >
+                                <Star
+                                  className={cn(
+                                    "size-3.5",
+                                    rowValue?.highlighted && "fill-current",
+                                  )}
+                                />
+                              </button>
+                              <Button
+                                className="cursor-pointer rounded"
+                                size="icon-sm"
+                                variant="destructive"
+                                onClick={() => agenda.remove(index)}
+                              >
+                                <HugeiconsIcon
+                                  icon={Delete02Icon}
+                                  className="text-destructive"
+                                />
+                              </Button>
+                              {/* <button
                               className="flex size-7 items-center justify-center rounded text-zinc-300 transition-colors hover:bg-red-50 hover:text-red-500"
                               type="button"
                               onClick={() => agenda.remove(index)}
                             >
                               <Trash2 className="size-3.5" />
                             </button> */}
+                            </div>
                           </div>
-                        </div>
-                      );
+                        );
                       })}
                     {/* Empty state */}
                     {agenda.fields.filter((f) => f.day === activeDay).length ===
@@ -3376,7 +4557,7 @@ export function EventForm({
               )}
 
               {/* ─────────────────────────────────────────────────────────
-                  §07  TRAINERS
+                  §08  TRAINERS
                   Select from existing trainers · displayed as grid cards
               ───────────────────────────────────────────────────────── */}
               {activeSection === "trainers" && (
@@ -3384,7 +4565,7 @@ export function EventForm({
                   <SectionHeader
                     description="People leading this event"
                     icon={Users}
-                    number="07"
+                    number="08"
                     title="Trainers"
                   />
 
@@ -3446,7 +4627,7 @@ export function EventForm({
                       items={chosenTrainers.map((t) => t.value)}
                       strategy={rectSortingStrategy}
                     >
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {chosenTrainers.map((trainer) => (
                           <SortableTrainerItem
                             id={trainer.value}
@@ -3500,7 +4681,7 @@ export function EventForm({
               )}
 
               {/* ─────────────────────────────────────────────────────────
-                  §08  CATEGORIES
+                  §09  CATEGORIES
                   Toggle chips — selected = filled teal pill
               ───────────────────────────────────────────────────────── */}
               {activeSection === "categories" && (
@@ -3508,7 +4689,7 @@ export function EventForm({
                   <SectionHeader
                     description="Tags that appear on the event page and in filters"
                     icon={Tag}
-                    number="08"
+                    number="09"
                     title="Categories"
                   />
                   <div className="flex flex-wrap gap-2">
@@ -3543,16 +4724,16 @@ export function EventForm({
               )}
 
               {/* ─────────────────────────────────────────────────────────
-                  §09  REGISTRATION FORM
+                  §10  REGISTRATION FORM
                   Add custom fields · accordion per field
               ───────────────────────────────────────────────────────── */}
               {activeSection === "registrationForm" &&
-                registrationType === "internal" && (
+                visibility.showRegistrationFormSection && (
                   <FieldSet className="">
                     <SectionHeader
                       description="Custom inputs shown to learners during sign-up"
                       icon={ClipboardList}
-                      number="09"
+                      number="10"
                       title="Registration Form"
                     />
 
@@ -3657,7 +4838,7 @@ export function EventForm({
                                       {/* Body */}
                                       {isOpen && (
                                         <div className="border-t border-zinc-100 px-4 pb-4 pt-4">
-                                          <div className="grid grid-cols-2 gap-4">
+                                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                             <Field className="grid gap-2">
                                               <EnumSelect
                                                 label="Field Type"
@@ -3926,7 +5107,7 @@ export function EventForm({
                 )}
 
               {/* ─────────────────────────────────────────────────────────
-                  §10  REGISTRATIONS
+                  §11  REGISTRATIONS
                   Summary strip + inline table.
                   NOTE FOR DEVELOPER: pass a `registrations` prop to
                   populate the table rows. See comment inside table body.
@@ -3936,7 +5117,7 @@ export function EventForm({
                   <SectionHeader
                     description="Attendee submissions for this event"
                     icon={ListChecks}
-                    number="10"
+                    number="11"
                     title="Registrations"
                   />
 
@@ -3996,8 +5177,8 @@ export function EventForm({
                       </div>
 
                       {/* Registrations table */}
-                      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
-                        <div className="grid grid-cols-[1fr_140px_100px_44px] border-b border-zinc-100 bg-zinc-50">
+                      <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-xs">
+                        <div className="grid min-w-[620px] grid-cols-[1fr_140px_100px_44px] border-b border-zinc-100 bg-zinc-50">
                           {["Learner", "Registered", "Status", ""].map((h) => (
                             <div
                               className="border-r border-zinc-100 px-3 py-2 text-[9.5px] font-bold uppercase tracking-widest text-zinc-400 last:border-none"
@@ -4021,7 +5202,7 @@ export function EventForm({
                         ) : (
                           registrations.map((r) => (
                             <div
-                              className="grid grid-cols-[1fr_140px_100px_44px] border-b border-zinc-100 last:border-none"
+                              className="grid min-w-[620px] grid-cols-[1fr_140px_100px_44px] border-b border-zinc-100 last:border-none"
                               key={r.id}
                             >
                               <div className="border-r border-zinc-100 px-3 py-2.5">
@@ -4056,6 +5237,8 @@ export function EventForm({
                   )}
                 </FieldSet>
               )}
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             {/* Prev / Next section navigation */}
@@ -4091,226 +5274,25 @@ export function EventForm({
             Wider than before so text is never squished.
             Status · Featured · Registrations open · Certificate
         ════════════════════════════════════════════════════════════════ */}
-        <aside
-          aria-label="Event settings"
-          className="flex h-full w-72 shrink-0 flex-col overflow-y-auto border-l border-zinc-200 bg-white"
-        >
-          {/* Rail header */}
-          <div className="border-b border-zinc-100 px-5 py-4 relative after:absolute after:inset-x-0 after:top-full after:h-10 after:bg-linear-to-b after:from-background after:to-transparent shadow-lg">
-            <div className="flex items-center gap-2">
-              <Settings2 className="size-4 text-teal-600" />
-              <h2 className="text-[13px] font-bold text-zinc-800">Settings</h2>
-            </div>
-            <p className="mt-1 text-[11.5px] leading-relaxed text-zinc-400">
-              Content type, visibility, registration and certificate controls
-            </p>
-          </div>
-
-          <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
-            <FieldSet>
-              <FieldLegend variant="label">Program Type (Required)</FieldLegend>
-              <Field className="grid gap-2">
-                <div className="grid gap-2">
-                  <button
-                    className={cn(
-                      "rounded-lg border px-3 py-2.5 text-left transition-colors",
-                      form.watch("eventKind") === "event"
-                        ? "border-emerald-300 bg-emerald-50"
-                        : "border-zinc-200 bg-white hover:bg-zinc-50",
-                    )}
-                    type="button"
-                    onClick={() =>
-                      form.setValue("eventKind", "event", {
-                        shouldDirty: true,
-                      })
-                    }
-                  >
-                    <p className="text-[12px] font-semibold text-zinc-900">
-                      Event
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-zinc-500">
-                      One-off or recurring event entry.
-                    </p>
-                  </button>
-                  <button
-                    className={cn(
-                      "rounded-lg border px-3 py-2.5 text-left transition-colors",
-                      form.watch("eventKind") === "training_course"
-                        ? "border-indigo-300 bg-indigo-50"
-                        : "border-zinc-200 bg-white hover:bg-zinc-50",
-                    )}
-                    type="button"
-                    onClick={() =>
-                      form.setValue("eventKind", "training_course", {
-                        shouldDirty: true,
-                      })
-                    }
-                  >
-                    <p className="text-[12px] font-semibold text-zinc-900">
-                      Training Course
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-zinc-500">
-                      Course-focused program shown under training courses.
-                    </p>
-                  </button>
-                </div>
-                <FieldError errors={[form.formState.errors.eventKind]} />
-              </Field>
-            </FieldSet>
-
-            <div className="h-px border-0 bg-zinc-100" />
-
-            {/* ── Status ── */}
-            <FieldSet>
-              <FieldLegend variant="label">Publication Status</FieldLegend>
-              <Field className="grid gap-2">
-                <button
-                  className={cn(
-                    "flex w-full items-start gap-3 rounded-lg border px-3.5 py-3 text-left transition-colors",
-                    form.watch("status") === "published"
-                      ? "border-teal-200 bg-teal-50/60"
-                      : "border-zinc-200 bg-white hover:bg-zinc-50/80",
-                  )}
-                  type="button"
-                  onClick={() =>
-                    form.setValue(
-                      "status",
-                      form.watch("status") === "published"
-                        ? "draft"
-                        : "published",
-                      { shouldDirty: true },
-                    )
-                  }
-                >
-                  <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-zinc-100">
-                    <FileText
-                      className={cn(
-                        "size-4",
-                        form.watch("status") === "published"
-                          ? "text-teal-600"
-                          : "text-zinc-400",
-                      )}
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-semibold text-zinc-800">
-                      {form.watch("status") === "published"
-                        ? statusLabels.published
-                        : statusLabels.draft}
-                    </p>
-                    <p className="mt-0.5 text-[11.5px] leading-relaxed text-zinc-400">
-                      {form.watch("status") === "published"
-                        ? "Visible to learners"
-                        : "Hidden from public"}
-                    </p>
-                  </div>
-                  <div className="mt-0.5 shrink-0">
-                    <Switch
-                      checked={form.watch("status") === "published"}
-                      className="pointer-events-none data-[state=checked]:bg-teal-600"
-                    />
-                  </div>
-                </button>
-                <FieldError errors={[form.formState.errors.status]} />
-              </Field>
-            </FieldSet>
-
-            <div className="h-px border-0 bg-zinc-100" />
-
-            {/* ── Controls ── */}
-            <FieldSet>
-              <FieldLegend variant="label">Controls</FieldLegend>
-              <FieldGroup className="">
-                <Field className="grid gap-2">
-                  <ToggleControl
-                    checked={form.watch("isFeatured")}
-                    description="Hero card on homepage · one event at a time"
-                    iconBg={
-                      form.watch("isFeatured") ? "bg-amber-50" : "bg-zinc-100"
-                    }
-                    iconEl={
-                      <Star
-                        className={cn(
-                          "size-4",
-                          form.watch("isFeatured")
-                            ? "fill-amber-400 text-amber-400"
-                            : "text-zinc-400",
-                        )}
-                      />
-                    }
-                    title="Featured event"
-                    onCheckedChange={(v) =>
-                      form.setValue("isFeatured", v, { shouldDirty: true })
-                    }
-                  />
-                </Field>
-                <Field className="grid gap-2">
-                  <ToggleControl
-                    checked={form.watch("registrationsOpen")}
-                    description="Block new sign-ups without unpublishing"
-                    iconBg="bg-teal-50"
-                    iconEl={<Users className="size-4 text-teal-600" />}
-                    title="Registrations open"
-                    onCheckedChange={(v) =>
-                      form.setValue("registrationsOpen", v, {
-                        shouldDirty: true,
-                      })
-                    }
-                  />
-                </Field>
-                <Field className="grid gap-2">
-                  <FieldLabel
-                    htmlFor={`${idPrefix}-registration-open-label-en`}
-                  >
-                    Registration Open Label (English)
-                  </FieldLabel>
-                  <FieldContent>
-                    <Input
-                      className={inputCls}
-                      id={`${idPrefix}-registration-open-label-en`}
-                      placeholder="Registration Open"
-                      {...form.register("registrationOpenLabelEn")}
-                    />
-                  </FieldContent>
-                  <FieldError
-                    errors={[form.formState.errors.registrationOpenLabelEn]}
-                  />
-                </Field>
-                <Field className="grid gap-2">
-                  <FieldLabel
-                    htmlFor={`${idPrefix}-registration-open-label-ar`}
-                  >
-                    Registration Open Label (Arabic)
-                  </FieldLabel>
-                  <FieldContent>
-                    <Input
-                      className={inputCls}
-                      dir="rtl"
-                      id={`${idPrefix}-registration-open-label-ar`}
-                      placeholder="الحجز متاح"
-                      {...form.register("registrationOpenLabelAr")}
-                    />
-                  </FieldContent>
-                  <FieldError
-                    errors={[form.formState.errors.registrationOpenLabelAr]}
-                  />
-                </Field>
-                <Field className="grid gap-2">
-                  <ToggleControl
-                    checked={form.watch("isCertified")}
-                    description="Issued on completion of this event"
-                    iconBg="bg-blue-50"
-                    iconEl={<Award className="size-4 text-blue-600" />}
-                    title="Issue certificate"
-                    onCheckedChange={(v) =>
-                      form.setValue("isCertified", v, { shouldDirty: true })
-                    }
-                  />
-                </Field>
-              </FieldGroup>
-            </FieldSet>
-          </div>
-        </aside>
+        <EventSettingsRail
+          activeSection={activeSection}
+          completedOverdriveStepIds={completedOverdriveStepIds}
+          enableOverdriveHints={enableOverdriveHints}
+          fixQueue={fixQueue}
+          form={form}
+          healthSummary={healthSummary}
+          idPrefix={idPrefix}
+          inputCls={inputCls}
+          onDismissSmartHint={() => setDismissSmartHint(true)}
+          onFixItem={handleFixQueueItem}
+          onToggleOverdriveStep={handleToggleOverdriveStep}
+          onSectionChange={setActiveSection}
+          overdrivePlan={overdrivePlan}
+          sections={sections}
+          sidebarContext={sidebarContext}
+          smartHintDismissed={dismissSmartHint}
+          smartHint={smartHint}
+        />
       </form>
 
       <MediaLibraryDialog
