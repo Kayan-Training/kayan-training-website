@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { LocaleShell } from "@/components/layout/locale-shell";
+import { FeaturedProgramsPopup } from "@/components/layout/featured-programs-popup";
 import type { NavMenuItem } from "@/components/layout/nav";
 import { getAnimatedCategoryIcons } from "@/lib/content/category-icons";
+import { getFeaturedPrograms } from "@/lib/content/queries";
 import { db } from "@/lib/db";
 import { LOCALE_DIRECTION, isSupportedLocale, type AppLocale } from "@/lib/i18n/config";
 import { getLocalizedSiteSettings } from "@/lib/settings";
@@ -53,6 +55,7 @@ export default async function LocaleLayout({
   const footerCategoryIcons = siteSettings.footerShowAnimatedCategoryIcons
     ? await getAnimatedCategoryIcons(locale)
     : [];
+  const featuredPrograms = await getFeaturedPrograms(locale, 8);
 
   const menus = await db.menu.findMany({
     where: { location: { in: ["main", "header"] } },
@@ -124,6 +127,23 @@ export default async function LocaleLayout({
         footerCategoryIcons={footerCategoryIcons}
       >
         {children}
+        <FeaturedProgramsPopup
+          events={featuredPrograms.map((program) => ({
+            basePath: program.basePath,
+            coverImage: program.coverImage,
+            dateIso: program.startDate,
+            excerpt: "",
+            location: program.location,
+            logo: program.logo,
+            capacity: program.capacity,
+            registrationsCount: program.registrationsCount,
+            registrationsOpen: program.registrationsOpen,
+            slug: program.slug,
+            title: program.title,
+            updatedAtIso: program.updatedAt,
+          }))}
+          locale={locale}
+        />
       </LocaleShell>
     </div>
   );

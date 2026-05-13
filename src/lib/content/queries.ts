@@ -25,6 +25,11 @@ export async function getLocalizedEvents(
     },
     take,
     include: {
+      _count: {
+        select: {
+          registrations: true,
+        },
+      },
       categories: {
         include: {
           category: {
@@ -82,12 +87,82 @@ export async function getLocalizedEvents(
     seoTitle: event.translations[0]?.seoTitle ?? event.translations[0]?.title ?? event.slug,
     slug: event.slug,
     eventKind: (event as { eventKind?: string }).eventKind ?? "event",
+    capacity: event.capacity,
+    registrationsCount: event._count.registrations,
+    registrationsOpen: Boolean(event.registrationsOpen),
     startDate: event.startDate,
     title: event.translations[0]?.title ?? event.slug,
     type: event.type,
     excerpt: event.translations[0]?.shortDescription ?? "",
     heroProgramLogo:
       typeof heroConfig?.programLogo === "string" ? heroConfig.programLogo : "",
+    updatedAt: event.updatedAt,
+    };
+  });
+}
+
+export async function getFeaturedPrograms(locale: "ar" | "en", take = 8) {
+  const events = await db.event.findMany({
+    where: {
+      status: "published",
+      isFeatured: true,
+      endDate: {
+        gte: new Date(),
+      },
+    },
+    orderBy: [{ startDate: "asc" }, { updatedAt: "desc" }],
+    take,
+    include: {
+      _count: {
+        select: {
+          registrations: true,
+        },
+      },
+      translations: {
+        where: { locale },
+        take: 1,
+      },
+    },
+  });
+
+  return events.map((event) => {
+    const uiConfig =
+      event.bankTransferDetails && typeof event.bankTransferDetails === "object"
+        ? (event.bankTransferDetails as {
+            ui?: {
+              location?: { ar?: string | null; en?: string | null };
+              registrationOpenLabel?: { ar?: string | null; en?: string | null };
+            };
+            hero?: { programLogo?: string };
+          })
+        : undefined;
+
+    const eventKind = ((event as { eventKind?: string }).eventKind ?? "event") as "event" | "training_course";
+    const basePath: "events" | "training-courses" =
+      eventKind === "training_course" ? "training-courses" : "events";
+
+    return {
+      basePath,
+      coverImage:
+        event.coverImage ??
+        "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1400&q=80",
+      location:
+        (uiConfig?.ui?.location?.[locale] ?? event.location ?? "").trim(),
+      logo:
+        typeof uiConfig?.hero?.programLogo === "string"
+          ? uiConfig.hero.programLogo
+          : "",
+      capacity: event.capacity,
+      registrationsCount: event._count.registrations,
+      registrationsOpen: Boolean(event.registrationsOpen),
+      registrationOpenLabel:
+        typeof uiConfig?.ui?.registrationOpenLabel?.[locale] === "string"
+          ? (uiConfig.ui.registrationOpenLabel[locale] ?? "").trim()
+          : "",
+      slug: event.slug,
+      startDate: event.startDate.toISOString(),
+      title: event.translations[0]?.title ?? event.slug,
+      updatedAt: event.updatedAt.toISOString(),
     };
   });
 }

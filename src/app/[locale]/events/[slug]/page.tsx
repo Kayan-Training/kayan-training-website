@@ -144,6 +144,17 @@ function RegisterCard({
     : `${event.price} OMR`;
   const showSeatsFulfillment = event.showSidebarSeatsFulfillment !== false;
   const showPaymentSummary = event.showSidebarPayment !== false;
+  const hasStarted = new Date(event.startDate).getTime() <= Date.now();
+  const isFull = Boolean(event.capacity && event.registrationsCount >= event.capacity);
+  const registrationClosedMessage =
+    locale === "ar"
+      ? "تم إغلاق التسجيل لهذا البرنامج."
+      : "Registration is closed for this program.";
+  const registrationNotOpenMessage =
+    locale === "ar"
+      ? "التسجيل غير مفتوح حالياً. سنعلن الموعد قريباً."
+      : "Registration is not open yet. We will announce the opening soon.";
+  const canRegister = !isPastProgram && event.registrationsOpen;
 
   const registrationHref =
     event.registrationType === "external" && event.externalRegistrationUrl
@@ -155,7 +166,7 @@ function RegisterCard({
       <div className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-primary">
         {locale === "ar" ? "سجّل الآن" : "Register Now"}
       </div>
-      {!isPastProgram && showPaymentSummary ? (
+      {canRegister && showPaymentSummary ? (
         <div className="mb-6 flex items-baseline gap-2">
           <span className="font-mono text-3xl font-semibold text-on-surface">
             {priceLabel}
@@ -183,6 +194,10 @@ function RegisterCard({
       {isPastProgram ? (
         <p className="rounded border border-outline-variant/30 bg-surface-container px-4 py-3 text-center text-xs text-on-surface-variant">
           {locale === "ar" ? "انتهى موعد هذا البرنامج." : "This program has already concluded."}
+        </p>
+      ) : !event.registrationsOpen ? (
+        <p className="rounded border border-secondary/30 bg-secondary/10 px-4 py-3 text-center text-xs text-secondary">
+          {hasStarted || isFull ? registrationClosedMessage : registrationNotOpenMessage}
         </p>
       ) : (
         <>
@@ -326,7 +341,7 @@ export default async function EventDetailPage({
                 />
               </div>
               <div className="flex flex-wrap gap-4">
-                {!isPastProgram ? (
+                {!isPastProgram && event.registrationsOpen ? (
                   <Link
                     className="flex items-center gap-2 bg-secondary px-8 py-4 text-xs uppercase tracking-widest text-surface-dim transition-colors hover:bg-primary"
                     href={

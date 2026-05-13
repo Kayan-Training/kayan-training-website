@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { EventCard, type EventCardItem } from "@/components/events/event-card";
+import { FeaturedProgramCard } from "@/components/events/featured-program-card";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -19,6 +20,10 @@ type ListingEvent = {
   isFeatured: boolean;
   listingType: "consulting" | "evenings" | "featured" | "training";
   location: string;
+  logo?: string;
+  capacity?: number | null;
+  registrationsCount?: number;
+  registrationsOpen?: boolean;
   searchText: string;
   slug: string;
   title: string;
@@ -224,56 +229,35 @@ export function EventsListingClient({
             <CarouselContent>
               {featuredEvents.map((featuredEvent) => (
                 <CarouselItem key={featuredEvent.slug}>
-                  <Link
-                    href={`/${locale}/${basePath}/${featuredEvent.slug}`}
-                    className="group relative block h-[480px] overflow-hidden ghost-border md:h-[560px]"
-                  >
-                    <Image
-                      alt={featuredEvent.title}
-                      className="absolute inset-0 h-full w-full object-cover grayscale transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0"
-                      fill
-                      priority
-                      sizes="100vw"
-                      src={featuredEvent.coverImage}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/95 via-surface-container-lowest/60 to-transparent" />
-                    <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-12">
-                      <div className="mb-4 flex items-center gap-3">
-                        <span className="badge-teal font-body">
-                          {locale === "ar" ? "حدث مميّز" : "Featured Event"}
-                        </span>
-                        {featuredEvent.location ? (
-                          <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-on-surface-variant">
-                            <HugeiconsIcon icon={Location01Icon} size={12} strokeWidth={1.8} />
-                            {featuredEvent.location}
-                          </span>
-                        ) : null}
-                      </div>
-                      <h2 className="mb-3 max-w-3xl text-2xl font-semibold leading-snug text-on-surface transition-colors group-hover:text-secondary md:text-4xl">
-                        {featuredEvent.title}
-                      </h2>
-                      <p className="mb-8 max-w-xl text-sm leading-relaxed text-on-surface-variant">
-                        {featuredEvent.excerpt}
-                      </p>
-                      <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="font-mono text-4xl font-semibold leading-none text-on-surface">
-                            {formatDayNumber(featuredEvent.dateIso, locale)}
-                          </span>
-                          <span className="text-xs uppercase tracking-widest text-on-surface-variant">
-                            {new Intl.DateTimeFormat(locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB", {
-                              month: "short",
-                              year: "numeric",
-                            }).format(new Date(featuredEvent.dateIso))}
-                          </span>
-                        </div>
-                        <span className="inline-flex items-center gap-2 bg-primary px-6 py-3 text-xs uppercase tracking-[0.18em] text-primary-foreground transition-colors group-hover:bg-secondary">
-                          {locale === "ar" ? "التفاصيل والتسجيل" : "Details & Register"}
-                          <HugeiconsIcon className="rtl:rotate-180" icon={ArrowRight01Icon} size={18} strokeWidth={1.8} />
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
+                  <FeaturedProgramCard
+                    event={{
+                      basePath,
+                      coverImage: featuredEvent.coverImage,
+                      dateIso: featuredEvent.dateIso,
+                      excerpt: featuredEvent.excerpt,
+                      location: featuredEvent.location,
+                      logo: featuredEvent.logo,
+                      capacity: featuredEvent.capacity,
+                      registrationsCount: featuredEvent.registrationsCount,
+                      registrationsOpen: featuredEvent.registrationsOpen,
+                      slug: featuredEvent.slug,
+                      title: featuredEvent.title,
+                    }}
+                    labels={{
+                      details: locale === "ar" ? "التفاصيل" : "Details",
+                      detailsAndRegister: locale === "ar" ? "التفاصيل والتسجيل" : "Details & Register",
+                      featured: locale === "ar" ? "برنامج مميّز" : "Featured Program",
+                      registrationClosed:
+                        locale === "ar"
+                          ? "تم إغلاق التسجيل لهذا البرنامج."
+                          : "Registration is closed for this program.",
+                      registrationNotOpen:
+                        locale === "ar"
+                          ? "التسجيل غير مفتوح حالياً. سنعلن الموعد قريباً."
+                          : "Registration is not open yet. We will announce the opening soon.",
+                    }}
+                    locale={locale}
+                  />
                 </CarouselItem>
               ))}
             </CarouselContent>

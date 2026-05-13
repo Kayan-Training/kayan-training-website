@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { StarIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
-
+import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 
 type AgendaItem = {
@@ -62,22 +63,39 @@ export function AgendaDayTabs({
             className={cn(
               "flex gap-4 p-3 md:p-4 border",
               item.highlighted
-                ? "border-amber-400/70 bg-amber-50/30 animate-pulse"
+                ? "border-amber-400/70 bg-amber-50/30"
                 : index % 2
                   ? "border-transparent bg-surface-container-low"
                   : "border-transparent bg-surface-container-lowest",
             )}
             key={`${item.day}-${item.time}-${item.title}-${index}`}
           >
-            <span className="w-16 shrink-0 pt-0.5 font-mono text-xs text-secondary md:w-20" dir="ltr">
+            <span
+              className="w-16 shrink-0 pt-0.5 font-mono flex items-center gap-2 text-xs text-secondary md:w-20"
+              dir="ltr"
+            >
+              {item.highlighted ? (
+                <HugeiconsIcon
+                  icon={StarIcon}
+                  className="text-amber-400 size-4"
+                  fill="currentColor"
+                />
+              ) : null}
               {item.time}
             </span>
             <div className="min-w-0">
-              <div className="break-words text-sm font-semibold">{item.title}</div>
+              <div className="break-words text-sm font-semibold">
+                {item.title}
+              </div>
               {item.trainerName ? (
                 <div className="mt-1 break-words text-xs text-on-surface-variant">
                   {item.trainerLink ? (
-                    <Link className="underline-offset-4 hover:text-primary hover:underline" href={item.trainerLink} rel="noreferrer" target="_blank">
+                    <Link
+                      className="underline-offset-4 hover:text-primary hover:underline"
+                      href={item.trainerLink}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
                       {item.trainerName}
                     </Link>
                   ) : (
@@ -92,4 +110,3 @@ export function AgendaDayTabs({
     </div>
   );
 }
-

@@ -23,6 +23,9 @@ export default async function EventRegisterPage({
     notFound();
   }
   const eventData = event;
+  if (!eventData.registrationsOpen) {
+    redirect(`/${activeLocale}/events/${slug}`);
+  }
   if (eventData.registrationType === "external" && eventData.externalRegistrationUrl) {
     redirect(eventData.externalRegistrationUrl);
   }
