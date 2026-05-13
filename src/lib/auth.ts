@@ -23,6 +23,10 @@ const hasGoogleOAuth =
 
 const authBaseUrl = process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const authSecret = process.env.BETTER_AUTH_SECRET ?? "dev-only-better-auth-secret-change-me";
+const trustedOrigins = (process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 async function resolveUserLocale(email: string) {
   const found = await db.user.findUnique({
@@ -51,6 +55,7 @@ export const auth = betterAuth({
     },
   },
   baseURL: authBaseUrl,
+  trustedOrigins,
   secret: authSecret,
   emailAndPassword: {
     enabled: true,
