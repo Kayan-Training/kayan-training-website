@@ -1,15 +1,28 @@
 "use client";
 
+import {
+  Album02Icon,
+  Cancel01Icon,
+  Upload04Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { ImageIcon, Loader2, Upload, X } from "lucide-react";
-import { useRef, useState, type ChangeEvent } from "react";
+import { type ChangeEvent, useRef, useState } from "react";
 import { toast } from "sonner";
-
 import { MediaLibraryDialog } from "@/components/ui/media-library-dialog";
 import { UploadProgress } from "@/components/ui/upload-progress";
 import { uploadMediaFile } from "@/lib/client/media-upload";
 import { cn } from "@/lib/utils";
+import { Button } from "./button";
+import { Input } from "./input";
+import { Spinner } from "./spinner";
 
-type MediaItem = { id: string; originalName: string; url: string; mimeType?: string };
+type MediaItem = {
+  id: string;
+  originalName: string;
+  url: string;
+  mimeType?: string;
+};
 
 type FetchMediaFn = () => Promise<MediaItem[]>;
 
@@ -115,51 +128,60 @@ export function ImagePickerField({
               alt="Preview"
               className={cn(
                 "h-full w-full",
-                previewFit === "contain" ? "object-contain p-2" : "object-cover",
+                previewFit === "contain"
+                  ? "object-contain p-2"
+                  : "object-cover",
               )}
               src={value}
             />
-            <button
+            <Button
               aria-label="Remove image"
-              className="absolute right-2 top-2 rounded-md bg-black/60 p-1 text-white hover:bg-black/80"
               title="Remove image"
-              type="button"
+              className="absolute right-1 top-1 rounded-full cursor-pointer"
               onClick={() => onChange("")}
+              size="icon-sm"
+              variant="destructive"
             >
-              <X className="size-3" />
-            </button>
+              <HugeiconsIcon icon={Cancel01Icon} className="text-destructive" />
+            </Button>
           </div>
         )}
         <div className="flex gap-2 p-2">
-          <input
+          <Input
             className={cn(inputCls, dir === "rtl" && "text-right")}
             dir={dir}
             placeholder="Paste URL or browse library…"
             value={value}
             onChange={(e) => onChange(e.target.value)}
           />
-          <button
-            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-border/70 bg-muted/30 px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+          <Button
             disabled={loading}
-            type="button"
             onClick={openPicker}
+            size="icon"
+            variant="outline"
+            className="h-9 aspect-square cursor-pointer"
           >
-            {loading ? <Loader2 className="size-3 animate-spin" /> : <ImageIcon className="size-3" />}
-            Browse
-          </button>
-          <button
-            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-border/70 bg-muted/30 px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+            {loading ? (
+              <Spinner className="size-4" />
+            ) : (
+              <HugeiconsIcon icon={Album02Icon} className="size-4" />
+            )}
+            <span className="sr-only">Browse</span>
+          </Button>
+          <Button
+            className="h-9 aspect-square cursor-pointer"
             disabled={uploading}
-            type="button"
             onClick={() => fileInputRef.current?.click()}
+            size="icon"
+            variant="outline"
           >
             {uploading ? (
-              <Loader2 className="size-3 animate-spin" />
+              <Spinner className="size-4" />
             ) : (
-              <Upload className="size-3" />
+              <HugeiconsIcon icon={Upload04Icon} className="size-4" />
             )}
-            Upload
-          </button>
+            <span className="sr-only">Upload</span>
+          </Button>
         </div>
         <input
           accept="image/*"
@@ -184,9 +206,14 @@ export function ImagePickerField({
         acceptedKinds={["image"]}
         emptyText="No images uploaded yet. Upload via the Media section."
         initialSelectedIds={
-          value ? items.filter((item) => item.url === value).map((item) => item.id) : []
+          value
+            ? items.filter((item) => item.url === value).map((item) => item.id)
+            : []
         }
-        items={items.map((item) => ({ ...item, mimeType: item.mimeType ?? "image/*" }))}
+        items={items.map((item) => ({
+          ...item,
+          mimeType: item.mimeType ?? "image/*",
+        }))}
         loading={loading}
         multiple={false}
         open={open}

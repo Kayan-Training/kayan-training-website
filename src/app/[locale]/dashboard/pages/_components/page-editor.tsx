@@ -16,7 +16,16 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Delete02Icon } from "@hugeicons/core-free-icons";
+import {
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  BrushIcon,
+  Copy01Icon,
+  Delete02Icon,
+  Image01Icon,
+  Image02Icon,
+  PaintBoardIcon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   AlertTriangle,
@@ -26,13 +35,17 @@ import {
   ChevronDown,
   ClipboardPaste,
   Copy,
+  Dot,
   FileText,
   GripVertical,
   ImageIcon,
   Languages,
   Loader2,
+  Minus,
+  Palette,
   Plus,
   Search,
+  SwatchBook,
   Video,
 } from "lucide-react";
 import Link from "next/link";
@@ -51,6 +64,7 @@ import { toast } from "sonner";
 import { DashboardSectionHeading } from "@/components/dashboard/editor-primitives";
 import { RichTextEditor } from "@/components/dashboard/rich-text-editor";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import {
   Dialog,
   DialogContent,
@@ -64,11 +78,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ImagePickerField } from "@/components/ui/image-picker-field";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   type LinkPickerEntities,
   LinkPickerInput,
 } from "@/components/ui/link-picker-input";
 import { MediaLibraryDialog } from "@/components/ui/media-library-dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { UploadProgress } from "@/components/ui/upload-progress";
@@ -159,10 +175,10 @@ function ArrayItemRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-card/70 p-4 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]">
+    <div className="group rounded-xl border border-border/60 bg-card/70 p-4 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="font-mono text-[10px] text-muted-foreground">
+          <span className="font-mono text-sm font-semibold text-primary p-1.5">
             {String(index + 1).padStart(2, "0")}
           </span>
           {title ? (
@@ -171,46 +187,59 @@ function ArrayItemRow({
             </span>
           ) : null}
         </div>
-        <div className="flex items-center gap-1">
+
+        <ButtonGroup
+          className={
+            "rounded-[4px] group-hover:opacity-100 opacity-0 duration-150 transition-all"
+          }
+        >
           {onMoveUp ? (
-            <button
+            <Button
               aria-label={`Move item ${index + 1} up`}
-              className="inline-flex h-11 min-w-11 items-center justify-center rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              type="button"
               onClick={onMoveUp}
+              size="icon-sm"
+              variant="outline"
+              className="cursor-pointer rounded-[4px]"
             >
-              Up
-            </button>
+              <HugeiconsIcon icon={ArrowUp01Icon} size={14} />
+            </Button>
           ) : null}
           {onMoveDown ? (
-            <button
+            <Button
               aria-label={`Move item ${index + 1} down`}
-              className="inline-flex h-11 min-w-11 items-center justify-center rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              type="button"
               onClick={onMoveDown}
+              size="icon-sm"
+              variant="outline"
+              className="cursor-pointer rounded-[4px]"
             >
-              Down
-            </button>
+              <HugeiconsIcon icon={ArrowDown01Icon} size={14} />
+            </Button>
           ) : null}
           {onDuplicate ? (
-            <button
+            <Button
               aria-label={`Duplicate item ${index + 1}`}
-              className="inline-flex h-11 min-w-11 items-center justify-center rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              type="button"
               onClick={onDuplicate}
+              size="icon-sm"
+              variant="outline"
+              className="cursor-pointer rounded-[4px]"
             >
-              Copy
-            </button>
+              <HugeiconsIcon icon={Copy01Icon} size={14} />
+            </Button>
           ) : null}
-          <button
-            aria-label={`Remove item ${index + 1}`}
-            className="inline-flex h-11 min-w-11 items-center justify-center rounded-md border border-border/60 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:border-destructive/50 hover:bg-destructive/5 hover:text-destructive"
-            type="button"
+          <Button
+            variant="destructive"
+            size="icon-sm"
             onClick={onRemove}
+            aria-label={`Remove item ${index + 1}`}
+            className="cursor-pointer border-border"
           >
-            <HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={1.9} />
-          </button>
-        </div>
+            <HugeiconsIcon
+              icon={Delete02Icon}
+              size={14}
+              className="text-destructive"
+            />
+          </Button>
+        </ButtonGroup>
       </div>
       {children}
     </div>
@@ -2629,75 +2658,164 @@ function AccreditationFields({
                   })
                 }
               >
-                <div className="space-y-2">
-                  <input
-                    className={inputCls}
-                    placeholder="Organization name"
-                    value={org.name}
-                    onChange={(e) =>
-                      onChange({
-                        featuredOrgs: block.featuredOrgs.map((x, j) =>
-                          j === i ? { ...x, name: e.target.value } : x,
-                        ),
-                      })
-                    }
-                  />
-                  <input
-                    className={cn(inputCls, dir === "rtl" && "text-right")}
-                    dir={dir}
-                    placeholder="Short text"
-                    value={org.summary}
-                    onChange={(e) =>
-                      onChange({
-                        featuredOrgs: block.featuredOrgs.map((x, j) =>
-                          j === i ? { ...x, summary: e.target.value } : x,
-                        ),
-                      })
-                    }
-                  />
-                  <select
-                    className={inputCls}
-                    value={org.displayMode ?? "original"}
-                    onChange={(e) =>
-                      onChange({
-                        featuredOrgs: block.featuredOrgs.map((x, j) =>
-                          j === i
-                            ? {
-                                ...x,
-                                displayMode: e.target.value as
-                                  | "original"
-                                  | "mono",
-                              }
-                            : x,
-                        ),
-                      })
-                    }
-                  >
-                    <option value="original">Original Colors</option>
-                    <option value="mono">Mono</option>
-                  </select>
-                  <select
-                    className={inputCls}
-                    value={org.size ?? "md"}
-                    onChange={(e) =>
-                      onChange({
-                        featuredOrgs: block.featuredOrgs.map((x, j) =>
-                          j === i
-                            ? {
-                                ...x,
-                                size: e.target.value as "sm" | "md" | "lg",
-                              }
-                            : x,
-                        ),
-                      })
-                    }
-                  >
-                    <option value="sm">Small Logo</option>
-                    <option value="md">Medium Logo</option>
-                    <option value="lg">Large Logo</option>
-                  </select>
+                <div className="space-y-2 grid grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    <Input
+                      className={inputCls}
+                      placeholder="Organization name"
+                      value={org.name}
+                      onChange={(e) =>
+                        onChange({
+                          featuredOrgs: block.featuredOrgs.map((x, j) =>
+                            j === i ? { ...x, name: e.target.value } : x,
+                          ),
+                        })
+                      }
+                    />
+                    <Input
+                      className={cn(inputCls, dir === "rtl" && "text-right")}
+                      dir={dir}
+                      placeholder="Short text"
+                      value={org.summary}
+                      onChange={(e) =>
+                        onChange({
+                          featuredOrgs: block.featuredOrgs.map((x, j) =>
+                            j === i ? { ...x, summary: e.target.value } : x,
+                          ),
+                        })
+                      }
+                    />
+                    <div className="space-y-1.5">
+                      <div className={labelCls}>Display Options</div>
+                      <RadioGroup
+                        className="grid w-full grid-cols-2 gap-0 shadow-xs"
+                        value={org.displayMode ?? "original"}
+                        onValueChange={(value) =>
+                          onChange({
+                            featuredOrgs: block.featuredOrgs.map((x, j) =>
+                              j === i
+                                ? {
+                                    ...x,
+                                    displayMode: value as "original" | "mono",
+                                  }
+                                : x,
+                            ),
+                          })
+                        }
+                      >
+                        <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-between border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+                          <RadioGroupItem
+                            className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                            id={`featured-org-${i}-display-original`}
+                            value="original"
+                            aria-label="Original colors"
+                          />
+                          <Label
+                            className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
+                            htmlFor={`featured-org-${i}-display-original`}
+                          >
+                            {/* <Palette className="size-3.5" /> */}
+                            <HugeiconsIcon
+                              icon={PaintBoardIcon}
+                              className="size-3.5"
+                            />
+                            Original
+                          </Label>
+                        </div>
+                        <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-between border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+                          <RadioGroupItem
+                            className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                            id={`featured-org-${i}-display-mono`}
+                            value="mono"
+                            aria-label="Mono"
+                          />
+                          <Label
+                            className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
+                            htmlFor={`featured-org-${i}-display-mono`}
+                          >
+                            <HugeiconsIcon
+                              icon={BrushIcon}
+                              className="size-3.5"
+                            />
+                            {/* <SwatchBook className="size-3.5" /> */}
+                            Mono
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                    <div className="space-y-1.5">
+                      <RadioGroup
+                        className="grid w-full grid-cols-3 gap-0 rounded-md shadow-xs"
+                        value={org.size ?? "md"}
+                        onValueChange={(value) =>
+                          onChange({
+                            featuredOrgs: block.featuredOrgs.map((x, j) =>
+                              j === i
+                                ? { ...x, size: value as "sm" | "md" | "lg" }
+                                : x,
+                            ),
+                          })
+                        }
+                      >
+                        <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+                          <RadioGroupItem
+                            className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                            id={`featured-org-${i}-size-sm`}
+                            value="sm"
+                            aria-label="Small logo"
+                          />
+                          <Label
+                            className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
+                            htmlFor={`featured-org-${i}-size-sm`}
+                          >
+                            <HugeiconsIcon
+                              icon={Image01Icon}
+                              className="size-3"
+                            />
+                            Small
+                          </Label>
+                        </div>
+                        <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+                          <RadioGroupItem
+                            className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                            id={`featured-org-${i}-size-md`}
+                            value="md"
+                            aria-label="Medium logo"
+                          />
+                          <Label
+                            className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
+                            htmlFor={`featured-org-${i}-size-md`}
+                          >
+                            <HugeiconsIcon
+                              icon={Image01Icon}
+                              className="size-3.5"
+                            />
+                            Medium
+                          </Label>
+                        </div>
+                        <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+                          <RadioGroupItem
+                            className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                            id={`featured-org-${i}-size-lg`}
+                            value="lg"
+                            aria-label="Large logo"
+                          />
+                          <Label
+                            className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
+                            htmlFor={`featured-org-${i}-size-lg`}
+                          >
+                            <HugeiconsIcon
+                              icon={Image01Icon}
+                              className="size-4"
+                            />
+                            Large
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </div>
                   <div>
-                    <label className={labelCls}>Logo</label>
+                    {/* <label className={labelCls}>Logo</label> */}
                     <ImagePickerField
                       fetchMedia={fetchMediaAction}
                       previewFit="contain"
