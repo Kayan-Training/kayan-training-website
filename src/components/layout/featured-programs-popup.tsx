@@ -1,6 +1,7 @@
 "use client";
 
 import type { EmblaCarouselType } from "embla-carousel";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -15,12 +16,10 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 
-type PopupEvent = FeaturedProgramCardItem & {
+export type FeaturedProgramsPopupEvent = FeaturedProgramCardItem & {
+  eventId: string;
   updatedAtIso: string;
 };
 
@@ -30,7 +29,7 @@ const AUTO_ADVANCE_MS = 3800;
 
 type PopupCookie = {
   dismissedUntil: number;
-  signature: string;
+  signatureHash: string;
 };
 
 function readCookie(name: string): string | null {
@@ -45,24 +44,83 @@ function writeCookie(name: string, value: string, expiresAt: number) {
   document.cookie = `${name}=${encodeURIComponent(value)}; path=/; expires=${new Date(expiresAt).toUTCString()}; samesite=lax`;
 }
 
+async function hashSignature(raw: string): Promise<string> {
+  if (!raw) return "";
+  if (typeof crypto !== "undefined" && crypto.subtle) {
+    const encoded = new TextEncoder().encode(raw);
+    const digest = await crypto.subtle.digest("SHA-256", encoded);
+    return Array.from(new Uint8Array(digest))
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  }
+  return raw;
+}
+
 export function FeaturedProgramsPopup({
-  events,
+  events: initialEvents,
   locale,
 }: {
-  events: PopupEvent[];
+  events: FeaturedProgramsPopupEvent[];
   locale: "ar" | "en";
 }) {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [api, setApi] = useState<EmblaCarouselType>();
+  const [events, setEvents] = useState<FeaturedProgramsPopupEvent[]>(initialEvents);
+  const [signatureHash, setSignatureHash] = useState<string>("");
 
-  const signature = useMemo(
+  useEffect(() => {
+    setEvents(initialEvents);
+  }, [initialEvents]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refreshFeaturedPrograms() {
+      try {
+        const response = await fetch(`/api/featured-programs?locale=${locale}`, {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const payload = (await response.json()) as {
+          events?: FeaturedProgramsPopupEvent[];
+        };
+        if (!cancelled && Array.isArray(payload.events)) {
+          setEvents(payload.events);
+        }
+      } catch {
+        // Swallow fetch failures; popup will keep last known state.
+      }
+    }
+
+    void refreshFeaturedPrograms();
+    return () => {
+      cancelled = true;
+    };
+  }, [locale, pathname]);
+
+  const rawSignature = useMemo(
     () =>
-      events.map((event) => `${event.slug}:${event.updatedAtIso}`).join("|"),
+      events.map((event) => `${event.eventId}:${event.updatedAtIso}`).join("|"),
     [events],
   );
 
   useEffect(() => {
-    if (!events.length) return;
+    let cancelled = false;
+    async function computeHash() {
+      const nextHash = await hashSignature(rawSignature);
+      if (!cancelled) {
+        setSignatureHash(nextHash);
+      }
+    }
+    void computeHash();
+    return () => {
+      cancelled = true;
+    };
+  }, [rawSignature]);
+
+  useEffect(() => {
+    if (!events.length || !signatureHash) return;
 
     const now = Date.now();
     const rawCookie = readCookie(COOKIE_KEY);
@@ -73,7 +131,7 @@ export function FeaturedProgramsPopup({
 
     try {
       const parsed = JSON.parse(rawCookie) as PopupCookie;
-      const signatureChanged = parsed.signature !== signature;
+      const signatureChanged = parsed.signatureHash !== signatureHash;
       const expired =
         !Number.isFinite(parsed.dismissedUntil) || parsed.dismissedUntil <= now;
 
@@ -83,7 +141,7 @@ export function FeaturedProgramsPopup({
     } catch {
       setOpen(true);
     }
-  }, [events.length, signature]);
+  }, [events.length, signatureHash]);
 
   useEffect(() => {
     if (!api || events.length <= 1 || !open) return;
@@ -122,7 +180,7 @@ export function FeaturedProgramsPopup({
           const dismissedUntil = Date.now() + SIX_HOURS_MS;
           writeCookie(
             COOKIE_KEY,
-            JSON.stringify({ dismissedUntil, signature }),
+            JSON.stringify({ dismissedUntil, signatureHash }),
             dismissedUntil,
           );
         }
@@ -133,19 +191,6 @@ export function FeaturedProgramsPopup({
         closeButtonClassName="top-3 right-3 rounded-full cursor-pointer text-white hover:bg-black/75 hover:text-white size-8"
         showCloseButton
       >
-        {/* <DialogHeader>
-          <DialogTitle>
-            {locale === "ar"
-              ? "برامج قادمة مميزة"
-              : "Upcoming Featured Programs"}
-          </DialogTitle>
-          <DialogDescription>
-            {locale === "ar"
-              ? "اكتشف أحدث البرامج المميزة المتاحة الآن."
-              : "Explore the latest featured programs now available."}
-          </DialogDescription>
-        </DialogHeader> */}
-
         <Carousel
           className="w-full"
           opts={{

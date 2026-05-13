@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { LocaleShell } from "@/components/layout/locale-shell";
-import { FeaturedProgramsPopup } from "@/components/layout/featured-programs-popup";
 import type { NavMenuItem } from "@/components/layout/nav";
 import { getAnimatedCategoryIcons } from "@/lib/content/category-icons";
 import { getFeaturedPrograms } from "@/lib/content/queries";
@@ -125,25 +124,23 @@ export default async function LocaleLayout({
         menuItems={menuItems}
         siteSettings={siteSettings}
         footerCategoryIcons={footerCategoryIcons}
+        featuredPrograms={featuredPrograms.map((program) => ({
+          eventId: program.id,
+          basePath: program.basePath,
+          coverImage: program.coverImage,
+          dateIso: program.startDate,
+          excerpt: "",
+          location: program.location,
+          logo: program.logo,
+          capacity: program.capacity,
+          registrationsCount: program.registrationsCount,
+          registrationsOpen: program.registrationsOpen,
+          slug: program.slug,
+          title: program.title,
+          updatedAtIso: program.updatedAt,
+        }))}
       >
         {children}
-        <FeaturedProgramsPopup
-          events={featuredPrograms.map((program) => ({
-            basePath: program.basePath,
-            coverImage: program.coverImage,
-            dateIso: program.startDate,
-            excerpt: "",
-            location: program.location,
-            logo: program.logo,
-            capacity: program.capacity,
-            registrationsCount: program.registrationsCount,
-            registrationsOpen: program.registrationsOpen,
-            slug: program.slug,
-            title: program.title,
-            updatedAtIso: program.updatedAt,
-          }))}
-          locale={locale}
-        />
       </LocaleShell>
     </div>
   );

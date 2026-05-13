@@ -142,6 +142,7 @@ export async function getFeaturedPrograms(locale: "ar" | "en", take = 8) {
       eventKind === "training_course" ? "training-courses" : "events";
 
     return {
+      id: event.id,
       basePath,
       coverImage:
         event.coverImage ??

@@ -777,6 +777,7 @@ export function EventForm({
   const router = useRouter();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
+  const isSavingRef = useRef(false);
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [activeLocale, setActiveLocale] = useState<"en" | "ar">(
@@ -1070,15 +1071,18 @@ export function EventForm({
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   function save(values: EventFormValues) {
+    isSavingRef.current = true;
     startTransition(async () => {
       const result = await onSubmit(values);
       if (result.error) {
+        isSavingRef.current = false;
         toast.error(result.error);
         return;
       }
       try {
         sessionStorage.removeItem(draftStorageKey);
       } catch {}
+      form.reset(values);
       toast.success(`${contentTypeText} saved.`);
       router.refresh();
     });
@@ -1111,6 +1115,7 @@ export function EventForm({
 
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (isSavingRef.current) return;
       if (!form.formState.isDirty) return;
       try {
         sessionStorage.setItem(

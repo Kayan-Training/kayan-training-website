@@ -8,6 +8,10 @@
 import { usePathname } from "next/navigation";
 import type { CSSProperties } from "react";
 
+import {
+  FeaturedProgramsPopup,
+  type FeaturedProgramsPopupEvent,
+} from "@/components/layout/featured-programs-popup";
 import { SiteFooter } from "@/components/layout/footer";
 import { SiteNav, type NavMenuItem } from "@/components/layout/nav";
 import type { AnimatedCategoryIconItem } from "@/lib/content/category-icons";
@@ -18,11 +22,13 @@ export function LocaleShell({
   menuItems,
   siteSettings,
   footerCategoryIcons,
+  featuredPrograms,
 }: {
   children: React.ReactNode;
   locale: "ar" | "en";
   menuItems?: NavMenuItem[];
   footerCategoryIcons?: AnimatedCategoryIconItem[];
+  featuredPrograms?: FeaturedProgramsPopupEvent[];
   siteSettings?: {
     contactAddress: string;
     contactEmail: string;
@@ -98,6 +104,10 @@ export function LocaleShell({
         locale={locale}
         settings={siteSettings}
         footerCategoryIcons={footerCategoryIcons}
+      />
+      <FeaturedProgramsPopup
+        events={featuredPrograms ?? []}
+        locale={locale}
       />
     </div>
   );
