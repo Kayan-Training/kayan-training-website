@@ -544,264 +544,182 @@ type BlockNavFilter =
   | "untranslated";
 
 function BlockWireframe({ type }: { type: BlockType }) {
-  const bg = "#121414";
-  const el = "#3f3f46";
-  const elLight = "#52525b";
-  const accent = "#2d5a3d";
-  const accentLight = "#4a8a65";
+  const bg = "#ffffff";
+  const panel = "#f8fafc";
+  const line = "#cbd5e1";
+  const lineStrong = "#94a3b8";
+  const accent = "#22c55e";
+  const accentSoft = "#dcfce7";
 
   const frames: Record<BlockType, React.ReactNode> = {
     page_hero: (
       <>
         <rect width="120" height="68" fill={bg} />
-        <rect x="0" y="0" width="120" height="68" fill="url(#heroGrad)" />
+        <rect x="0" y="0" width="120" height="68" fill="#e2e8f0" />
         <rect
           x="0"
-          y="38"
+          y="36"
           width="120"
-          height="30"
-          fill="#090d0d"
-          opacity="0.75"
+          height="32"
+          fill="#0f172a"
+          opacity="0.35"
         />
         <rect
-          x="14"
-          y="16"
-          width="92"
-          height="7"
+          x="12"
+          y="12"
+          width="24"
+          height="3"
+          rx="1.5"
+          fill={accent}
+          opacity="0.8"
+        />
+        <rect
+          x="18"
+          y="21"
+          width="84"
+          height="6"
           rx="2"
-          fill="#f4f4f5"
+          fill="white"
           opacity="0.85"
         />
         <rect
-          x="25"
-          y="27"
-          width="70"
-          height="5"
+          x="26"
+          y="30"
+          width="68"
+          height="4"
           rx="1.5"
-          fill="#d4d4d8"
-          opacity="0.7"
+          fill="#e2e8f0"
+          opacity="0.9"
         />
         <rect
           x="41"
-          y="45"
+          y="46"
           width="38"
-          height="4"
-          rx="1.5"
-          fill={accentLight}
+          height="10"
+          rx="3"
+          fill={accent}
           opacity="0.9"
         />
-        <rect
-          x="8"
-          y="8"
-          width="24"
-          height="4"
-          rx="1.5"
-          fill={accentLight}
-          opacity="0.9"
-        />
-        <defs>
-          <linearGradient id="heroGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2f3a3c" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#121414" stopOpacity="1" />
-          </linearGradient>
-        </defs>
       </>
     ),
     about_intro: (
       <>
         <rect width="120" height="68" fill={bg} />
-        <rect x="8" y="10" width="58" height="4" rx="1.5" fill={el} />
-        <rect
-          x="8"
-          y="18"
-          width="52"
-          height="3"
-          rx="1"
-          fill={elLight}
-          opacity="0.5"
-        />
-        <rect
-          x="8"
-          y="24"
-          width="55"
-          height="3"
-          rx="1"
-          fill={elLight}
-          opacity="0.5"
-        />
-        <rect
-          x="8"
-          y="30"
-          width="45"
-          height="3"
-          rx="1"
-          fill={elLight}
-          opacity="0.4"
-        />
-        <rect
-          x="8"
-          y="42"
-          width="28"
-          height="14"
-          rx="2"
-          fill={accent}
-          opacity="0.8"
-        />
-        <rect
-          x="40"
-          y="42"
-          width="28"
-          height="14"
-          rx="2"
-          fill={accent}
-          opacity="0.8"
-        />
-        <rect
-          x="72"
-          y="42"
-          width="28"
-          height="14"
-          rx="2"
-          fill={accent}
-          opacity="0.8"
-        />
-        <rect x="14" y="46" width="16" height="3" rx="1" fill={accentLight} />
-        <rect x="46" y="46" width="16" height="3" rx="1" fill={accentLight} />
-        <rect x="78" y="46" width="16" height="3" rx="1" fill={accentLight} />
-        <rect
-          x="13"
-          y="51"
-          width="18"
-          height="2"
-          rx="1"
-          fill={elLight}
-          opacity="0.5"
-        />
-        <rect
-          x="45"
-          y="51"
-          width="18"
-          height="2"
-          rx="1"
-          fill={elLight}
-          opacity="0.5"
-        />
-        <rect
-          x="77"
-          y="51"
-          width="18"
-          height="2"
-          rx="1"
-          fill={elLight}
-          opacity="0.5"
-        />
+        <rect x="8" y="10" width="58" height="4" rx="1.5" fill={lineStrong} />
+        <rect x="8" y="18" width="52" height="3" rx="1" fill={line} />
+        <rect x="8" y="24" width="55" height="3" rx="1" fill={line} />
+        <rect x="8" y="30" width="45" height="3" rx="1" fill={line} />
+        {[0, 1, 2].map((i) => (
+          <g key={i}>
+            <rect
+              x={8 + i * 32}
+              y="42"
+              width="28"
+              height="14"
+              rx="2"
+              fill={accentSoft}
+            />
+            <rect
+              x={14 + i * 32}
+              y="46"
+              width="16"
+              height="2.5"
+              rx="1"
+              fill={accent}
+              opacity="0.8"
+            />
+          </g>
+        ))}
       </>
     ),
     mission_vision: (
       <>
         <rect width="120" height="68" fill={bg} />
-        <rect x="6" y="10" width="32" height="48" rx="3" fill={el} />
-        <rect x="44" y="10" width="32" height="48" rx="3" fill={el} />
-        <rect x="82" y="10" width="32" height="48" rx="3" fill={el} />
-        <rect
-          x="12"
-          y="18"
-          width="20"
-          height="3"
-          rx="1"
-          fill={accentLight}
-          opacity="0.7"
-        />
-        <rect
-          x="50"
-          y="18"
-          width="20"
-          height="3"
-          rx="1"
-          fill={accentLight}
-          opacity="0.7"
-        />
-        <rect
-          x="88"
-          y="18"
-          width="20"
-          height="3"
-          rx="1"
-          fill={accentLight}
-          opacity="0.7"
-        />
-        <rect
-          x="12"
-          y="25"
-          width="20"
-          height="2"
-          rx="1"
-          fill={elLight}
-          opacity="0.5"
-        />
-        <rect
-          x="12"
-          y="30"
-          width="16"
-          height="2"
-          rx="1"
-          fill={elLight}
-          opacity="0.4"
-        />
-        <rect
-          x="50"
-          y="25"
-          width="20"
-          height="2"
-          rx="1"
-          fill={elLight}
-          opacity="0.5"
-        />
-        <rect
-          x="50"
-          y="30"
-          width="16"
-          height="2"
-          rx="1"
-          fill={elLight}
-          opacity="0.4"
-        />
-        <rect
-          x="88"
-          y="25"
-          width="20"
-          height="2"
-          rx="1"
-          fill={elLight}
-          opacity="0.5"
-        />
-        <rect
-          x="88"
-          y="30"
-          width="16"
-          height="2"
-          rx="1"
-          fill={elLight}
-          opacity="0.4"
-        />
+        {[0, 1, 2].map((i) => (
+          <g key={i}>
+            <rect
+              x={6 + i * 38}
+              y="10"
+              width="32"
+              height="48"
+              rx="3"
+              fill={panel}
+              stroke={line}
+            />
+            <rect
+              x={12 + i * 38}
+              y="18"
+              width="20"
+              height="3"
+              rx="1"
+              fill={lineStrong}
+            />
+            <rect
+              x={12 + i * 38}
+              y="25"
+              width="20"
+              height="2"
+              rx="1"
+              fill={line}
+            />
+            <rect
+              x={12 + i * 38}
+              y="30"
+              width="16"
+              height="2"
+              rx="1"
+              fill={line}
+            />
+            <rect
+              x={10 + i * 38}
+              y="40"
+              width="24"
+              height="12"
+              rx="2"
+              fill={accentSoft}
+            />
+          </g>
+        ))}
       </>
     ),
     process_steps: (
       <>
         <rect width="120" height="68" fill={bg} />
-        {[0, 1, 2, 3].map((i) => (
+        <rect
+          x="8"
+          y="8"
+          width="42"
+          height="52"
+          rx="3"
+          fill={panel}
+          stroke={line}
+        />
+        <rect x="13" y="14" width="32" height="5" rx="1.5" fill={lineStrong} />
+        <rect x="13" y="23" width="28" height="3" rx="1" fill={line} />
+        <rect x="13" y="29" width="24" height="3" rx="1" fill={line} />
+        <rect x="13" y="38" width="20" height="12" rx="2.5" fill={accentSoft} />
+
+        <rect
+          x="56"
+          y="8"
+          width="56"
+          height="52"
+          rx="3"
+          fill={panel}
+          stroke={line}
+        />
+        {[0, 1, 2].map((i) => (
           <g key={i} transform={`translate(0, ${i * 14})`}>
-            <rect x="8" y="10" width="8" height="8" rx="4" fill={accent} />
-            <rect x="22" y="12" width="36" height="3" rx="1" fill={el} />
+            <rect x="62" y="14" width="8" height="8" rx="4" fill={accent} />
             <rect
-              x="22"
-              y="17"
-              width="60"
-              height="2"
+              x="74"
+              y="16"
+              width="26"
+              height="3"
               rx="1"
-              fill={elLight}
-              opacity="0.4"
+              fill={lineStrong}
             />
+            <rect x="74" y="21" width="30" height="2" rx="1" fill={line} />
           </g>
         ))}
       </>
@@ -818,7 +736,8 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="48"
               height="14"
               rx="2"
-              fill={el}
+              fill={panel}
+              stroke={line}
             />
           )),
         )}
@@ -831,8 +750,7 @@ function BlockWireframe({ type }: { type: BlockType }) {
                 width={28}
                 height="2.5"
                 rx="1"
-                fill={accentLight}
-                opacity="0.7"
+                fill={lineStrong}
               />
               <rect
                 x={14 + col * 56}
@@ -840,8 +758,7 @@ function BlockWireframe({ type }: { type: BlockType }) {
                 width={22}
                 height="2"
                 rx="1"
-                fill={elLight}
-                opacity="0.4"
+                fill={line}
               />
             </g>
           )),
@@ -851,26 +768,27 @@ function BlockWireframe({ type }: { type: BlockType }) {
     accreditation: (
       <>
         <rect width="120" height="68" fill={bg} />
-        <rect x="8" y="10" width="40" height="48" rx="3" fill={el} />
         <rect
-          x="16"
-          y="20"
-          width="24"
-          height="24"
-          rx="12"
+          x="8"
+          y="10"
+          width="40"
+          height="48"
+          rx="3"
+          fill={panel}
+          stroke={line}
+        />
+        <rect x="16" y="20" width="24" height="24" rx="12" fill={accentSoft} />
+        <rect
+          x="19"
+          y="23"
+          width="18"
+          height="18"
+          rx="9"
           fill={accent}
-          opacity="0.8"
+          opacity="0.25"
         />
-        <rect
-          x="18"
-          y="48"
-          width="20"
-          height="2"
-          rx="1"
-          fill={elLight}
-          opacity="0.5"
-        />
-        <rect x="54" y="12" width="58" height="5" rx="1.5" fill={el} />
+        <rect x="18" y="48" width="20" height="2" rx="1" fill={line} />
+        <rect x="54" y="12" width="58" height="5" rx="1.5" fill={lineStrong} />
         {[0, 1, 2, 3].map((i) => (
           <g key={i}>
             <rect
@@ -880,7 +798,6 @@ function BlockWireframe({ type }: { type: BlockType }) {
               height="6"
               rx="1.5"
               fill={accent}
-              opacity="0.7"
             />
             <rect
               x="66"
@@ -888,8 +805,16 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="42"
               height="2.5"
               rx="1"
-              fill={elLight}
-              opacity="0.5"
+              fill={line}
+            />
+            <rect
+              x="66"
+              y={27 + i * 10}
+              width="30"
+              height="1.8"
+              rx="1"
+              fill={line}
+              opacity="0.7"
             />
           </g>
         ))}
@@ -906,7 +831,8 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="32"
               height="52"
               rx="3"
-              fill={el}
+              fill={panel}
+              stroke={line}
             />
             <rect
               x={6 + i * 38}
@@ -914,8 +840,7 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="32"
               height="28"
               rx="3"
-              fill={elLight}
-              opacity="0.4"
+              fill="#e2e8f0"
             />
             <rect
               x={11 + i * 38}
@@ -923,8 +848,7 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="22"
               height="3"
               rx="1"
-              fill={accentLight}
-              opacity="0.7"
+              fill={lineStrong}
             />
             <rect
               x={11 + i * 38}
@@ -932,8 +856,7 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="18"
               height="2"
               rx="1"
-              fill={elLight}
-              opacity="0.4"
+              fill={line}
             />
             <rect
               x={11 + i * 38}
@@ -941,8 +864,7 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="14"
               height="2"
               rx="1"
-              fill={elLight}
-              opacity="0.3"
+              fill={line}
             />
           </g>
         ))}
@@ -960,8 +882,8 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="22"
               height="22"
               rx="3"
-              fill={col % 2 === 0 ? accent : elLight}
-              opacity={row === 0 ? "0.9" : "0.6"}
+              fill={col % 2 === 0 ? accentSoft : panel}
+              stroke={line}
             />
           )),
         )}
@@ -974,8 +896,7 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="14"
               height="2"
               rx="1"
-              fill="white"
-              opacity="0.4"
+              fill={col % 2 === 0 ? accent : lineStrong}
             />
           )),
         )}
@@ -983,53 +904,12 @@ function BlockWireframe({ type }: { type: BlockType }) {
     ),
     cta_banner: (
       <>
-        <rect width="120" height="68" fill="#0f1f16" />
-        <rect x="0" y="0" width="120" height="68" fill={accent} opacity="0.2" />
-        <rect
-          x="20"
-          y="14"
-          width="80"
-          height="6"
-          rx="2"
-          fill={accentLight}
-          opacity="0.7"
-        />
-        <rect
-          x="32"
-          y="24"
-          width="56"
-          height="4"
-          rx="1.5"
-          fill={elLight}
-          opacity="0.5"
-        />
-        <rect
-          x="36"
-          y="32"
-          width="48"
-          height="3"
-          rx="1.5"
-          fill={elLight}
-          opacity="0.4"
-        />
-        <rect
-          x="38"
-          y="44"
-          width="44"
-          height="12"
-          rx="4"
-          fill={accentLight}
-          opacity="0.9"
-        />
-        <rect
-          x="46"
-          y="49"
-          width="28"
-          height="2.5"
-          rx="1"
-          fill="white"
-          opacity="0.6"
-        />
+        <rect width="120" height="68" fill="#f0fdf4" />
+        <rect x="20" y="14" width="80" height="6" rx="2" fill={lineStrong} />
+        <rect x="32" y="24" width="56" height="4" rx="1.5" fill={line} />
+        <rect x="36" y="32" width="48" height="3" rx="1.5" fill={line} />
+        <rect x="38" y="44" width="44" height="12" rx="4" fill={accent} />
+        <rect x="46" y="49" width="28" height="2.5" rx="1" fill={accentSoft} />
       </>
     ),
     richtext: (
@@ -1043,51 +923,25 @@ function BlockWireframe({ type }: { type: BlockType }) {
             width={[100, 88, 95, 60, 100, 72, 90, 50][i]}
             height="3"
             rx="1"
-            fill={elLight}
-            opacity={i === 3 || i === 7 ? "0.3" : "0.5"}
+            fill={i === 3 || i === 7 ? line : lineStrong}
           />
         ))}
       </>
     ),
     hero: (
       <>
-        <rect width="120" height="68" fill="#222a2b" />
-        <rect width="120" height="68" fill="url(#heroGrad2)" />
+        <rect width="120" height="68" fill="#e2e8f0" />
         <rect
           x="0"
           y="0"
           width="120"
           height="68"
-          fill="#0a0e0e"
-          opacity="0.55"
+          fill="#0f172a"
+          opacity="0.35"
         />
-        <rect
-          x="8"
-          y="9"
-          width="52"
-          height="3.5"
-          rx="1.5"
-          fill={accentLight}
-          opacity="0.85"
-        />
-        <rect
-          x="20"
-          y="20"
-          width="80"
-          height="8"
-          rx="2"
-          fill="white"
-          opacity="0.7"
-        />
-        <rect
-          x="30"
-          y="32"
-          width="60"
-          height="5"
-          rx="1.5"
-          fill="white"
-          opacity="0.4"
-        />
+        <rect x="8" y="9" width="52" height="3.5" rx="1.5" fill={accent} />
+        <rect x="20" y="20" width="80" height="8" rx="2" fill="white" />
+        <rect x="30" y="32" width="60" height="5" rx="1.5" fill="#e2e8f0" />
         <rect
           x="42"
           y="46"
@@ -1095,39 +949,17 @@ function BlockWireframe({ type }: { type: BlockType }) {
           height="10"
           rx="3"
           fill={accent}
-          stroke={accentLight}
+          stroke={accentSoft}
           strokeWidth="0.8"
         />
-        <defs>
-          <linearGradient id="heroGrad2" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0%" stopColor="#18181b" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#18181b" stopOpacity="0.2" />
-          </linearGradient>
-        </defs>
       </>
     ),
     cta: (
       <>
         <rect width="120" height="68" fill={bg} />
-        <rect x="16" y="12" width="88" height="7" rx="2" fill={el} />
-        <rect
-          x="24"
-          y="23"
-          width="72"
-          height="4"
-          rx="1.5"
-          fill={elLight}
-          opacity="0.5"
-        />
-        <rect
-          x="28"
-          y="30"
-          width="64"
-          height="4"
-          rx="1.5"
-          fill={elLight}
-          opacity="0.4"
-        />
+        <rect x="16" y="12" width="88" height="7" rx="2" fill={lineStrong} />
+        <rect x="24" y="23" width="72" height="4" rx="1.5" fill={line} />
+        <rect x="28" y="30" width="64" height="4" rx="1.5" fill={line} />
         <rect
           x="34"
           y="44"
@@ -1135,42 +967,18 @@ function BlockWireframe({ type }: { type: BlockType }) {
           height="14"
           rx="4"
           fill={accent}
-          stroke={accentLight}
+          stroke={accentSoft}
           strokeWidth="0.8"
         />
-        <rect
-          x="46"
-          y="50"
-          width="28"
-          height="2.5"
-          rx="1"
-          fill={accentLight}
-          opacity="0.9"
-        />
+        <rect x="46" y="50" width="28" height="2.5" rx="1" fill={accentSoft} />
       </>
     ),
     listing_config: (
       <>
         <rect width="120" height="68" fill={bg} />
-        <rect x="8" y="8" width="70" height="7" rx="2" fill={el} />
-        <rect
-          x="8"
-          y="19"
-          width="90"
-          height="4"
-          rx="1.5"
-          fill={elLight}
-          opacity="0.5"
-        />
-        <rect
-          x="8"
-          y="27"
-          width="70"
-          height="3"
-          rx="1.5"
-          fill={elLight}
-          opacity="0.4"
-        />
+        <rect x="8" y="8" width="70" height="7" rx="2" fill={lineStrong} />
+        <rect x="8" y="19" width="90" height="4" rx="1.5" fill={line} />
+        <rect x="8" y="27" width="70" height="3" rx="1.5" fill={line} />
         {[0, 1, 2].map((i) => (
           <g key={i}>
             <rect
@@ -1179,8 +987,8 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="104"
               height="6"
               rx="1.5"
-              fill={el}
-              opacity="0.6"
+              fill={panel}
+              stroke={line}
             />
             <rect
               x="12"
@@ -1188,8 +996,7 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="40"
               height="2"
               rx="1"
-              fill={elLight}
-              opacity="0.5"
+              fill={lineStrong}
             />
           </g>
         ))}
@@ -1198,16 +1005,8 @@ function BlockWireframe({ type }: { type: BlockType }) {
     accreditation_bar: (
       <>
         <rect width="120" height="68" fill={bg} />
-        <rect
-          x="8"
-          y="10"
-          width="30"
-          height="6"
-          rx="2"
-          fill={accent}
-          opacity="0.8"
-        />
-        <rect x="8" y="20" width="50" height="4" rx="1.5" fill={el} />
+        <rect x="8" y="10" width="30" height="6" rx="2" fill={accent} />
+        <rect x="8" y="20" width="50" height="4" rx="1.5" fill={lineStrong} />
         {[0, 1, 2, 3].map((i) => (
           <rect
             key={i}
@@ -1216,8 +1015,8 @@ function BlockWireframe({ type }: { type: BlockType }) {
             width="24"
             height="22"
             rx="2"
-            fill={el}
-            opacity="0.5"
+            fill={panel}
+            stroke={line}
           />
         ))}
       </>
@@ -1225,118 +1024,45 @@ function BlockWireframe({ type }: { type: BlockType }) {
     home_events_carousel: (
       <>
         <rect width="120" height="68" fill={bg} />
-        <rect
-          x="8"
-          y="7"
-          width="34"
-          height="4"
-          rx="1.5"
-          fill={accentLight}
-          opacity="0.9"
-        />
-        <rect
-          x="8"
-          y="14"
-          width="58"
-          height="3"
-          rx="1.5"
-          fill={elLight}
-          opacity="0.5"
-        />
-        <rect x="12" y="22" width="30" height="40" rx="2.5" fill="#212829" />
+        <rect x="8" y="7" width="34" height="4" rx="1.5" fill={accent} />
+        <rect x="8" y="14" width="58" height="3" rx="1.5" fill={line} />
         <rect
           x="12"
           y="22"
           width="30"
           height="40"
           rx="2.5"
-          fill="url(#cardA)"
-          opacity="0.65"
+          fill={panel}
+          stroke={line}
         />
-        <rect x="45" y="22" width="30" height="40" rx="2.5" fill="#1d2324" />
         <rect
           x="45"
           y="22"
           width="30"
           height="40"
           rx="2.5"
-          fill="url(#cardB)"
-          opacity="0.58"
+          fill={panel}
+          stroke={line}
         />
-        <rect x="78" y="22" width="30" height="40" rx="2.5" fill="#212829" />
         <rect
           x="78"
           y="22"
           width="30"
           height="40"
           rx="2.5"
-          fill="url(#cardC)"
-          opacity="0.62"
+          fill={panel}
+          stroke={line}
         />
-        <rect
-          x="16"
-          y="51"
-          width="13"
-          height="2"
-          rx="1"
-          fill="#2bb673"
-          opacity="0.8"
-        />
-        <rect
-          x="49"
-          y="51"
-          width="13"
-          height="2"
-          rx="1"
-          fill="#2bb673"
-          opacity="0.8"
-        />
-        <rect
-          x="82"
-          y="51"
-          width="13"
-          height="2"
-          rx="1"
-          fill="#2bb673"
-          opacity="0.8"
-        />
-        <defs>
-          <linearGradient id="cardA" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#718096" />
-            <stop offset="100%" stopColor="#1f2937" />
-          </linearGradient>
-          <linearGradient id="cardB" x1="1" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#7c3aed" />
-            <stop offset="100%" stopColor="#111827" />
-          </linearGradient>
-          <linearGradient id="cardC" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#0ea5e9" />
-            <stop offset="100%" stopColor="#111827" />
-          </linearGradient>
-        </defs>
+        <rect x="16" y="51" width="13" height="2" rx="1" fill={accent} />
+        <rect x="49" y="51" width="13" height="2" rx="1" fill={accent} />
+        <rect x="82" y="51" width="13" height="2" rx="1" fill={accent} />
       </>
     ),
     home_posts_grid: (
       <>
         <rect width="120" height="68" fill={bg} />
-        <rect
-          x="8"
-          y="7"
-          width="30"
-          height="4"
-          rx="1.5"
-          fill={accentLight}
-          opacity="0.9"
-        />
-        <rect
-          x="8"
-          y="14"
-          width="52"
-          height="3"
-          rx="1.5"
-          fill={elLight}
-          opacity="0.5"
-        />
+        <rect x="8" y="7" width="30" height="4" rx="1.5" fill={accent} />
+        <rect x="8" y="14" width="52" height="3" rx="1.5" fill={line} />
         {[0, 1, 2].map((i) => (
           <g key={i}>
             <rect
@@ -1345,7 +1071,8 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="34"
               height="36"
               rx="3"
-              fill="#1e2020"
+              fill={panel}
+              stroke={line}
             />
             <rect
               x={10 + i * 38}
@@ -1353,8 +1080,7 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="30"
               height="12"
               rx="2"
-              fill={elLight}
-              opacity="0.35"
+              fill="#e2e8f0"
             />
             <rect
               x={10 + i * 38}
@@ -1362,8 +1088,7 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="24"
               height="2.6"
               rx="1"
-              fill={accentLight}
-              opacity="0.75"
+              fill={accent}
             />
             <rect
               x={10 + i * 38}
@@ -1371,8 +1096,7 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="27"
               height="2"
               rx="1"
-              fill={elLight}
-              opacity="0.5"
+              fill={line}
             />
             <rect
               x={10 + i * 38}
@@ -1380,8 +1104,7 @@ function BlockWireframe({ type }: { type: BlockType }) {
               width="20"
               height="2"
               rx="1"
-              fill={elLight}
-              opacity="0.4"
+              fill={line}
             />
           </g>
         ))}
@@ -1391,10 +1114,10 @@ function BlockWireframe({ type }: { type: BlockType }) {
 
   return (
     <svg
-      className="h-20 w-36 shrink-0 overflow-hidden rounded-md border border-border/30"
+      className="h-20 w-36 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-white"
       viewBox="0 0 120 68"
     >
-      {frames[type] ?? <rect width="120" height="68" fill="#27272a" />}
+      {frames[type] ?? <rect width="120" height="68" fill="#ffffff" />}
     </svg>
   );
 }
@@ -1672,7 +1395,7 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: BlockType) => void }) {
       <DropdownMenuTrigger
         render={
           <button
-            className="inline-flex h-9 items-center gap-2 rounded-md border border-dashed border-primary/40 bg-primary/5 px-4 text-xs font-medium text-primary hover:border-primary/70 hover:bg-primary/10 cursor-pointer"
+            className="inline-flex h-9 items-center gap-2 rounded-[4px] border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary transition-colors hover:border-primary/60 hover:bg-primary/10 cursor-pointer"
             type="button"
           >
             <Plus className="size-3.5" />
@@ -1682,33 +1405,43 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: BlockType) => void }) {
       ></DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
-        className="max-h-[70vh] w-[30rem] overflow-y-auto p-2"
+        className="w-[30rem] max-h-[76vh] overflow-y-auto border border-zinc-200 bg-white p-2 text-zinc-900 shadow-xl"
         sideOffset={6}
+        onKeyDownCapture={(event) => {
+          const target = event.target as HTMLElement | null;
+          if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") {
+            event.stopPropagation();
+          }
+        }}
       >
-        <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Choose a block type
-        </p>
-        <Input
-          className="mb-2 h-8"
-          placeholder="Search block types..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+        <div className="sticky top-0 z-10 -mx-2 -mt-2 mb-2 border-b border-zinc-200 bg-white/95 px-2 py-2 backdrop-blur-sm">
+          <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+            Choose a block type
+          </p>
+          <Input
+            autoFocus
+            className="h-8"
+            placeholder="Search block types..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.stopPropagation()}
+          />
+        </div>
         {visibleGroups.length === 0 ? (
-          <div className="rounded-md border border-dashed border-border/60 px-3 py-4 text-xs text-muted-foreground">
+          <div className="rounded-md border border-dashed border-zinc-200 px-3 py-4 text-xs text-zinc-500">
             No block types match this search.
           </div>
         ) : (
           <div className="space-y-3">
             {visibleGroups.map((group) => (
               <div key={group.group}>
-                <p className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                <p className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                   {group.group}
                 </p>
-                <div className="grid grid-cols-1 gap-1">
+                <div className="grid grid-cols-1 gap-1.5">
                   {group.types.map((type) => (
                     <button
-                      className="group flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-2 text-left transition-colors hover:border-border/50 hover:bg-secondary cursor-pointer"
+                      className="group flex w-full items-start gap-3 rounded-[8px] border border-zinc-200 bg-white px-2.5 py-2.5 text-left transition-colors hover:border-primary/30 hover:bg-primary/5 cursor-pointer"
                       key={type}
                       type="button"
                       onClick={() => {
@@ -1717,12 +1450,14 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: BlockType) => void }) {
                         setQuery("");
                       }}
                     >
-                      <BlockWireframe type={type} />
+                      <div className="mt-0.5">
+                        <BlockWireframe type={type} />
+                      </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground group-hover:text-primary-container">
+                        <p className="text-sm font-semibold text-zinc-900 group-hover:text-primary">
                           {BLOCK_LABELS[type]}
                         </p>
-                        <p className="text-[11px] text-muted-foreground group-hover:text-primary-container/80">
+                        <p className="line-clamp-2 text-[11px] text-zinc-500 group-hover:text-zinc-700">
                           {BLOCK_DESCRIPTIONS[type]}
                         </p>
                       </div>
@@ -2033,12 +1768,14 @@ function MediaCarouselEditor({
           </p>
         )}
         {media.map((item, i) => (
+          // TODO: I need a better design for the individual media, I have made some changes to the remove button and the iterative number I want to keep those, but the other parts I want a very modern design where the media/image is the background of the card inset with linear gradient . The URL text truncation should be https://aslkfja....sjalfl,webp instead of https://alsjkfas... so part of beginning and part of end is visible and middle is truncated
           <div
-            className="rounded-xl border border-border/60 bg-card/70 p-3 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]"
+            className="rounded-xl border border-border/60 bg-card/70 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)] min-h-[100px] overflow-hidden relative"
             key={item.id}
+            style={{ "--radius": "4px" } as React.CSSProperties}
           >
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="font-mono text-[10px] text-muted-foreground">
+            <div className="mb-2 flex items-center justify-between gap-2 py-2 px-3 group">
+              <span className="font-mono text-sm font-semibold text-primary">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <Button
@@ -2047,11 +1784,14 @@ function MediaCarouselEditor({
                 size="icon-sm"
                 title="Remove"
                 onClick={() => remove(item.id)}
+                className={
+                  "group-hover:opacity-100 duration-150 transition-all opacity-0 cursor-pointer rounded-[4px]"
+                }
               >
                 <HugeiconsIcon
                   icon={Delete02Icon}
                   size={14}
-                  strokeWidth={1.9}
+                  className="text-destructive"
                 />
               </Button>
             </div>

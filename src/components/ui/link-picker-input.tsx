@@ -124,6 +124,7 @@ export function LinkPickerInput({
               )}
               title="Browse pages, posts, events, and training courses"
               type="button"
+              onClick={(e) => e.preventDefault()}
             >
               {/* <HugeiconsIcon icon={SearchMdIcon} className="size-3.5" /> */}
               <HugeiconsIcon icon={Search01Icon} className="size-3.5" />
@@ -131,8 +132,12 @@ export function LinkPickerInput({
             </button>
           }
         ></PopoverTrigger>
-        <PopoverContent align="end" className="w-80 p-0" sideOffset={4}>
-          <Command>
+        <PopoverContent
+          align="end"
+          className="w-80 border border-border/70 bg-card p-0 text-foreground shadow-lg ring-0"
+          sideOffset={4}
+        >
+          <Command className="rounded-none bg-card text-foreground">
             <CommandInput placeholder="Search pages, posts, events, training courses…" />
             <CommandList>
               {!hasEntities && <CommandEmpty>No items found.</CommandEmpty>}
