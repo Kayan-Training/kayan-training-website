@@ -153,9 +153,188 @@ function Field({
   );
 }
 
+function NumberStepper({
+  value,
+  onChange,
+  min = 1,
+  max,
+  step = 1,
+  presets = [],
+}: {
+  value: number;
+  onChange: (next: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+  presets?: number[];
+}) {
+  const clamp = (n: number) => {
+    const withMin = Math.max(min, n);
+    return typeof max === "number" ? Math.min(max, withMin) : withMin;
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-[auto_1fr_auto] gap-1">
+        <Button
+          className="h-10 w-10 rounded-[4px]"
+          onClick={() => onChange(clamp(value - step))}
+          size="icon-sm"
+          type="button"
+          variant="outline"
+        >
+          -
+        </Button>
+        <input
+          className={cn(inputCls, "text-center")}
+          min={min}
+          max={max}
+          step={step}
+          type="number"
+          value={value}
+          onChange={(e) => onChange(clamp(Number(e.target.value) || min))}
+        />
+        <Button
+          className="h-10 w-10 rounded-[4px]"
+          onClick={() => onChange(clamp(value + step))}
+          size="icon-sm"
+          type="button"
+          variant="outline"
+        >
+          +
+        </Button>
+      </div>
+      {presets.length ? (
+        <div className="flex flex-wrap gap-1">
+          {presets.map((preset) => (
+            <Button
+              key={preset}
+              className="h-7 rounded-[4px] px-2 text-[11px]"
+              onClick={() => onChange(clamp(preset))}
+              size="sm"
+              type="button"
+              variant={value === preset ? "default" : "outline"}
+            >
+              {preset}
+            </Button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function LinkFieldWithMode({
+  dir,
+  entities,
+  value,
+  onChange,
+  internalPlaceholder = "/en/contact",
+}: {
+  dir: "ltr" | "rtl";
+  entities: LinkPickerEntities;
+  value?: string;
+  onChange: (url: string) => void;
+  internalPlaceholder?: string;
+}) {
+  const modeId = useId();
+  const detectMode = (url: string): "internal" | "external" | "anchor" => {
+    if (url.startsWith("#")) return "anchor";
+    if (/^https?:\/\//i.test(url) || url.startsWith("mailto:"))
+      return "external";
+    return "internal";
+  };
+
+  const safeValue = value ?? "";
+  const [mode, setMode] = useState<"internal" | "external" | "anchor">(
+    detectMode(safeValue),
+  );
+
+  useEffect(() => {
+    setMode(detectMode(safeValue));
+  }, [safeValue]);
+
+  return (
+    <div className="space-y-2">
+      <RadioGroup
+        className="grid w-full grid-cols-3 gap-0 rounded-md shadow-xs"
+        value={mode}
+        onValueChange={(next) => {
+          const m = next as "internal" | "external" | "anchor";
+          setMode(m);
+          if (m === "external" && !safeValue) onChange("https://");
+          if (m === "anchor" && (!safeValue || !safeValue.startsWith("#")))
+            onChange("#section-id");
+          if (
+            m === "internal" &&
+            (safeValue.startsWith("#") ||
+              /^https?:\/\//i.test(safeValue) ||
+              safeValue.startsWith("mailto:"))
+          ) {
+            onChange("");
+          }
+        }}
+      >
+        <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border p-2 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+          <RadioGroupItem
+            className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+            id={`${modeId}-internal`}
+            value="internal"
+            aria-label="Internal link"
+          />
+          <Label className="cursor-pointer text-xs" htmlFor={`${modeId}-internal`}>
+            Internal
+          </Label>
+        </div>
+        <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border p-2 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+          <RadioGroupItem
+            className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+            id={`${modeId}-external`}
+            value="external"
+            aria-label="External link"
+          />
+          <Label className="cursor-pointer text-xs" htmlFor={`${modeId}-external`}>
+            External
+          </Label>
+        </div>
+        <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border p-2 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+          <RadioGroupItem
+            className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+            id={`${modeId}-anchor`}
+            value="anchor"
+            aria-label="Anchor link"
+          />
+          <Label className="cursor-pointer text-xs" htmlFor={`${modeId}-anchor`}>
+            Anchor
+          </Label>
+        </div>
+      </RadioGroup>
+
+      {mode === "internal" ? (
+        <LinkPickerInput
+          dir={dir}
+          entities={entities}
+          placeholder={internalPlaceholder}
+          value={safeValue}
+          onChange={onChange}
+        />
+      ) : (
+        <input
+          className={cn(inputCls, dir === "rtl" && "text-right")}
+          dir={dir}
+          placeholder={mode === "external" ? "https://example.com" : "#section-id"}
+          value={safeValue}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )}
+    </div>
+  );
+}
+
 function ArrayItemRow({
   index,
   title,
+  badges,
   onMoveUp,
   onMoveDown,
   onDuplicate,
@@ -164,6 +343,7 @@ function ArrayItemRow({
 }: {
   index: number;
   title?: string;
+  badges?: string[];
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   onDuplicate?: () => void;
@@ -182,6 +362,16 @@ function ArrayItemRow({
               {title}
             </span>
           ) : null}
+          {badges?.length
+            ? badges.map((badge) => (
+                <span
+                  key={badge}
+                  className="rounded-[4px] border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                >
+                  {badge}
+                </span>
+              ))
+            : null}
         </div>
 
         <ButtonGroup
@@ -240,6 +430,16 @@ function ArrayItemRow({
       {children}
     </div>
   );
+}
+
+function displayModeLabel(value: "original" | "mono" | undefined) {
+  return value === "mono" ? "Mono" : "Original Colors";
+}
+
+function logoSizeLabel(value: "sm" | "md" | "lg" | undefined) {
+  if (value === "sm") return "Small";
+  if (value === "lg") return "Large";
+  return "Medium";
 }
 
 function AddItemButton({
@@ -2030,6 +2230,11 @@ function PageHeroFields({
   onChange: (patch: Partial<typeof block>) => void;
   entities: LinkPickerEntities;
 }) {
+  const moveSlide = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= block.slides.length) return;
+    onChange({ slides: arrayMove(block.slides, fromIndex, toIndex) });
+  };
+
   return (
     <div className="space-y-4">
       <BlockSubsection hint="Eyebrow and visual treatment" title="Hero Basics">
@@ -2070,34 +2275,21 @@ function PageHeroFields({
       >
         <div className="space-y-2">
           {block.slides.map((slide, i) => (
-            <div
-              className="rounded-xl border border-border/60 bg-card/70 p-4 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]"
+            <ArrayItemRow
+              index={i}
               key={slide.id}
+              title={slide.heading?.trim() || "Untitled slide"}
+              badges={slide.ctaText?.trim() ? ["cta"] : undefined}
+              onMoveDown={() => moveSlide(i, i + 1)}
+              onMoveUp={() => moveSlide(i, i - 1)}
+              onRemove={() => {
+                if (block.slides.length <= 1) return;
+                onChange({
+                  slides: block.slides.filter((_, j) => j !== i),
+                });
+              }}
             >
-              <div className="mb-2 flex items-center justify-between">
-                <span className="font-mono text-[10px] text-muted-foreground">
-                  Slide {String(i + 1).padStart(2, "0")}
-                </span>
-                {block.slides.length > 1 && (
-                  <button
-                    aria-label="Remove slide"
-                    className="text-muted-foreground hover:text-destructive"
-                    type="button"
-                    onClick={() =>
-                      onChange({
-                        slides: block.slides.filter((_, j) => j !== i),
-                      })
-                    }
-                  >
-                    <HugeiconsIcon
-                      icon={Delete02Icon}
-                      size={14}
-                      strokeWidth={1.9}
-                    />
-                  </button>
-                )}
-              </div>
-              <div className="space-y-2">
+              <div className="space-y-2 p-3">
                 <FieldRow>
                   <Field label="Heading">
                     <input
@@ -2149,15 +2341,15 @@ function PageHeroFields({
                   </Field>
                   <div>
                     <label className={labelCls}>CTA URL (optional)</label>
-                    <LinkPickerInput
+                    <LinkFieldWithMode
                       dir={dir}
                       entities={entities}
-                      placeholder="/en/contact"
+                      internalPlaceholder="/en/contact"
                       value={slide.ctaUrl ?? ""}
-                      onChange={(url) =>
+                      onChange={(ctaUrl) =>
                         onChange({
                           slides: block.slides.map((s, j) =>
-                            j === i ? { ...s, ctaUrl: url } : s,
+                            j === i ? { ...s, ctaUrl } : s,
                           ),
                         })
                       }
@@ -2165,7 +2357,7 @@ function PageHeroFields({
                   </div>
                 </FieldRow>
               </div>
-            </div>
+            </ArrayItemRow>
           ))}
         </div>
         <AddItemButton
@@ -2227,10 +2419,10 @@ function AboutIntroFields({
         </Field>
         <div>
           <label className={labelCls}>CTA URL</label>
-          <LinkPickerInput
+          <LinkFieldWithMode
             dir={dir}
             entities={entities}
-            placeholder="/en/services"
+            internalPlaceholder="/en/services"
             value={block.ctaUrl}
             onChange={(url) => onChange({ ctaUrl: url })}
           />
@@ -2301,67 +2493,61 @@ function MissionVisionFields({
   dir: "ltr" | "rtl";
   onChange: (patch: Partial<typeof block>) => void;
 }) {
+  const moveItem = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= block.items.length) return;
+    onChange({ items: arrayMove(block.items, fromIndex, toIndex) });
+  };
+
   return (
     <div className="space-y-3">
       {block.items.map((item, i) => {
         return (
-          <div
-            className="rounded-xl border border-border/60 bg-card/70 p-4 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]"
+          <ArrayItemRow
+            index={i}
             key={i}
+            title={item.title?.trim() || "Untitled item"}
+            onMoveDown={() => moveItem(i, i + 1)}
+            onMoveUp={() => moveItem(i, i - 1)}
+            onRemove={() => {
+              if (block.items.length <= 1) return;
+              onChange({ items: block.items.filter((_, j) => j !== i) });
+            }}
           >
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-primary/70">
-              Item {String(i + 1).padStart(2, "0")}
-            </p>
-            <FieldRow>
-              <Field label="Title">
-                <input
-                  className={cn(inputCls, dir === "rtl" && "text-right")}
-                  dir={dir}
-                  title="Title"
-                  value={item.title}
-                  onChange={(e) =>
-                    onChange({
-                      items: block.items.map((x, j) =>
-                        j === i ? { ...x, title: e.target.value } : x,
-                      ),
-                    })
-                  }
-                />
-              </Field>
-              <Field label="Body">
-                <input
-                  className={cn(inputCls, dir === "rtl" && "text-right")}
-                  dir={dir}
-                  title="Body"
-                  value={item.body}
-                  onChange={(e) =>
-                    onChange({
-                      items: block.items.map((x, j) =>
-                        j === i ? { ...x, body: e.target.value } : x,
-                      ),
-                    })
-                  }
-                />
-              </Field>
-            </FieldRow>
-            <div className="mt-2 flex justify-end">
-              <button
-                aria-label={`Remove item ${i + 1}`}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-destructive/40 text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={block.items.length <= 1}
-                type="button"
-                onClick={() =>
-                  onChange({ items: block.items.filter((_, j) => j !== i) })
-                }
-              >
-                <HugeiconsIcon
-                  icon={Delete02Icon}
-                  size={14}
-                  strokeWidth={1.9}
-                />
-              </button>
+            <div className="p-3 space-y-2">
+              <FieldRow>
+                <Field label="Title">
+                  <input
+                    className={cn(inputCls, dir === "rtl" && "text-right")}
+                    dir={dir}
+                    title="Title"
+                    value={item.title}
+                    onChange={(e) =>
+                      onChange({
+                        items: block.items.map((x, j) =>
+                          j === i ? { ...x, title: e.target.value } : x,
+                        ),
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Body">
+                  <input
+                    className={cn(inputCls, dir === "rtl" && "text-right")}
+                    dir={dir}
+                    title="Body"
+                    value={item.body}
+                    onChange={(e) =>
+                      onChange({
+                        items: block.items.map((x, j) =>
+                          j === i ? { ...x, body: e.target.value } : x,
+                        ),
+                      })
+                    }
+                  />
+                </Field>
+              </FieldRow>
             </div>
-          </div>
+          </ArrayItemRow>
         );
       })}
       <AddItemButton
@@ -2490,42 +2676,57 @@ function ProcessStepsFields({
       </div>
       <div>
         <label className={labelCls}>Steps</label>
-        <div className="space-y-2">
+        <div className="grid gap-2 xl:grid-cols-2">
           {block.steps.map((step, i) => (
             <ArrayItemRow
               index={i}
               key={i}
+              title={step.title?.trim() || "Untitled step"}
+              onMoveDown={() => {
+                const next = i + 1;
+                if (next >= block.steps.length) return;
+                onChange({ steps: arrayMove(block.steps, i, next) });
+              }}
+              onMoveUp={() => {
+                const next = i - 1;
+                if (next < 0) return;
+                onChange({ steps: arrayMove(block.steps, i, next) });
+              }}
               onRemove={() =>
                 onChange({ steps: block.steps.filter((_, j) => j !== i) })
               }
             >
-              <div className="grid gap-2 sm:grid-cols-2">
-                <input
-                  className={cn(inputCls, dir === "rtl" && "text-right")}
-                  dir={dir}
-                  placeholder="Step title"
-                  value={step.title}
-                  onChange={(e) =>
-                    onChange({
-                      steps: block.steps.map((x, j) =>
-                        j === i ? { ...x, title: e.target.value } : x,
-                      ),
-                    })
-                  }
-                />
-                <input
-                  className={cn(inputCls, dir === "rtl" && "text-right")}
-                  dir={dir}
-                  placeholder="Short description"
-                  value={step.desc}
-                  onChange={(e) =>
-                    onChange({
-                      steps: block.steps.map((x, j) =>
-                        j === i ? { ...x, desc: e.target.value } : x,
-                      ),
-                    })
-                  }
-                />
+              <div className="space-y-2 p-3">
+                <Field label="Step Title">
+                  <input
+                    className={cn(inputCls, dir === "rtl" && "text-right")}
+                    dir={dir}
+                    placeholder="Step title"
+                    value={step.title}
+                    onChange={(e) =>
+                      onChange({
+                        steps: block.steps.map((x, j) =>
+                          j === i ? { ...x, title: e.target.value } : x,
+                        ),
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Step Description">
+                  <input
+                    className={cn(inputCls, dir === "rtl" && "text-right")}
+                    dir={dir}
+                    placeholder="Short description"
+                    value={step.desc}
+                    onChange={(e) =>
+                      onChange({
+                        steps: block.steps.map((x, j) =>
+                          j === i ? { ...x, desc: e.target.value } : x,
+                        ),
+                      })
+                    }
+                  />
+                </Field>
               </div>
             </ArrayItemRow>
           ))}
@@ -2550,6 +2751,11 @@ function ValuesListFields({
   dir: "ltr" | "rtl";
   onChange: (patch: Partial<typeof block>) => void;
 }) {
+  const moveItem = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= block.items.length) return;
+    onChange({ items: arrayMove(block.items, fromIndex, toIndex) });
+  };
+
   return (
     <>
       <FieldRow>
@@ -2574,42 +2780,49 @@ function ValuesListFields({
       </FieldRow>
       <div>
         <label className={labelCls}>Values</label>
-        <div className="space-y-2">
+        <div className="grid gap-2 xl:grid-cols-2">
           {block.items.map((item, i) => (
             <ArrayItemRow
               index={i}
               key={i}
+              title={item.title?.trim() || "Untitled value"}
+              onMoveDown={() => moveItem(i, i + 1)}
+              onMoveUp={() => moveItem(i, i - 1)}
               onRemove={() =>
                 onChange({ items: block.items.filter((_, j) => j !== i) })
               }
             >
-              <div className="grid gap-2 sm:grid-cols-2">
-                <input
-                  className={cn(inputCls, dir === "rtl" && "text-right")}
-                  dir={dir}
-                  placeholder="Value title"
-                  value={item.title}
-                  onChange={(e) =>
-                    onChange({
-                      items: block.items.map((x, j) =>
-                        j === i ? { ...x, title: e.target.value } : x,
-                      ),
-                    })
-                  }
-                />
-                <input
-                  className={cn(inputCls, dir === "rtl" && "text-right")}
-                  dir={dir}
-                  placeholder="Description"
-                  value={item.desc}
-                  onChange={(e) =>
-                    onChange({
-                      items: block.items.map((x, j) =>
-                        j === i ? { ...x, desc: e.target.value } : x,
-                      ),
-                    })
-                  }
-                />
+              <div className="space-y-2 p-3">
+                <Field label="Value Title">
+                  <input
+                    className={cn(inputCls, dir === "rtl" && "text-right")}
+                    dir={dir}
+                    placeholder="Value title"
+                    value={item.title}
+                    onChange={(e) =>
+                      onChange({
+                        items: block.items.map((x, j) =>
+                          j === i ? { ...x, title: e.target.value } : x,
+                        ),
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Value Description">
+                  <input
+                    className={cn(inputCls, dir === "rtl" && "text-right")}
+                    dir={dir}
+                    placeholder="Description"
+                    value={item.desc}
+                    onChange={(e) =>
+                      onChange({
+                        items: block.items.map((x, j) =>
+                          j === i ? { ...x, desc: e.target.value } : x,
+                        ),
+                      })
+                    }
+                  />
+                </Field>
               </div>
             </ArrayItemRow>
           ))}
@@ -2679,6 +2892,10 @@ function AccreditationFields({
                 index={i}
                 key={i}
                 title={org.name?.trim() || "Untitled organization"}
+                badges={[
+                  displayModeLabel(org.displayMode),
+                  logoSizeLabel(org.size),
+                ]}
                 onDuplicate={() =>
                   onChange({
                     featuredOrgs: [
@@ -2921,6 +3138,10 @@ function AccreditationFields({
                 index={i}
                 key={i}
                 title={p.name?.trim() || "Untitled logo"}
+                badges={[
+                  displayModeLabel(p.displayMode),
+                  logoSizeLabel(p.size),
+                ]}
                 onDuplicate={() =>
                   onChange({
                     logos: [
@@ -3310,19 +3531,33 @@ function TrainingDomainsFields({
           </Field>
           {block.descriptionSize === "custom" ? (
             <Field label="Custom Size (px)">
-              <input
-                className={inputCls}
-                max={40}
-                min={12}
-                step={1}
-                type="number"
-                value={block.customDescriptionSize}
-                onChange={(e) =>
-                  onChange({
-                    customDescriptionSize: Number(e.target.value) || 16,
-                  })
-                }
-              />
+              <div className="space-y-2">
+                <input
+                  className="w-full accent-primary"
+                  max={40}
+                  min={12}
+                  step={1}
+                  type="range"
+                  value={block.customDescriptionSize}
+                  onChange={(e) =>
+                    onChange({
+                      customDescriptionSize: Number(e.target.value) || 16,
+                    })
+                  }
+                />
+                <NumberStepper
+                  max={40}
+                  min={12}
+                  presets={[14, 16, 18, 20, 24]}
+                  step={1}
+                  value={block.customDescriptionSize}
+                  onChange={(next) =>
+                    onChange({
+                      customDescriptionSize: next,
+                    })
+                  }
+                />
+              </div>
             </Field>
           ) : (
             <div />
@@ -3401,10 +3636,10 @@ function CtaBannerFields({
           </Field>
           <div>
             <label className={labelCls}>Primary Button URL</label>
-            <LinkPickerInput
+            <LinkFieldWithMode
               dir={dir}
               entities={entities}
-              placeholder="mailto:…"
+              internalPlaceholder="/en/contact"
               value={block.buttonUrl}
               onChange={(url) => onChange({ buttonUrl: url })}
             />
@@ -3420,9 +3655,10 @@ function CtaBannerFields({
           </Field>
           <div>
             <label className={labelCls}>Secondary Link URL</label>
-            <LinkPickerInput
+            <LinkFieldWithMode
               dir={dir}
               entities={entities}
+              internalPlaceholder="/en/services"
               value={block.linkUrl}
               onChange={(url) => onChange({ linkUrl: url })}
             />
@@ -3470,6 +3706,11 @@ function HeroBlockFields({
   onChange: (patch: Partial<typeof block>) => void;
   entities: LinkPickerEntities;
 }) {
+  const moveSlide = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= block.slides.length) return;
+    onChange({ slides: arrayMove(block.slides, fromIndex, toIndex) });
+  };
+
   return (
     <div className="space-y-4">
       <BlockSubsection hint="Hero viewport and overlays" title="Hero Display">
@@ -3499,34 +3740,21 @@ function HeroBlockFields({
       >
         <div className="space-y-2">
           {block.slides.map((slide, i) => (
-            <div
-              className="rounded-xl border border-border/60 bg-card/70 p-4 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]"
+            <ArrayItemRow
+              index={i}
               key={slide.id}
+              title={slide.heading?.trim() || "Untitled slide"}
+              badges={(slide.ctas ?? []).length ? [`${(slide.ctas ?? []).length} cta`] : undefined}
+              onMoveDown={() => moveSlide(i, i + 1)}
+              onMoveUp={() => moveSlide(i, i - 1)}
+              onRemove={() => {
+                if (block.slides.length <= 1) return;
+                onChange({
+                  slides: block.slides.filter((_, j) => j !== i),
+                });
+              }}
             >
-              <div className="mb-2 flex items-center justify-between">
-                <span className="font-mono text-[10px] text-muted-foreground">
-                  Slide {String(i + 1).padStart(2, "0")}
-                </span>
-                {block.slides.length > 1 && (
-                  <button
-                    aria-label="Remove slide"
-                    className="text-muted-foreground hover:text-destructive"
-                    type="button"
-                    onClick={() =>
-                      onChange({
-                        slides: block.slides.filter((_, j) => j !== i),
-                      })
-                    }
-                  >
-                    <HugeiconsIcon
-                      icon={Delete02Icon}
-                      size={14}
-                      strokeWidth={1.9}
-                    />
-                  </button>
-                )}
-              </div>
-              <div className="space-y-2">
+              <div className="space-y-2 p-3">
                 <FieldRow>
                   <Field label="Eyebrow">
                     <input
@@ -3600,7 +3828,6 @@ function HeroBlockFields({
                   </label>
                 </div>
 
-                {/* CTAs */}
                 <div className="mt-2 space-y-2">
                   <span className={labelCls}>CTAs</span>
                   <div className="grid gap-2 lg:grid-cols-2">
@@ -3635,10 +3862,10 @@ function HeroBlockFields({
                               })
                             }
                           />
-                          <LinkPickerInput
+                          <LinkFieldWithMode
                             dir={dir}
                             entities={entities}
-                            placeholder="/en/contact"
+                            internalPlaceholder="/en/contact"
                             value={cta.url}
                             onChange={(url) =>
                               onChange({
@@ -3788,7 +4015,7 @@ function HeroBlockFields({
                   />
                 </div>
               </div>
-            </div>
+            </ArrayItemRow>
           ))}
         </div>
         <AddItemButton
@@ -3889,9 +4116,10 @@ function CtaBlockFields({
       </Field>
       <div>
         <label className={labelCls}>Button URL</label>
-        <LinkPickerInput
+        <LinkFieldWithMode
           dir={dir}
           entities={entities}
+          internalPlaceholder="/en/contact"
           value={block.buttonUrl}
           onChange={(url) => onChange({ buttonUrl: url })}
         />
@@ -3951,15 +4179,12 @@ function ListingConfigFields({
       >
         <FieldRow>
           <Field label="Results Per Page">
-            <input
-              className={inputCls}
+            <NumberStepper
               min={1}
-              title="Results Per Page"
-              type="number"
+              presets={[6, 9, 12, 18]}
+              step={1}
               value={block.resultsPerPage}
-              onChange={(e) =>
-                onChange({ resultsPerPage: Number(e.target.value) || 12 })
-              }
+              onChange={(next) => onChange({ resultsPerPage: next })}
             />
           </Field>
         </FieldRow>
@@ -4160,13 +4385,12 @@ function HomeEventsCarouselFields({
         />
       </Field>
       <Field label="Max Events">
-        <input
-          className={inputCls}
+        <NumberStepper
           min={1}
-          title="Max Events"
-          type="number"
+          presets={[3, 6, 9, 12]}
+          step={1}
           value={block.limit}
-          onChange={(e) => onChange({ limit: Number(e.target.value) || 6 })}
+          onChange={(next) => onChange({ limit: next })}
         />
       </Field>
       <Field label="Content Source">
@@ -4240,7 +4464,7 @@ function HomeEventsCarouselFields({
               className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
               htmlFor="upcoming-events-show-view-more-yes"
             >
-              Yes
+              Show
             </Label>
           </div>
           <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
@@ -4254,10 +4478,51 @@ function HomeEventsCarouselFields({
               className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
               htmlFor="upcoming-events-show-view-more-no"
             >
-              No
+              Hide
             </Label>
           </div>
         </RadioGroup>
+      </Field>
+      <Field label="Quick Presets">
+        <div className="flex flex-wrap gap-1">
+          <Button
+            className="h-8 rounded-[4px] px-2 text-[11px]"
+            size="sm"
+            type="button"
+            variant="outline"
+            onClick={() =>
+              onChange({ limit: 6, source: "mixed", showViewMore: true })
+            }
+          >
+            Balanced
+          </Button>
+          <Button
+            className="h-8 rounded-[4px] px-2 text-[11px]"
+            size="sm"
+            type="button"
+            variant="outline"
+            onClick={() =>
+              onChange({ limit: 9, source: "events", showViewMore: true })
+            }
+          >
+            Event-heavy
+          </Button>
+          <Button
+            className="h-8 rounded-[4px] px-2 text-[11px]"
+            size="sm"
+            type="button"
+            variant="outline"
+            onClick={() =>
+              onChange({
+                limit: 6,
+                source: "training_courses",
+                showViewMore: false,
+              })
+            }
+          >
+            Courses focus
+          </Button>
+        </div>
       </Field>
     </FieldRow>
   );
@@ -4295,13 +4560,12 @@ function HomePostsGridFields({
         />
       </Field>
       <Field label="Max Posts">
-        <input
-          className={inputCls}
+        <NumberStepper
           min={1}
-          title="Max Posts"
-          type="number"
+          presets={[3, 6, 9, 12]}
+          step={1}
           value={block.limit}
-          onChange={(e) => onChange({ limit: Number(e.target.value) || 6 })}
+          onChange={(next) => onChange({ limit: next })}
         />
       </Field>
     </FieldRow>
