@@ -22,6 +22,7 @@ import {
   BrushIcon,
   Copy01Icon,
   Delete02Icon,
+  DragDropVerticalIcon,
   FloppyDiskIcon,
   Image01Icon,
   Image02Icon,
@@ -35,7 +36,6 @@ import {
   AlertTriangle,
   AlignLeft,
   ArrowLeft,
-  CheckCircle2,
   ChevronDown,
   ClipboardPaste,
   Copy,
@@ -44,6 +44,7 @@ import {
   ImageIcon,
   Languages,
   Loader2,
+  MoreHorizontal,
   Plus,
   Redo2,
   Search,
@@ -131,7 +132,7 @@ const labelCls =
 // ─── Primitives ───────────────────────────────────────────────────────────────
 
 function FieldRow({ children }: { children: React.ReactNode }) {
-  return <div className="grid gap-4 sm:grid-cols-2">{children}</div>;
+  return <div className="grid gap-4 lg:grid-cols-2">{children}</div>;
 }
 
 function Field({
@@ -369,8 +370,8 @@ function ArrayItemRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="group rounded-[8px] border border-border/60 bg-card/70 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]">
-      <div className="flex items-center justify-between gap-2 py-2 px-3 border-b">
+    <div className="group rounded-[8px] border border-border/60 bg-card/70 shadow overflow-hidden">
+      <div className="flex items-center justify-between gap-2 py-2 px-3 border-b bg-secondary/5">
         <div className="flex min-w-0 items-center gap-2">
           <span className="font-mono text-sm font-semibold text-primary p-1.5">
             {String(index + 1).padStart(2, "0")}
@@ -393,9 +394,11 @@ function ArrayItemRow({
         </div>
 
         <ButtonGroup
-          className={
-            "rounded-[4px] group-hover:opacity-100 opacity-0 duration-150 transition-all"
-          }
+          className={cn(
+            "rounded-[4px] transition-all duration-150",
+            "opacity-100 md:opacity-0 md:group-hover:opacity-100",
+          )}
+          style={{ "--radius": "4px" } as React.CSSProperties}
         >
           {onMoveUp ? (
             <Button
@@ -537,11 +540,7 @@ function makeId() {
 // ─── Block wireframes ─────────────────────────────────────────────────────────
 
 type BlockType = Block["type"];
-type BlockNavFilter =
-  | "all"
-  | "needs-attention"
-  | "media-heavy"
-  | "untranslated";
+type BlockNavFilter = "all" | "needs-attention" | "untranslated";
 
 function BlockWireframe({ type }: { type: BlockType }) {
   const bg = "#ffffff";
@@ -1267,18 +1266,16 @@ function BlockNavSidebar({
       const diag = diagnostics[block.id];
       if (!diag) return acc;
       if (diag.missingRequiredContent) acc.needsAttention += 1;
-      if (diag.mediaCount >= 4) acc.mediaHeavy += 1;
       if (diag.untranslated) acc.untranslated += 1;
       return acc;
     },
-    { mediaHeavy: 0, needsAttention: 0, untranslated: 0 },
+    { needsAttention: 0, untranslated: 0 },
   );
 
   const filteredBlocks = blocks.filter((block) => {
     const diag = diagnostics[block.id];
     if (!diag) return true;
     if (filter === "needs-attention") return diag.missingRequiredContent;
-    if (filter === "media-heavy") return diag.mediaCount >= 4;
     if (filter === "untranslated") return diag.untranslated;
     return true;
   });
@@ -1288,18 +1285,6 @@ function BlockNavSidebar({
       <p className="mb-2 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">
         Blocks
       </p>
-      <div className="mb-2 rounded-md border border-border/60 bg-card/60 p-2">
-        <div className="flex items-center justify-between text-[10px]">
-          <span className="text-muted-foreground">Total</span>
-          <span className="font-semibold text-foreground">{blocks.length}</span>
-        </div>
-        <div className="mt-1 flex items-center justify-between text-[10px]">
-          <span className="text-muted-foreground">Healthy</span>
-          <span className="font-semibold text-emerald-600">
-            {blocks.length - counts.needsAttention}
-          </span>
-        </div>
-      </div>
       <div className="mb-2 flex flex-wrap gap-1">
         {[
           { id: "all" as const, label: "All", value: blocks.length },
@@ -1307,11 +1292,6 @@ function BlockNavSidebar({
             id: "needs-attention" as const,
             label: "Needs",
             value: counts.needsAttention,
-          },
-          {
-            id: "media-heavy" as const,
-            label: "Media",
-            value: counts.mediaHeavy,
           },
           {
             id: "untranslated" as const,
@@ -1361,9 +1341,9 @@ function BlockNavSidebar({
               <span className="truncate">{BLOCK_LABELS[block.type]}</span>
               {diag?.missingRequiredContent ? (
                 <AlertTriangle className="ml-auto size-3 shrink-0 text-amber-500" />
-              ) : (
-                <CheckCircle2 className="ml-auto size-3 shrink-0 text-emerald-600" />
-              )}
+              ) : diag?.untranslated ? (
+                <Languages className="ml-auto size-3 shrink-0 text-blue-500" />
+              ) : null}
             </button>
           );
         })}
@@ -1389,6 +1369,7 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: BlockType) => void }) {
       );
     }),
   })).filter((group) => group.types.length > 0);
+  const firstVisibleType = visibleGroups[0]?.types[0];
 
   return (
     <DropdownMenu onOpenChange={setOpen} open={open}>
@@ -1424,7 +1405,15 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: BlockType) => void }) {
             placeholder="Search block types..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === "Enter" && firstVisibleType) {
+                e.preventDefault();
+                onAdd(firstVisibleType);
+                setOpen(false);
+                setQuery("");
+              }
+            }}
           />
         </div>
         {visibleGroups.length === 0 ? (
@@ -1509,6 +1498,8 @@ function SortableBlock({
   order,
   label,
   health,
+  untranslated,
+  isDimmed,
   copyLabel,
   translateLabel,
   isSelected,
@@ -1523,6 +1514,8 @@ function SortableBlock({
   order: number;
   label: string;
   health: "healthy" | "needs-attention";
+  untranslated: boolean;
+  isDimmed: boolean;
   copyLabel: string;
   translateLabel: string;
   isSelected: boolean;
@@ -1552,7 +1545,10 @@ function SortableBlock({
       ref={setNodeRef}
       data-block-id={id}
       style={style}
-      className={cn(isDragging && "opacity-50 z-50")}
+      className={cn(
+        isDragging && "opacity-50 z-50",
+        isDimmed && "opacity-45 saturate-50",
+      )}
       onClick={onSelect}
     >
       <div
@@ -1563,18 +1559,19 @@ function SortableBlock({
         )}
       >
         {/* Block header */}
-        <div className="flex h-12 items-center gap-2 border-b border-border/50 bg-muted/20 px-3">
-          <button
+        <div className="group/block-header flex h-12 items-center gap-2 border-b border-border/50 bg-muted/20 px-3 relative transition-all duration-300">
+          <Button
+            onClick={(e) => e.stopPropagation()}
+            className="cursor-grab"
+            aria-label="Drag to reorder"
+            variant="ghost"
+            size="icon"
             {...attributes}
             {...listeners}
-            aria-label="Drag to reorder"
-            className="cursor-grab touch-none rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing"
-            type="button"
-            onClick={(e) => e.stopPropagation()}
           >
-            <GripVertical className="size-4" />
-          </button>
-          <span className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
+            <HugeiconsIcon icon={DragDropVerticalIcon} className="size-4" />
+          </Button>
+          <span className="shrink-0 font-mono text-sm text-secondary font-semibold">
             {String(order).padStart(2, "0")}
           </span>
           <div className="min-w-0 flex-1">
@@ -1582,74 +1579,90 @@ function SortableBlock({
               {label}
             </span>
           </div>
-          <span
-            className={cn(
-              "rounded-full px-2 py-0.5 text-[10px] font-semibold",
-              health === "healthy"
-                ? "bg-emerald-500/10 text-emerald-700"
-                : "bg-amber-500/10 text-amber-700",
-            )}
+          {health === "needs-attention" ? (
+            <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+              Needs work
+            </span>
+          ) : null}
+          {untranslated ? (
+            <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+              Missing locale
+            </span>
+          ) : null}
+          <div
+            className="flex items-center -right-[52px] group-hover/block-header:right-0 transition-all duration-400 relative"
+            style={{ "--radius": "4px" } as React.CSSProperties}
           >
-            {health === "healthy" ? "Healthy" : "Needs work"}
-          </span>
-          <button
-            aria-label={collapsed ? "Expand block" : "Collapse block"}
-            className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setCollapsed((v) => !v);
-            }}
-          >
-            <ChevronDown
-              className={cn(
-                "size-4 transition-transform duration-150",
-                collapsed && "-rotate-90",
-              )}
-            />
-          </button>
-          {ENABLE_BLOCK_TRANSLATION ? (
-            <button
-              aria-label={`Translate ${label} block to ${translateLabel}`}
-              className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
-              disabled={isTranslating}
-              title={`Translate to ${translateLabel}`}
-              type="button"
+            <Button
+              aria-label={collapsed ? "Expand block" : "Collapse block"}
+              className="cursor-pointer"
+              variant="ghost"
+              size="icon"
               onClick={(e) => {
                 e.stopPropagation();
-                onTranslateToOtherLocale();
+                setCollapsed((v) => !v);
               }}
             >
-              {isTranslating ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Languages className="size-3.5" />
-              )}
-            </button>
-          ) : null}
-          <button
-            aria-label={`Copy ${label} block to ${copyLabel}`}
-            className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            title={`Copy to ${copyLabel}`}
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onCopyToOtherLocale();
-            }}
-          >
-            <Copy className="size-3.5" />
-          </button>
-          <button
-            aria-label={`Remove ${label} block`}
-            className="rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove();
-            }}
-          >
-            <HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={1.9} />
-          </button>
+              <HugeiconsIcon
+                icon={ArrowDown01Icon}
+                className={cn(
+                  "size-4 transition-transform duration-150",
+                  collapsed && "-rotate-90",
+                )}
+              />
+            </Button>
+            <div className="flex items-center group-hover/block-header:opacity-100 opacity-0 transition-all duration-300">
+              {ENABLE_BLOCK_TRANSLATION ? (
+                <Button
+                  aria-label={`Translate ${label} block to ${translateLabel}`}
+                  className="cursor-pointer"
+                  disabled={isTranslating}
+                  title={`Translate to ${translateLabel}`}
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTranslateToOtherLocale();
+                  }}
+                >
+                  {isTranslating ? (
+                    <Spinner className="size-3.5" />
+                  ) : (
+                    <Languages className="size-3.5" />
+                  )}
+                </Button>
+              ) : null}
+              <Button
+                aria-label={`Copy ${label} block to ${copyLabel}`}
+                className="cursor-pointer"
+                title={`Copy to ${copyLabel}`}
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCopyToOtherLocale();
+                }}
+              >
+                <Copy className="size-3.5" />
+              </Button>
+              <Button
+                aria-label={`Remove ${label} block`}
+                className="cursor-pointer rounded"
+                variant="destructive"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove();
+                }}
+              >
+                <HugeiconsIcon
+                  icon={Delete02Icon}
+                  size={14}
+                  className="text-destructive"
+                />
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Block fields */}
@@ -1843,7 +1856,7 @@ function MediaCarouselEditor({
           </div>
         ))}
         <div
-          className="relative min-h-[120px] overflow-hidden rounded-xl border-2 border-border/60 bg-card/70 hover:bg-primary/10 hover:border-primary hover:text-primary grid place-items-center"
+          className="relative min-h-[120px] overflow-hidden rounded-xl border-2 border-dashed border-border/60 bg-card/70 hover:bg-primary/10 hover:border-primary hover:text-primary grid place-items-center"
           style={{ "--radius": "4px" } as React.CSSProperties}
         >
           <button
@@ -4740,6 +4753,7 @@ export function PageEditor({
   const [activeLocale, setActiveLocale] = useState<"ar" | "en">("en");
   const [activeSection, setActiveSection] = useState<SectionId>("identity");
   const [viewMode, setViewMode] = useState<"editor" | "preview">("editor");
+  const [focusMode, setFocusMode] = useState(false);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [hasClipboardBlock, setHasClipboardBlock] = useState(false);
   const [translatingBlockId, setTranslatingBlockId] = useState<string | null>(
@@ -5224,6 +5238,20 @@ export function PageEditor({
   }, [currentSerialized]);
 
   useEffect(() => {
+    if (!focusMode || activeSection !== "blocks") return;
+    if (!selectedBlockId && blocks.length > 0) {
+      setSelectedBlockId(blocks[0]?.id ?? null);
+      return;
+    }
+    if (
+      selectedBlockId &&
+      !blocks.some((block) => block.id === selectedBlockId)
+    ) {
+      setSelectedBlockId(blocks[0]?.id ?? null);
+    }
+  }, [focusMode, activeSection, selectedBlockId, blocks]);
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (
@@ -5333,8 +5361,8 @@ export function PageEditor({
               /{pageData.slug}
             </span>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <ButtonGroup className="h-9">
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+            <div className="flex h-9 flex-wrap items-center gap-1.5">
               <ButtonGroup
                 className="rounded-[4px]"
                 style={{ "--radius": "4px" } as React.CSSProperties}
@@ -5449,7 +5477,7 @@ export function PageEditor({
                   Save
                 </Button>
               </ButtonGroup>
-            </ButtonGroup>
+            </div>
           </div>
         </div>
 
@@ -5504,51 +5532,70 @@ export function PageEditor({
                     title="Identity"
                   />
 
-                  {activeLocale === "en" ? (
-                    <Field label="Page Title (English)">
-                      <Input
-                        className={inputCls}
-                        placeholder="Page title"
-                        value={titleEn}
-                        onChange={(e) => setTitleEn(e.target.value)}
-                      />
-                    </Field>
-                  ) : (
-                    <Field label="Page Title (Arabic)">
-                      <Input
-                        className={cn(inputCls, "text-right")}
-                        dir="rtl"
-                        placeholder="عنوان الصفحة"
-                        value={titleAr}
-                        onChange={(e) => setTitleAr(e.target.value)}
-                      />
-                    </Field>
-                  )}
-
-                  <Field label="Status">
-                    <button
-                      className={cn(
-                        "inline-flex h-9 w-56 items-center justify-between rounded-md border px-3 text-sm transition-colors",
-                        status === "published"
-                          ? "border-green-500/40 bg-green-500/10 text-green-700"
-                          : "border-input bg-input/20 text-muted-foreground",
+                  <BlockSubsection
+                    title={
+                      activeLocale === "en"
+                        ? "English Content"
+                        : "Arabic Content"
+                    }
+                    defaultOpen
+                  >
+                    <div className="space-y-4 p-4 pt-0">
+                      {activeLocale === "en" ? (
+                        <Field label="Page Title (English)">
+                          <Input
+                            className={inputCls}
+                            placeholder="Page title shown in editor"
+                            value={titleEn}
+                            onChange={(e) => setTitleEn(e.target.value)}
+                          />
+                        </Field>
+                      ) : (
+                        <Field label="Page Title (Arabic)">
+                          <Input
+                            className={cn(inputCls, "text-right")}
+                            dir="rtl"
+                            placeholder="عنوان الصفحة"
+                            value={titleAr}
+                            onChange={(e) => setTitleAr(e.target.value)}
+                          />
+                        </Field>
                       )}
-                      type="button"
-                      onClick={() =>
-                        setStatus(
-                          status === "published" ? "draft" : "published",
-                        )
-                      }
-                    >
-                      <span className="font-medium">
-                        {status === "published" ? "Published" : "Draft"}
-                      </span>
-                      <Switch
-                        checked={status === "published"}
-                        className="pointer-events-none"
-                      />
-                    </button>
-                  </Field>
+                    </div>
+                  </BlockSubsection>
+
+                  <BlockSubsection
+                    title="Publishing"
+                    hint="Set whether this page is live or in draft."
+                    defaultOpen={false}
+                  >
+                    <div className="space-y-4 p-4 pt-0">
+                      <Field label="Status">
+                        <button
+                          className={cn(
+                            "inline-flex h-9 w-full max-w-64 items-center justify-between rounded-md border px-3 text-sm transition-colors",
+                            status === "published"
+                              ? "border-green-500/40 bg-green-500/10 text-green-700"
+                              : "border-input bg-input/20 text-muted-foreground",
+                          )}
+                          type="button"
+                          onClick={() =>
+                            setStatus(
+                              status === "published" ? "draft" : "published",
+                            )
+                          }
+                        >
+                          <span className="font-medium">
+                            {status === "published" ? "Published" : "Draft"}
+                          </span>
+                          <Switch
+                            checked={status === "published"}
+                            className="pointer-events-none"
+                          />
+                        </button>
+                      </Field>
+                    </div>
+                  </BlockSubsection>
                 </div>
               )}
 
@@ -5556,7 +5603,7 @@ export function PageEditor({
               {activeSection === "blocks" && (
                 <div className="relative flex justify-between gap-6">
                   <div className="min-w-0 max-w-6xl flex-1 space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                       <div className="flex items-center gap-2.5">
                         <DashboardSectionHeading
                           icon={AlignLeft}
@@ -5564,43 +5611,74 @@ export function PageEditor({
                           title="Content Blocks"
                         />
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <span className="text-[11px] text-muted-foreground">
                           {activeLocale === "en" ? "English" : "Arabic"} ·{" "}
                           {blocks.length} block{blocks.length !== 1 ? "s" : ""}
                         </span>
-                        <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                          Needs attention: {qualityCounts.needsAttention}
-                        </span>
-                        <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
-                          Missing locale: {qualityCounts.untranslated}
-                        </span>
-                        <button
-                          className="inline-flex h-9 items-center gap-2 rounded-md border border-border/70 bg-card px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
-                          disabled={!hasClipboardBlock}
-                          type="button"
-                          onClick={pasteBlockFromClipboard}
-                        >
-                          <ClipboardPaste className="size-3.5" />
-                          Paste Block
-                        </button>
-                        {ENABLE_BLOCK_TRANSLATION ? (
-                          <button
-                            className="inline-flex h-9 items-center gap-2 rounded-md border border-border/70 bg-card px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
-                            disabled={isBulkTranslating}
-                            type="button"
-                            onClick={translateMissingBlocksToOtherLocale}
-                          >
-                            {isBulkTranslating ? (
-                              <Loader2 className="size-3.5 animate-spin" />
-                            ) : (
-                              <Languages className="size-3.5" />
-                            )}
-                            {activeLocale === "en"
-                              ? "Translate Missing to AR"
-                              : "Translate Missing to EN"}
-                          </button>
+                        {qualityCounts.needsAttention > 0 ? (
+                          <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                            Needs attention: {qualityCounts.needsAttention}
+                          </span>
                         ) : null}
+                        {qualityCounts.untranslated > 0 ? (
+                          <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                            Missing locale: {qualityCounts.untranslated}
+                          </span>
+                        ) : null}
+                        <button
+                          className={cn(
+                            "inline-flex h-9 items-center rounded-md border px-2.5 text-[11px] font-medium transition-colors",
+                            focusMode
+                              ? "border-primary/40 bg-primary/10 text-primary"
+                              : "border-border/70 bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
+                          )}
+                          type="button"
+                          onClick={() => setFocusMode((v) => !v)}
+                        >
+                          {focusMode ? "Exit Focus" : "Focus Selected"}
+                        </button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <button
+                                className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border/70 bg-card px-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                type="button"
+                              >
+                                <MoreHorizontal className="size-3.5" />
+                                More
+                              </button>
+                            }
+                          />
+                          <DropdownMenuContent align="end" className="w-56">
+                            <button
+                              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                              disabled={!hasClipboardBlock}
+                              type="button"
+                              onClick={pasteBlockFromClipboard}
+                            >
+                              <ClipboardPaste className="size-3.5" />
+                              Paste Block
+                            </button>
+                            {ENABLE_BLOCK_TRANSLATION ? (
+                              <button
+                                className="mt-1 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                                disabled={isBulkTranslating}
+                                type="button"
+                                onClick={translateMissingBlocksToOtherLocale}
+                              >
+                                {isBulkTranslating ? (
+                                  <Loader2 className="size-3.5 animate-spin" />
+                                ) : (
+                                  <Languages className="size-3.5" />
+                                )}
+                                {activeLocale === "en"
+                                  ? "Translate Missing to AR"
+                                  : "Translate Missing to EN"}
+                              </button>
+                            ) : null}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         <AddBlockMenu onAdd={addBlock} />
                       </div>
                     </div>
@@ -5612,7 +5690,7 @@ export function PageEditor({
                           No blocks yet
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground/60">
-                          Use the Add Block button above to build this page.
+                          Add your first block to start composing this page.
                         </p>
                       </div>
                     )}
@@ -5640,10 +5718,19 @@ export function PageEditor({
                                   : "healthy"
                               }
                               id={block.id}
+                              isDimmed={
+                                focusMode &&
+                                selectedBlockId !== null &&
+                                selectedBlockId !== block.id
+                              }
                               isSelected={selectedBlockId === block.id}
                               key={block.id}
                               label={BLOCK_LABELS[block.type]}
                               order={index + 1}
+                              untranslated={
+                                blockDiagnostics[block.id]?.untranslated ??
+                                false
+                              }
                               onSelect={() => setSelectedBlockId(block.id)}
                               isTranslating={translatingBlockId === block.id}
                               onTranslateToOtherLocale={() =>
@@ -5680,62 +5767,81 @@ export function PageEditor({
                     index="03"
                     title="SEO"
                   />
-                  {activeLocale === "en" ? (
-                    <>
-                      <Field label="SEO Title (English)">
-                        <Input
-                          className={inputCls}
-                          maxLength={60}
-                          placeholder="Overrides page title in search results"
-                          value={seoTitleEn}
-                          onChange={(e) => setSeoTitleEn(e.target.value)}
-                        />
-                      </Field>
-                      <Field label="Meta Description (English)">
-                        <Textarea
-                          className="min-h-20 w-full resize-none rounded-md border border-input bg-input/20 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                          maxLength={160}
-                          placeholder="Shown in search engine results pages…"
-                          value={seoDescEn}
-                          onChange={(e) => setSeoDescEn(e.target.value)}
-                        />
-                      </Field>
-                    </>
-                  ) : (
-                    <>
-                      <Field label="SEO Title (Arabic)">
-                        <Input
-                          className={cn(inputCls, "text-right")}
-                          dir="rtl"
-                          maxLength={60}
-                          placeholder="عنوان SEO"
-                          value={seoTitleAr}
-                          onChange={(e) => setSeoTitleAr(e.target.value)}
-                        />
-                      </Field>
-                      <Field label="Meta Description (Arabic)">
-                        <Textarea
-                          className="min-h-20 w-full resize-none rounded-md border border-input bg-input/20 px-3 py-2.5 text-right text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                          dir="rtl"
-                          maxLength={160}
-                          placeholder="وصف محركات البحث"
-                          value={seoDescAr}
-                          onChange={(e) => setSeoDescAr(e.target.value)}
-                        />
-                      </Field>
-                    </>
-                  )}
-                  <p className="text-[11px] text-muted-foreground">
-                    Title:{" "}
-                    {activeLocale === "en"
-                      ? seoTitleEn.length
-                      : seoTitleAr.length}
-                    /60 · Description:{" "}
-                    {activeLocale === "en"
-                      ? seoDescEn.length
-                      : seoDescAr.length}
-                    /160
-                  </p>
+                  <BlockSubsection
+                    title={
+                      activeLocale === "en"
+                        ? "English Metadata"
+                        : "Arabic Metadata"
+                    }
+                    defaultOpen
+                  >
+                    <div className="space-y-4 p-4 pt-0">
+                      {activeLocale === "en" ? (
+                        <>
+                          <Field label="SEO Title (English)">
+                            <Input
+                              className={inputCls}
+                              maxLength={60}
+                              placeholder="Title shown in search results"
+                              value={seoTitleEn}
+                              onChange={(e) => setSeoTitleEn(e.target.value)}
+                            />
+                          </Field>
+                          <Field label="Meta Description (English)">
+                            <Textarea
+                              className="min-h-20 w-full resize-none rounded-md border border-input bg-input/20 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                              maxLength={160}
+                              placeholder="Short summary shown under the title in search results"
+                              value={seoDescEn}
+                              onChange={(e) => setSeoDescEn(e.target.value)}
+                            />
+                          </Field>
+                        </>
+                      ) : (
+                        <>
+                          <Field label="SEO Title (Arabic)">
+                            <Input
+                              className={cn(inputCls, "text-right")}
+                              dir="rtl"
+                              maxLength={60}
+                              placeholder="عنوان SEO"
+                              value={seoTitleAr}
+                              onChange={(e) => setSeoTitleAr(e.target.value)}
+                            />
+                          </Field>
+                          <Field label="Meta Description (Arabic)">
+                            <Textarea
+                              className="min-h-20 w-full resize-none rounded-md border border-input bg-input/20 px-3 py-2.5 text-right text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                              dir="rtl"
+                              maxLength={160}
+                              placeholder="وصف مختصر يظهر في نتائج البحث"
+                              value={seoDescAr}
+                              onChange={(e) => setSeoDescAr(e.target.value)}
+                            />
+                          </Field>
+                        </>
+                      )}
+                    </div>
+                  </BlockSubsection>
+                  <BlockSubsection
+                    title="SEO Guidance"
+                    hint="Keep within recommended limits for better snippet quality."
+                    defaultOpen={false}
+                  >
+                    <div className="p-4 pt-0">
+                      <p className="text-[11px] text-muted-foreground">
+                        Title:{" "}
+                        {activeLocale === "en"
+                          ? seoTitleEn.length
+                          : seoTitleAr.length}
+                        /60 · Description:{" "}
+                        {activeLocale === "en"
+                          ? seoDescEn.length
+                          : seoDescAr.length}
+                        /160
+                      </p>
+                    </div>
+                  </BlockSubsection>
                 </div>
               )}
             </>
