@@ -1261,6 +1261,23 @@ function BlockNavSidebar({
   const [filter, setFilter] = useState<BlockNavFilter>("all");
   if (blocks.length === 0) return null;
 
+  function scrollBlockWithOffset(blockId: string) {
+    const blockEl = document.querySelector(
+      `[data-block-id="${blockId}"]`,
+    ) as HTMLElement | null;
+    if (!blockEl) return;
+    const appHeaderEl = document.querySelector("header") as HTMLElement | null;
+    const editorHeaderEl = document.querySelector(
+      '[data-editor-toolbar="true"]',
+    ) as HTMLElement | null;
+    const offset =
+      (appHeaderEl?.getBoundingClientRect().height ?? 0) +
+      (editorHeaderEl?.getBoundingClientRect().height ?? 0) +
+      16;
+    const top = blockEl.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }
+
   const counts = blocks.reduce(
     (acc, block) => {
       const diag = diagnostics[block.id];
@@ -1330,9 +1347,7 @@ function BlockNavSidebar({
               type="button"
               onClick={() => {
                 onSelectBlock(block.id);
-                document
-                  .querySelector(`[data-block-id="${block.id}"]`)
-                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                scrollBlockWithOffset(block.id);
               }}
             >
               <span className="shrink-0 font-mono text-[9px] text-muted-foreground/40">
@@ -1526,6 +1541,9 @@ function SortableBlock({
   onRemove: () => void;
 }) {
   const [collapsed, setCollapsed] = useState(true);
+  useEffect(() => {
+    if (isSelected) setCollapsed(false);
+  }, [isSelected]);
   const {
     attributes,
     listeners,
@@ -1559,7 +1577,7 @@ function SortableBlock({
         )}
       >
         {/* Block header */}
-        <div className="group/block-header flex h-12 items-center gap-2 border-b border-border/50 bg-muted/20 px-3 relative transition-all duration-300">
+        <div className="group/block-header flex h-12 items-center gap-2 border-b border-border/50 bg-muted/20 px-3 transition-all duration-300">
           <Button
             onClick={(e) => e.stopPropagation()}
             className="cursor-grab"
@@ -1579,20 +1597,19 @@ function SortableBlock({
               {label}
             </span>
           </div>
-          {health === "needs-attention" ? (
-            <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-              Needs work
-            </span>
-          ) : null}
-          {untranslated ? (
-            <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
-              Missing locale
-            </span>
-          ) : null}
-          <div
-            className="flex items-center -right-[52px] group-hover/block-header:right-0 transition-all duration-400 relative"
-            style={{ "--radius": "4px" } as React.CSSProperties}
-          >
+          <div className="ml-auto flex items-center gap-1 overflow-hidden">
+            <div className="flex items-center gap-1">
+              {health === "needs-attention" ? (
+                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                  Needs work
+                </span>
+              ) : null}
+              {untranslated ? (
+                <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                  Missing locale
+                </span>
+              ) : null}
+            </div>
             <Button
               aria-label={collapsed ? "Expand block" : "Collapse block"}
               className="cursor-pointer"
@@ -1611,7 +1628,7 @@ function SortableBlock({
                 )}
               />
             </Button>
-            <div className="flex items-center group-hover/block-header:opacity-100 opacity-0 transition-all duration-300">
+            <div className="flex max-w-0 translate-x-2 items-center overflow-hidden opacity-0 transition-all duration-300 md:group-hover/block-header:max-w-40 md:group-hover/block-header:translate-x-0 md:group-hover/block-header:opacity-100 md:group-focus-within/block-header:max-w-40 md:group-focus-within/block-header:translate-x-0 md:group-focus-within/block-header:opacity-100">
               {ENABLE_BLOCK_TRANSLATION ? (
                 <Button
                   aria-label={`Translate ${label} block to ${translateLabel}`}
@@ -1666,18 +1683,9 @@ function SortableBlock({
         </div>
 
         {/* Block fields */}
-        <div
-          className={cn(
-            "grid transition-[grid-template-rows,opacity] duration-200",
-            collapsed
-              ? "grid-rows-[0fr] opacity-0"
-              : "grid-rows-[1fr] opacity-100",
-          )}
-        >
-          <div className="min-h-0 overflow-hidden">
-            <div className="space-y-4 bg-background/40 p-4">{children}</div>
-          </div>
-        </div>
+        {!collapsed ? (
+          <div className="space-y-4 bg-background/40 p-4">{children}</div>
+        ) : null}
       </div>
     </div>
   );
@@ -5352,7 +5360,10 @@ export function PageEditor({
       {/* Main panel */}
       <div className="flex min-h-0 max-w-6xl flex-col">
         {/* Toolbar */}
-        <div className="sticky top-14 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-border/50 bg-card/90 px-4 py-3 backdrop-blur-sm sm:px-6">
+        <div
+          className="sticky top-14 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-border/50 bg-card/90 px-4 py-3 backdrop-blur-sm sm:px-6"
+          data-editor-toolbar="true"
+        >
           <div className="flex min-w-0 items-center gap-3">
             <span className="text-[13px] font-semibold text-foreground">
               {activeLocale === "en" ? titleEn : titleAr}
