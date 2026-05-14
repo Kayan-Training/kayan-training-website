@@ -35,17 +35,13 @@ import {
   ChevronDown,
   ClipboardPaste,
   Copy,
-  Dot,
   FileText,
   GripVertical,
   ImageIcon,
   Languages,
   Loader2,
-  Minus,
-  Palette,
   Plus,
   Search,
-  SwatchBook,
   Video,
 } from "lucide-react";
 import Link from "next/link";
@@ -118,7 +114,7 @@ export type PageData = {
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const inputCls =
-  "h-10 w-full rounded-lg border border-input/80 bg-background px-3 text-sm text-foreground shadow-sm " +
+  "h-10 w-full rounded-lg border border-input/80  px-3 text-sm text-foreground shadow-sm " +
   "placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 " +
   "outline-none transition-colors";
 
@@ -175,8 +171,8 @@ function ArrayItemRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="group rounded-xl border border-border/60 bg-card/70 p-4 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]">
-      <div className="mb-3 flex items-center justify-between gap-2">
+    <div className="group rounded-[8px] border border-border/60 bg-card/70 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]">
+      <div className="flex items-center justify-between gap-2 py-2 px-3 border-b">
         <div className="flex min-w-0 items-center gap-2">
           <span className="font-mono text-sm font-semibold text-primary p-1.5">
             {String(index + 1).padStart(2, "0")}
@@ -2617,7 +2613,7 @@ function AccreditationFields({
         <div className="space-y-4">
           <FieldRow>
             <Field label="Heading">
-              <input
+              <Input
                 className={cn(inputCls, dir === "rtl" && "text-right")}
                 dir={dir}
                 title="Heading"
@@ -2626,7 +2622,7 @@ function AccreditationFields({
               />
             </Field>
             <Field label="Description">
-              <input
+              <Input
                 className={cn(inputCls, dir === "rtl" && "text-right")}
                 dir={dir}
                 title="Description"
@@ -2658,7 +2654,7 @@ function AccreditationFields({
                   })
                 }
               >
-                <div className="space-y-2 grid grid-cols-2 gap-2">
+                <div className="space-y-2 grid grid-cols-2 gap-2 p-3">
                   <div className="space-y-2">
                     <Input
                       className={inputCls}
@@ -2714,7 +2710,6 @@ function AccreditationFields({
                             className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
                             htmlFor={`featured-org-${i}-display-original`}
                           >
-                            {/* <Palette className="size-3.5" /> */}
                             <HugeiconsIcon
                               icon={PaintBoardIcon}
                               className="size-3.5"
@@ -2737,7 +2732,6 @@ function AccreditationFields({
                               icon={BrushIcon}
                               className="size-3.5"
                             />
-                            {/* <SwatchBook className="size-3.5" /> */}
                             Mono
                           </Label>
                         </div>
@@ -2861,7 +2855,7 @@ function AccreditationFields({
         <div className="space-y-4">
           <FieldRow>
             <Field label="Logos Heading">
-              <input
+              <Input
                 className={cn(inputCls, dir === "rtl" && "text-right")}
                 dir={dir}
                 title="Logos Heading"
@@ -2870,7 +2864,7 @@ function AccreditationFields({
               />
             </Field>
             <Field label="Logos Description">
-              <input
+              <Input
                 className={cn(inputCls, dir === "rtl" && "text-right")}
                 dir={dir}
                 title="Logos Description"
@@ -2900,62 +2894,148 @@ function AccreditationFields({
                   onChange({ logos: block.logos.filter((_, j) => j !== i) })
                 }
               >
-                <div className="space-y-2">
-                  <input
-                    className={inputCls}
-                    placeholder="Logo name"
-                    value={p.name}
-                    onChange={(e) =>
-                      onChange({
-                        logos: block.logos.map((x, j) =>
-                          j === i ? { ...x, name: e.target.value } : x,
-                        ),
-                      })
-                    }
-                  />
-                  <select
-                    className={inputCls}
-                    value={p.displayMode}
-                    onChange={(e) =>
-                      onChange({
-                        logos: block.logos.map((x, j) =>
-                          j === i
-                            ? {
-                                ...x,
-                                displayMode: e.target.value as
-                                  | "original"
-                                  | "mono",
-                              }
-                            : x,
-                        ),
-                      })
-                    }
-                  >
-                    <option value="mono">Mono</option>
-                    <option value="original">Original Colors</option>
-                  </select>
-                  <select
-                    className={inputCls}
-                    value={p.size ?? "md"}
-                    onChange={(e) =>
-                      onChange({
-                        logos: block.logos.map((x, j) =>
-                          j === i
-                            ? {
-                                ...x,
-                                size: e.target.value as "sm" | "md" | "lg",
-                              }
-                            : x,
-                        ),
-                      })
-                    }
-                  >
-                    <option value="sm">Small Logo</option>
-                    <option value="md">Medium Logo</option>
-                    <option value="lg">Large Logo</option>
-                  </select>
+                <div className="space-y-2 grid grid-cols-2 gap-2 p-3">
+                  <div className="space-y-2">
+                    <Input
+                      className={inputCls}
+                      placeholder="Logo name"
+                      value={p.name}
+                      onChange={(e) =>
+                        onChange({
+                          logos: block.logos.map((x, j) =>
+                            j === i ? { ...x, name: e.target.value } : x,
+                          ),
+                        })
+                      }
+                    />
+                    <div className="space-y-1.5">
+                      <div className={labelCls}>Display Options</div>
+                      <RadioGroup
+                        className="grid w-full grid-cols-2 gap-0 shadow-xs"
+                        value={p.displayMode ?? "original"}
+                        onValueChange={(value) =>
+                          onChange({
+                            logos: block.logos.map((x, j) =>
+                              j === i
+                                ? {
+                                    ...x,
+                                    displayMode: value as "original" | "mono",
+                                  }
+                                : x,
+                            ),
+                          })
+                        }
+                      >
+                        <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-between border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+                          <RadioGroupItem
+                            className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                            id={`logo-${i}-display-original`}
+                            value="original"
+                            aria-label="Original colors"
+                          />
+                          <Label
+                            className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
+                            htmlFor={`logo-${i}-display-original`}
+                          >
+                            <HugeiconsIcon
+                              icon={PaintBoardIcon}
+                              className="size-3.5"
+                            />
+                            Original
+                          </Label>
+                        </div>
+                        <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-between border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+                          <RadioGroupItem
+                            className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                            id={`logo-${i}-display-mono`}
+                            value="mono"
+                            aria-label="Mono"
+                          />
+                          <Label
+                            className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
+                            htmlFor={`logo-${i}-display-mono`}
+                          >
+                            <HugeiconsIcon
+                              icon={BrushIcon}
+                              className="size-3.5"
+                            />
+                            Mono
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                    <div className="space-y-1.5">
+                      <RadioGroup
+                        className="grid w-full grid-cols-3 gap-0 rounded-md shadow-xs"
+                        value={p.size ?? "md"}
+                        onValueChange={(value) =>
+                          onChange({
+                            logos: block.logos.map((x, j) =>
+                              j === i
+                                ? { ...x, size: value as "sm" | "md" | "lg" }
+                                : x,
+                            ),
+                          })
+                        }
+                      >
+                        <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+                          <RadioGroupItem
+                            className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                            id={`logo-${i}-size-sm`}
+                            value="sm"
+                            aria-label="Small logo"
+                          />
+                          <Label
+                            className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
+                            htmlFor={`logo-${i}-size-sm`}
+                          >
+                            <HugeiconsIcon
+                              icon={Image01Icon}
+                              className="size-3"
+                            />
+                            Small
+                          </Label>
+                        </div>
+                        <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+                          <RadioGroupItem
+                            className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                            id={`logo-${i}-size-md`}
+                            value="md"
+                            aria-label="Medium logo"
+                          />
+                          <Label
+                            className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
+                            htmlFor={`logo-${i}-size-md`}
+                          >
+                            <HugeiconsIcon
+                              icon={Image01Icon}
+                              className="size-3.5"
+                            />
+                            Medium
+                          </Label>
+                        </div>
+                        <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+                          <RadioGroupItem
+                            className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                            id={`logo-${i}-size-lg`}
+                            value="lg"
+                            aria-label="Large logo"
+                          />
+                          <Label
+                            className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
+                            htmlFor={`logo-${i}-size-lg`}
+                          >
+                            <HugeiconsIcon
+                              icon={Image01Icon}
+                              className="size-4"
+                            />
+                            Large
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </div>
                   <div>
-                    <label className={labelCls}>Logo</label>
                     <ImagePickerField
                       fetchMedia={fetchMediaAction}
                       previewFit="contain"
