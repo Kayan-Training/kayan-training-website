@@ -2417,17 +2417,59 @@ function ProcessStepsFields({
       </FieldRow>
       <FieldRow>
         <Field label="Media Size">
-          <select
-            className={inputCls}
+          <RadioGroup
+            className="grid w-full grid-cols-3 gap-0 rounded-md shadow-xs"
             value={block.mediaSize ?? "md"}
-            onChange={(e) =>
-              onChange({ mediaSize: e.target.value as "sm" | "md" | "lg" })
+            onValueChange={(value) =>
+              onChange({ mediaSize: value as "sm" | "md" | "lg" })
             }
           >
-            <option value="sm">Small</option>
-            <option value="md">Medium</option>
-            <option value="lg">Large</option>
-          </select>
+            <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+              <RadioGroupItem
+                className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                id="process-steps-media-size-sm"
+                value="sm"
+                aria-label="Small media"
+              />
+              <Label
+                className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
+                htmlFor="process-steps-media-size-sm"
+              >
+                <HugeiconsIcon icon={Image01Icon} className="size-3" />
+                Small
+              </Label>
+            </div>
+            <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+              <RadioGroupItem
+                className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                id="process-steps-media-size-md"
+                value="md"
+                aria-label="Medium media"
+              />
+              <Label
+                className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
+                htmlFor="process-steps-media-size-md"
+              >
+                <HugeiconsIcon icon={Image01Icon} className="size-3.5" />
+                Medium
+              </Label>
+            </div>
+            <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+              <RadioGroupItem
+                className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                id="process-steps-media-size-lg"
+                value="lg"
+                aria-label="Large media"
+              />
+              <Label
+                className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
+                htmlFor="process-steps-media-size-lg"
+              >
+                <HugeiconsIcon icon={Image01Icon} className="size-4" />
+                Large
+              </Label>
+            </div>
+          </RadioGroup>
         </Field>
         <div></div>
         <div></div>
@@ -4128,31 +4170,94 @@ function HomeEventsCarouselFields({
         />
       </Field>
       <Field label="Content Source">
-        <select
-          className={inputCls}
-          title="Content Source"
+        <RadioGroup
+          className="grid w-full grid-cols-1 gap-0 rounded-md shadow-xs sm:grid-cols-3"
           value={block.source ?? "mixed"}
-          onChange={(e) =>
+          onValueChange={(value) =>
             onChange({
-              source: e.target.value as "events" | "training_courses" | "mixed",
+              source: value as "events" | "training_courses" | "mixed",
             })
           }
         >
-          <option value="mixed">Mixed (Events + Training Courses)</option>
-          <option value="events">Events only</option>
-          <option value="training_courses">Training Courses only</option>
-        </select>
+          <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -mt-px flex items-center justify-center border p-2.5 outline-none first:mt-0 first:rounded-t-[4px] last:rounded-b-[4px] has-data-checked:z-10 sm:-ml-px sm:mt-0 sm:first:ml-0 sm:first:rounded-l-[4px] sm:first:rounded-t-none sm:last:rounded-b-none sm:last:rounded-r-[4px]">
+            <RadioGroupItem
+              className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+              id="upcoming-events-source-mixed"
+              value="mixed"
+              aria-label="Mixed content source"
+            />
+            <Label
+              className="inline-flex cursor-pointer items-center gap-1.5 text-center text-xs"
+              htmlFor="upcoming-events-source-mixed"
+            >
+              Mixed
+            </Label>
+          </div>
+          <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -mt-px flex items-center justify-center border p-2.5 outline-none first:mt-0 first:rounded-t-[4px] last:rounded-b-[4px] has-data-checked:z-10 sm:-ml-px sm:mt-0 sm:first:ml-0 sm:first:rounded-l-[4px] sm:first:rounded-t-none sm:last:rounded-b-none sm:last:rounded-r-[4px]">
+            <RadioGroupItem
+              className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+              id="upcoming-events-source-events"
+              value="events"
+              aria-label="Events only"
+            />
+            <Label
+              className="inline-flex cursor-pointer items-center gap-1.5 text-center text-xs"
+              htmlFor="upcoming-events-source-events"
+            >
+              Events
+            </Label>
+          </div>
+          <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -mt-px flex items-center justify-center border p-2.5 outline-none first:mt-0 first:rounded-t-[4px] last:rounded-b-[4px] has-data-checked:z-10 sm:-ml-px sm:mt-0 sm:first:ml-0 sm:first:rounded-l-[4px] sm:first:rounded-t-none sm:last:rounded-b-none sm:last:rounded-r-[4px]">
+            <RadioGroupItem
+              className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+              id="upcoming-events-source-training-courses"
+              value="training_courses"
+              aria-label="Training courses only"
+            />
+            <Label
+              className="inline-flex cursor-pointer items-center gap-1.5 text-center text-xs"
+              htmlFor="upcoming-events-source-training-courses"
+            >
+              Training
+            </Label>
+          </div>
+        </RadioGroup>
       </Field>
       <Field label="Show View More">
-        <select
-          className={inputCls}
-          title="Show View More"
+        <RadioGroup
+          className="grid w-full grid-cols-2 gap-0 rounded-md shadow-xs"
           value={block.showViewMore === false ? "no" : "yes"}
-          onChange={(e) => onChange({ showViewMore: e.target.value === "yes" })}
+          onValueChange={(value) => onChange({ showViewMore: value === "yes" })}
         >
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
-        </select>
+          <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+            <RadioGroupItem
+              className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+              id="upcoming-events-show-view-more-yes"
+              value="yes"
+              aria-label="Show view more"
+            />
+            <Label
+              className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
+              htmlFor="upcoming-events-show-view-more-yes"
+            >
+              Yes
+            </Label>
+          </div>
+          <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border p-2.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+            <RadioGroupItem
+              className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+              id="upcoming-events-show-view-more-no"
+              value="no"
+              aria-label="Hide view more"
+            />
+            <Label
+              className="inline-flex cursor-pointer items-center gap-1.5 text-xs"
+              htmlFor="upcoming-events-show-view-more-no"
+            >
+              No
+            </Label>
+          </div>
+        </RadioGroup>
       </Field>
     </FieldRow>
   );
