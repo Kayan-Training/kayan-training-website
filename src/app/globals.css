@@ -597,6 +597,16 @@ a[href^="tel:"] {
   color: oklch(0.556 0 0);
 }
 
+.dashboard-theme {
+  [dir="rtl"] {
+    @apply font-[alexandria];
+  }
+  input[dir="rtl"],
+  textarea[dir="rtl"] {
+    @apply text-[11px] md:text-[11px] leading-1.5;
+  }
+}
+
 /*---break---
  */
 

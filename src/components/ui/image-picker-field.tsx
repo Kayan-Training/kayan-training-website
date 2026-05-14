@@ -15,6 +15,12 @@ import { uploadMediaFile } from "@/lib/client/media-upload";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
 import { Input } from "./input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "./input-group";
 import { Spinner } from "./spinner";
 
 type MediaItem = {
@@ -97,7 +103,7 @@ export function ImagePickerField({
     <>
       <div
         className={cn(
-          "overflow-hidden rounded-lg border border-border/70 bg-card transition-colors",
+          "overflow-hidden rounded-[8px] border border-border/70 bg-card transition-colors group",
           dragOver && "border-primary ring-2 ring-primary/20",
         )}
         onDragEnter={(e) => {
@@ -137,7 +143,7 @@ export function ImagePickerField({
             <Button
               aria-label="Remove image"
               title="Remove image"
-              className="absolute right-1 top-1 rounded-full cursor-pointer"
+              className="absolute right-1 top-1 rounded-full cursor-pointer group-hover:opacity-100 opacity-0 duration-150 transition-all"
               onClick={() => onChange("")}
               size="icon-sm"
               variant="destructive"
@@ -147,41 +153,41 @@ export function ImagePickerField({
           </div>
         )}
         <div className="flex gap-2 p-2">
-          <Input
-            className={cn(inputCls, dir === "rtl" && "text-right")}
-            dir={dir}
-            placeholder="Paste URL or browse library…"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-          />
-          <Button
-            disabled={loading}
-            onClick={openPicker}
-            size="icon"
-            variant="outline"
-            className="h-9 aspect-square cursor-pointer"
-          >
-            {loading ? (
-              <Spinner className="size-4" />
-            ) : (
-              <HugeiconsIcon icon={Album02Icon} className="size-4" />
-            )}
-            <span className="sr-only">Browse</span>
-          </Button>
-          <Button
-            className="h-9 aspect-square cursor-pointer"
-            disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
-            size="icon"
-            variant="outline"
-          >
-            {uploading ? (
-              <Spinner className="size-4" />
-            ) : (
-              <HugeiconsIcon icon={Upload04Icon} className="size-4" />
-            )}
-            <span className="sr-only">Upload</span>
-          </Button>
+          <InputGroup className="h-9 rounded-[4px]">
+            <InputGroupInput
+              className={cn(dir === "rtl" && "text-right")}
+              dir={dir}
+              placeholder="Paste URL or browse library…"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+            />
+            <InputGroupAddon align="inline-end" className="gap-0 rounded-[4px]">
+              <InputGroupButton
+                disabled={loading}
+                onClick={openPicker}
+                className="h-full aspect-square cursor-pointer"
+              >
+                {loading ? (
+                  <Spinner className="size-4" />
+                ) : (
+                  <HugeiconsIcon icon={Album02Icon} className="size-4" />
+                )}
+                <span className="sr-only">Browse</span>
+              </InputGroupButton>
+              <InputGroupButton
+                className="h-full aspect-square cursor-pointer"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {uploading ? (
+                  <Spinner className="size-4" />
+                ) : (
+                  <HugeiconsIcon icon={Upload04Icon} className="size-4" />
+                )}
+                <span className="sr-only">Upload</span>
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
         </div>
         <input
           accept="image/*"

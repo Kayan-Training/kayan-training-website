@@ -22,9 +22,13 @@ import {
   BrushIcon,
   Copy01Icon,
   Delete02Icon,
+  FloppyDiskIcon,
   Image01Icon,
   Image02Icon,
   PaintBoardIcon,
+  Redo02Icon,
+  Undo02Icon,
+  ViewIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -41,7 +45,9 @@ import {
   Languages,
   Loader2,
   Plus,
+  Redo2,
   Search,
+  Undo2,
   Video,
 } from "lucide-react";
 import Link from "next/link";
@@ -81,6 +87,7 @@ import {
 } from "@/components/ui/link-picker-input";
 import { MediaLibraryDialog } from "@/components/ui/media-library-dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { UploadProgress } from "@/components/ui/upload-progress";
@@ -282,7 +289,10 @@ function LinkFieldWithMode({
             value="internal"
             aria-label="Internal link"
           />
-          <Label className="cursor-pointer text-xs" htmlFor={`${modeId}-internal`}>
+          <Label
+            className="cursor-pointer text-xs"
+            htmlFor={`${modeId}-internal`}
+          >
             Internal
           </Label>
         </div>
@@ -293,7 +303,10 @@ function LinkFieldWithMode({
             value="external"
             aria-label="External link"
           />
-          <Label className="cursor-pointer text-xs" htmlFor={`${modeId}-external`}>
+          <Label
+            className="cursor-pointer text-xs"
+            htmlFor={`${modeId}-external`}
+          >
             External
           </Label>
         </div>
@@ -304,7 +317,10 @@ function LinkFieldWithMode({
             value="anchor"
             aria-label="Anchor link"
           />
-          <Label className="cursor-pointer text-xs" htmlFor={`${modeId}-anchor`}>
+          <Label
+            className="cursor-pointer text-xs"
+            htmlFor={`${modeId}-anchor`}
+          >
             Anchor
           </Label>
         </div>
@@ -322,7 +338,9 @@ function LinkFieldWithMode({
         <input
           className={cn(inputCls, dir === "rtl" && "text-right")}
           dir={dir}
-          placeholder={mode === "external" ? "https://example.com" : "#section-id"}
+          placeholder={
+            mode === "external" ? "https://example.com" : "#section-id"
+          }
           value={safeValue}
           onChange={(e) => onChange(e.target.value)}
         />
@@ -2387,6 +2405,11 @@ function AboutIntroFields({
   onChange: (patch: Partial<typeof block>) => void;
   entities: LinkPickerEntities;
 }) {
+  const moveMetric = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= block.metrics.length) return;
+    onChange({ metrics: arrayMove(block.metrics, fromIndex, toIndex) });
+  };
+
   return (
     <>
       <Field label="Body (Rich Text)">
@@ -2430,45 +2453,50 @@ function AboutIntroFields({
       </FieldRow>
       <div>
         <label className={labelCls}>Metrics</label>
-        <div className="space-y-2">
+        <div className="grid gap-2 xl:grid-cols-2">
           {block.metrics.map((m, i) => (
             <ArrayItemRow
               index={i}
               key={i}
+              title={m.label?.trim() || "Untitled metric"}
+              badges={[m.value?.trim() || "no value"]}
+              onMoveDown={() => moveMetric(i, i + 1)}
+              onMoveUp={() => moveMetric(i, i - 1)}
               onRemove={() =>
                 onChange({ metrics: block.metrics.filter((_, j) => j !== i) })
               }
             >
-              <div className="flex gap-2">
-                <input
-                  className={cn(
-                    inputCls,
-                    dir === "rtl" && "text-right",
-                    "flex-1",
-                  )}
-                  dir={dir}
-                  placeholder="Label"
-                  value={m.label}
-                  onChange={(e) =>
-                    onChange({
-                      metrics: block.metrics.map((x, j) =>
-                        j === i ? { ...x, label: e.target.value } : x,
-                      ),
-                    })
-                  }
-                />
-                <input
-                  className={cn(inputCls, "w-24 shrink-0")}
-                  placeholder="+9"
-                  value={m.value}
-                  onChange={(e) =>
-                    onChange({
-                      metrics: block.metrics.map((x, j) =>
-                        j === i ? { ...x, value: e.target.value } : x,
-                      ),
-                    })
-                  }
-                />
+              <div className="space-y-2 p-3">
+                <Field label="Metric Label">
+                  <input
+                    className={cn(inputCls, dir === "rtl" && "text-right")}
+                    dir={dir}
+                    placeholder="Years of Experience"
+                    value={m.label}
+                    onChange={(e) =>
+                      onChange({
+                        metrics: block.metrics.map((x, j) =>
+                          j === i ? { ...x, label: e.target.value } : x,
+                        ),
+                      })
+                    }
+                  />
+                </Field>
+                <div className="space-y-1.5">
+                  <div className={labelCls}>Metric Value</div>
+                  <input
+                    className={cn(inputCls, "font-semibold")}
+                    placeholder="+9"
+                    value={m.value}
+                    onChange={(e) =>
+                      onChange({
+                        metrics: block.metrics.map((x, j) =>
+                          j === i ? { ...x, value: e.target.value } : x,
+                        ),
+                      })
+                    }
+                  />
+                </div>
               </div>
             </ArrayItemRow>
           ))}
@@ -2500,21 +2528,23 @@ function MissionVisionFields({
 
   return (
     <div className="space-y-3">
-      {block.items.map((item, i) => {
-        return (
-          <ArrayItemRow
-            index={i}
-            key={i}
-            title={item.title?.trim() || "Untitled item"}
-            onMoveDown={() => moveItem(i, i + 1)}
-            onMoveUp={() => moveItem(i, i - 1)}
-            onRemove={() => {
-              if (block.items.length <= 1) return;
-              onChange({ items: block.items.filter((_, j) => j !== i) });
-            }}
-          >
-            <div className="p-3 space-y-2">
-              <FieldRow>
+      <div className="grid gap-2 xl:grid-cols-2">
+        {block.items.map((item, i) => {
+          const bodyLength = (item.body ?? "").trim().length;
+          return (
+            <ArrayItemRow
+              index={i}
+              key={i}
+              title={item.title?.trim() || "Untitled item"}
+              badges={[bodyLength > 0 ? `${bodyLength} chars` : "empty body"]}
+              onMoveDown={() => moveItem(i, i + 1)}
+              onMoveUp={() => moveItem(i, i - 1)}
+              onRemove={() => {
+                if (block.items.length <= 1) return;
+                onChange({ items: block.items.filter((_, j) => j !== i) });
+              }}
+            >
+              <div className="p-3 space-y-2">
                 <Field label="Title">
                   <input
                     className={cn(inputCls, dir === "rtl" && "text-right")}
@@ -2531,8 +2561,11 @@ function MissionVisionFields({
                   />
                 </Field>
                 <Field label="Body">
-                  <input
-                    className={cn(inputCls, dir === "rtl" && "text-right")}
+                  <Textarea
+                    className={cn(
+                      "min-h-24 w-full rounded-lg border border-input/80 px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
+                      dir === "rtl" && "text-right",
+                    )}
                     dir={dir}
                     title="Body"
                     value={item.body}
@@ -2545,11 +2578,11 @@ function MissionVisionFields({
                     }
                   />
                 </Field>
-              </FieldRow>
-            </div>
-          </ArrayItemRow>
-        );
-      })}
+              </div>
+            </ArrayItemRow>
+          );
+        })}
+      </div>
       <AddItemButton
         label="Add item"
         onClick={() =>
@@ -3744,7 +3777,11 @@ function HeroBlockFields({
               index={i}
               key={slide.id}
               title={slide.heading?.trim() || "Untitled slide"}
-              badges={(slide.ctas ?? []).length ? [`${(slide.ctas ?? []).length} cta`] : undefined}
+              badges={
+                (slide.ctas ?? []).length
+                  ? [`${(slide.ctas ?? []).length} cta`]
+                  : undefined
+              }
               onMoveDown={() => moveSlide(i, i + 1)}
               onMoveUp={() => moveSlide(i, i - 1)}
               onRemove={() => {
@@ -4937,6 +4974,62 @@ export function PageEditor({
   const [blocksAr, setBlocksAr] = useState<Block[]>(() =>
     migrateBlocks(pageData.blocksAr),
   );
+  type EditorSnapshot = {
+    blocksAr: Block[];
+    blocksEn: Block[];
+    seoDescAr: string;
+    seoDescEn: string;
+    seoTitleAr: string;
+    seoTitleEn: string;
+    status: string;
+    titleAr: string;
+    titleEn: string;
+  };
+  const toSnapshot = (): EditorSnapshot => ({
+    status,
+    titleEn,
+    titleAr,
+    seoTitleEn,
+    seoTitleAr,
+    seoDescEn,
+    seoDescAr,
+    blocksEn,
+    blocksAr,
+  });
+  const applySnapshot = (snapshot: EditorSnapshot) => {
+    setStatus(snapshot.status);
+    setTitleEn(snapshot.titleEn);
+    setTitleAr(snapshot.titleAr);
+    setSeoTitleEn(snapshot.seoTitleEn);
+    setSeoTitleAr(snapshot.seoTitleAr);
+    setSeoDescEn(snapshot.seoDescEn);
+    setSeoDescAr(snapshot.seoDescAr);
+    setBlocksEn(snapshot.blocksEn);
+    setBlocksAr(snapshot.blocksAr);
+  };
+  const serializeSnapshot = (snapshot: EditorSnapshot) =>
+    JSON.stringify(snapshot);
+  const initialSnapshotRef = useRef<EditorSnapshot>({
+    status: pageData.status,
+    titleEn: pageData.titleEn,
+    titleAr: pageData.titleAr,
+    seoTitleEn: pageData.seoTitleEn,
+    seoTitleAr: pageData.seoTitleAr,
+    seoDescEn: pageData.seoDescriptionEn,
+    seoDescAr: pageData.seoDescriptionAr,
+    blocksEn: migrateBlocks(pageData.blocksEn),
+    blocksAr: migrateBlocks(pageData.blocksAr),
+  });
+  const historyRef = useRef<EditorSnapshot[]>([initialSnapshotRef.current]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+  const isApplyingHistoryRef = useRef(false);
+
+  const currentSnapshot = toSnapshot();
+  const currentSerialized = serializeSnapshot(currentSnapshot);
+  const initialSerialized = serializeSnapshot(initialSnapshotRef.current);
+  const isDirty = currentSerialized !== initialSerialized;
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < historyRef.current.length - 1;
 
   const pickerEntities: LinkPickerEntities = entities ?? {
     pages: [],
@@ -5186,8 +5279,49 @@ export function PageEditor({
       if (result.error) toast.error(result.error);
       else {
         toast.success("Page saved");
+        const savedSnapshot = toSnapshot();
+        initialSnapshotRef.current = savedSnapshot;
+        historyRef.current = [savedSnapshot];
+        setHistoryIndex(0);
         router.refresh();
       }
+    });
+  }
+
+  function handleDiscardChanges() {
+    isApplyingHistoryRef.current = true;
+    const base = initialSnapshotRef.current;
+    applySnapshot(base);
+    historyRef.current = [base];
+    setHistoryIndex(0);
+    queueMicrotask(() => {
+      isApplyingHistoryRef.current = false;
+    });
+  }
+
+  function handleUndo() {
+    if (!canUndo) return;
+    const nextIndex = historyIndex - 1;
+    const snapshot = historyRef.current[nextIndex];
+    if (!snapshot) return;
+    isApplyingHistoryRef.current = true;
+    applySnapshot(snapshot);
+    setHistoryIndex(nextIndex);
+    queueMicrotask(() => {
+      isApplyingHistoryRef.current = false;
+    });
+  }
+
+  function handleRedo() {
+    if (!canRedo) return;
+    const nextIndex = historyIndex + 1;
+    const snapshot = historyRef.current[nextIndex];
+    if (!snapshot) return;
+    isApplyingHistoryRef.current = true;
+    applySnapshot(snapshot);
+    setHistoryIndex(nextIndex);
+    queueMicrotask(() => {
+      isApplyingHistoryRef.current = false;
     });
   }
 
@@ -5284,6 +5418,54 @@ export function PageEditor({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeSection, selectedBlockId, viewMode, blocks]);
 
+  useEffect(() => {
+    if (isApplyingHistoryRef.current) return;
+    const stack = historyRef.current;
+    const last = stack[historyIndex];
+    if (!last) return;
+    const lastSerialized = serializeSnapshot(last);
+    if (lastSerialized === currentSerialized) return;
+    const next = toSnapshot();
+    const trimmed = stack.slice(0, historyIndex + 1);
+    trimmed.push(next);
+    historyRef.current = trimmed;
+    setHistoryIndex(trimmed.length - 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSerialized]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (!(event.metaKey || event.ctrlKey)) return;
+      const key = event.key.toLowerCase();
+      if (key === "z" && event.shiftKey) {
+        event.preventDefault();
+        handleRedo();
+        return;
+      }
+      if (key === "y") {
+        event.preventDefault();
+        handleRedo();
+        return;
+      }
+      if (key === "z") {
+        event.preventDefault();
+        handleUndo();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [canRedo, canUndo, historyIndex]);
+
   const dir = activeLocale === "ar" ? "rtl" : "ltr";
   const previewPath =
     pageData.slug === "home"
@@ -5362,59 +5544,122 @@ export function PageEditor({
             </span>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <div className="flex overflow-hidden rounded-md border border-border/70">
-              <button
-                className={cn(
-                  "px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors duration-150",
-                  viewMode === "editor"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted",
-                )}
-                type="button"
-                onClick={() => setViewMode("editor")}
+            <ButtonGroup className="h-9">
+              <ButtonGroup
+                className="rounded-[4px]"
+                style={{ "--radius": "4px" } as React.CSSProperties}
               >
-                Editor
-              </button>
-              <button
-                className={cn(
-                  "px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors",
-                  viewMode === "preview"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted",
-                )}
-                type="button"
-                onClick={() => setViewMode("preview")}
-              >
-                Live Preview
-              </button>
-            </div>
-            {/* Locale toggle */}
-            <div className="flex overflow-hidden rounded-md border border-border/70">
-              {(["en", "ar"] as const).map((loc) => (
-                <button
-                  className={cn(
-                    "px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors duration-150",
-                    activeLocale === loc
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted",
-                  )}
-                  key={loc}
-                  type="button"
-                  onClick={() => setActiveLocale(loc)}
+                <Button
+                  variant="outline"
+                  className="cursor-pointer"
+                  size="icon"
+                  disabled={!canUndo}
+                  onClick={handleUndo}
                 >
-                  {loc.toUpperCase()}
-                </button>
-              ))}
-            </div>
-            <button
-              className="inline-flex h-8 items-center gap-1.5 rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground transition-colors duration-150 hover:bg-secondary disabled:opacity-50"
-              disabled={isPending}
-              type="button"
-              onClick={handleSave}
-            >
-              {isPending ? <Loader2 className="size-3.5 animate-spin" /> : null}
-              Save
-            </button>
+                  <HugeiconsIcon icon={Undo02Icon} />
+                </Button>
+                <Button
+                  variant="outline"
+                  className="cursor-pointer"
+                  size="icon"
+                  disabled={!canRedo}
+                  onClick={handleRedo}
+                >
+                  <HugeiconsIcon icon={Redo02Icon} />
+                </Button>
+              </ButtonGroup>
+              <RadioGroup
+                className="grid w-full grid-cols-2 gap-0 rounded-[4px] shadow-xs md:w-auto"
+                value={viewMode}
+                onValueChange={(value) =>
+                  setViewMode(value as "editor" | "preview")
+                }
+              >
+                <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border px-3 py-1.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+                  <RadioGroupItem
+                    className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                    id="editor-view-mode"
+                    value="editor"
+                    aria-label="Editor mode"
+                  />
+                  <Label
+                    className="cursor-pointer text-[11px] font-semibold"
+                    htmlFor="editor-view-mode"
+                  >
+                    Editor
+                  </Label>
+                </div>
+                <div className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border px-3 py-1.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10">
+                  <RadioGroupItem
+                    className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                    id="preview-view-mode"
+                    value="preview"
+                    aria-label="Live preview mode"
+                  />
+                  <Label
+                    className="cursor-pointer text-[11px] font-semibold"
+                    htmlFor="preview-view-mode"
+                  >
+                    <HugeiconsIcon icon={ViewIcon} className="size-3.5" />
+                    Live Preview
+                  </Label>
+                </div>
+              </RadioGroup>
+              <RadioGroup
+                className="grid w-full grid-cols-2 gap-0 rounded-[4px] shadow-xs md:w-auto"
+                value={activeLocale}
+                onValueChange={(value) => setActiveLocale(value as "en" | "ar")}
+              >
+                {(["en", "ar"] as const).map((loc) => (
+                  <div
+                    className="border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border px-3 py-1.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10"
+                    key={loc}
+                  >
+                    <RadioGroupItem
+                      className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                      id={`toolbar-locale-${loc}`}
+                      value={loc}
+                      aria-label={`${loc.toUpperCase()} locale`}
+                    />
+                    <Label
+                      className={cn(
+                        "cursor-pointer text-[11px] font-semibold",
+                        loc === "ar" ? "font-[alexandria] leading-none" : "",
+                      )}
+                      dir={loc === "ar" ? "rtl" : "ltr"}
+                      htmlFor={`toolbar-locale-${loc}`}
+                    >
+                      {loc === "en" ? "English" : "العربية"}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+              <ButtonGroup
+                className="rounded-[4px] h-9"
+                style={{ "--radius": "4px" } as React.CSSProperties}
+              >
+                <Button
+                  variant="ghost"
+                  disabled={!isDirty || isPending}
+                  onClick={handleDiscardChanges}
+                  className="cursor-pointer h-9"
+                >
+                  Discard
+                </Button>
+                <Button
+                  disabled={!isDirty || isPending}
+                  onClick={handleSave}
+                  className="cursor-pointer h-9"
+                >
+                  {isPending ? (
+                    <Spinner />
+                  ) : (
+                    <HugeiconsIcon icon={FloppyDiskIcon} />
+                  )}
+                  Save
+                </Button>
+              </ButtonGroup>
+            </ButtonGroup>
           </div>
         </div>
 
