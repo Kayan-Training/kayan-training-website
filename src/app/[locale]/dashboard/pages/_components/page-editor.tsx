@@ -1759,6 +1759,11 @@ function MediaCarouselEditor({
     onChange(media.filter((m) => m.id !== id));
   }
 
+  function truncateUrlMiddle(url: string, start = 18, end = 10) {
+    if (url.length <= start + end + 3) return url;
+    return `${url.slice(0, start)}...${url.slice(-end)}`;
+  }
+
   return (
     <>
       <div className="grid gap-2 xl:grid-cols-2">
@@ -1768,64 +1773,109 @@ function MediaCarouselEditor({
           </p>
         )}
         {media.map((item, i) => (
-          // TODO: I need a better design for the individual media, I have made some changes to the remove button and the iterative number I want to keep those, but the other parts I want a very modern design where the media/image is the background of the card inset with linear gradient . The URL text truncation should be https://aslkfja....sjalfl,webp instead of https://alsjkfas... so part of beginning and part of end is visible and middle is truncated
           <div
-            className="rounded-xl border border-border/60 bg-card/70 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)] min-h-[100px] overflow-hidden relative"
+            className="relative min-h-[120px] overflow-hidden rounded-xl border border-border/60 bg-card/70 shadow-[inset_0_1px_0_hsl(var(--background)/0.7)]"
             key={item.id}
             style={{ "--radius": "4px" } as React.CSSProperties}
           >
-            <div className="mb-2 flex items-center justify-between gap-2 py-2 px-3 group">
-              <span className="font-mono text-sm font-semibold text-primary">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <Button
-                aria-label="Remove media"
-                variant="destructive"
-                size="icon-sm"
-                title="Remove"
-                onClick={() => remove(item.id)}
-                className={
-                  "group-hover:opacity-100 duration-150 transition-all opacity-0 cursor-pointer rounded-[4px]"
-                }
-              >
-                <HugeiconsIcon
-                  icon={Delete02Icon}
-                  size={14}
-                  className="text-destructive"
-                />
-              </Button>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-[72px_minmax(0,1fr)] sm:items-center">
-              {item.kind === "image" ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  alt="media preview"
-                  className="h-12 w-[72px] shrink-0 rounded object-cover"
-                  src={item.url}
-                />
-              ) : (
-                <div className="flex h-12 w-[72px] shrink-0 items-center justify-center rounded bg-muted">
-                  <Video className="size-4 text-muted-foreground" />
-                </div>
+            {item.kind === "image" ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                alt="media preview"
+                className="absolute inset-0 h-full w-full object-cover"
+                src={item.url}
+              />
+            ) : null}
+            <div
+              className={cn(
+                "absolute inset-0",
+                item.kind === "image"
+                  ? "bg-linear-to-t from-black/80 via-black/35 to-black/10"
+                  : "bg-linear-to-t from-slate-900 via-slate-800 to-slate-700",
               )}
-              <div className="min-w-0 space-y-1">
+            />
+            {item.kind === "video" ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="rounded-full border border-white/30 bg-white/10 p-3 backdrop-blur-sm">
+                  <Video className="size-4 text-white" />
+                </div>
+              </div>
+            ) : null}
+            <div className="relative z-10 flex h-full flex-col justify-between group">
+              <div className="flex items-center justify-between gap-2 p-3 group-hover:bg-linear-to-l group-hover:from-white group-hover:via-transparent group-hover:to-transparent duration-150 transition-all">
+                <span className="font-mono text-sm font-semibold text-white drop-shadow-sm">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <Button
+                  aria-label="Remove media"
+                  variant="destructive"
+                  size="icon-sm"
+                  title="Remove"
+                  onClick={() => remove(item.id)}
+                  className="cursor-pointer rounded-[4px] opacity-0 transition-all duration-150 group-hover:opacity-100"
+                >
+                  <HugeiconsIcon
+                    icon={Delete02Icon}
+                    size={14}
+                    className="text-destructive"
+                  />
+                </Button>
+              </div>
+              <div className="space-y-1 p-3">
                 <span
                   className={cn(
                     "inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase",
                     item.kind === "video"
-                      ? "border-blue-500/30 bg-blue-500/10 text-blue-600"
-                      : "border-border bg-muted text-muted-foreground",
+                      ? "border-blue-300/40 bg-blue-400/20 text-blue-100"
+                      : "border-white/30 bg-black/25 text-white",
                   )}
                 >
                   {item.kind}
                 </span>
-                <p className="truncate font-mono text-[11px] text-muted-foreground">
-                  {item.url}
+                <p
+                  className="font-mono text-[11px] text-white/85"
+                  title={item.url}
+                >
+                  {truncateUrlMiddle(item.url)}
                 </p>
               </div>
             </div>
           </div>
         ))}
+        <div
+          className="relative min-h-[120px] overflow-hidden rounded-xl border-2 border-border/60 bg-card/70 hover:bg-primary/10 hover:border-primary hover:text-primary grid place-items-center"
+          style={{ "--radius": "4px" } as React.CSSProperties}
+        >
+          <button
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border/70 bg-card px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+            disabled={browseLoading}
+            type="button"
+            onClick={openBrowse}
+          >
+            {browseLoading ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : (
+              <ImageIcon className="size-3" />
+            )}
+            Browse Library
+          </button>
+          <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-border/70 bg-card px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+            {uploading ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : (
+              <Plus className="size-3" />
+            )}
+            {uploading ? `Uploading… ${uploadProgress}%` : "Upload"}
+            <input
+              accept="image/*,video/*"
+              className="sr-only"
+              disabled={uploading}
+              multiple
+              type="file"
+              onChange={handleUpload}
+            />
+          </label>
+        </div>
       </div>
       <div className="flex flex-wrap gap-2">
         <button
