@@ -207,6 +207,7 @@ export function FeaturedProgramsPopup({
                   event={event}
                   labels={labels}
                   locale={locale}
+                  onInteract={() => setOpen(false)}
                 />
               </CarouselItem>
             ))}

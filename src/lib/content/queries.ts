@@ -415,7 +415,7 @@ export async function getEventDetailBySlug(
         type: field.type,
       };
     }),
-    agenda: event.agendaSessions.map((item, index) => {
+    agenda: event.agendaSessions.map((item) => {
       const agendaMeta =
         event.bankTransferDetails && typeof event.bankTransferDetails === "object"
           ? ((event.bankTransferDetails as {
@@ -430,7 +430,7 @@ export async function getEventDetailBySlug(
                     };
                 highlighted?: boolean;
               }>;
-            }).agenda?.find((entry) => (entry.order ?? -1) === index))
+            }).agenda?.find((entry) => (entry.order ?? -1) === item.order))
           : undefined;
       const trainerTranslation = item.trainer?.translations.find((t) => t.locale === locale);
       const trainerFallback = item.trainer?.translations.find((t) => t.locale !== locale);

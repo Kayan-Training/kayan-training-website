@@ -15,6 +15,25 @@ type AgendaItem = {
   trainerName?: string;
 };
 
+function timeToMinutes(value: string): number {
+  const input = value.trim();
+  const twelveHour = input.match(/^(\d{1,2}):(\d{2})\s*([AP]M)$/i);
+  if (twelveHour) {
+    const hoursRaw = Number(twelveHour[1]);
+    const minutes = Number(twelveHour[2]);
+    const marker = twelveHour[3].toUpperCase();
+    const hours = marker === "PM" && hoursRaw !== 12 ? hoursRaw + 12 : marker === "AM" && hoursRaw === 12 ? 0 : hoursRaw;
+    return hours * 60 + minutes;
+  }
+
+  const twentyFourHour = input.match(/^(\d{1,2}):(\d{2})$/);
+  if (twentyFourHour) {
+    return Number(twentyFourHour[1]) * 60 + Number(twentyFourHour[2]);
+  }
+
+  return Number.MAX_SAFE_INTEGER;
+}
+
 export function AgendaDayTabs({
   locale,
   items,
@@ -28,6 +47,14 @@ export function AgendaDayTabs({
       acc[item.day].push(item);
       return acc;
     }, {});
+    for (const dayItems of Object.values(grouped)) {
+      dayItems.sort((a, b) => {
+        const minuteDiff = timeToMinutes(a.time) - timeToMinutes(b.time);
+        if (minuteDiff !== 0) return minuteDiff;
+        return a.title.localeCompare(b.title);
+      });
+    }
+
     const days = Object.keys(grouped)
       .map((value) => Number(value))
       .sort((a, b) => a - b);

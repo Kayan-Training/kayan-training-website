@@ -38,10 +38,12 @@ export function FeaturedProgramCard({
   event,
   labels,
   locale,
+  onInteract,
 }: {
   event: FeaturedProgramCardItem;
   labels: FeaturedProgramCardLabels;
   locale: "ar" | "en";
+  onInteract?: () => void;
 }) {
   const hasStarted = new Date(event.dateIso).getTime() <= Date.now();
   const isFull =
@@ -57,6 +59,7 @@ export function FeaturedProgramCard({
     <Link
       href={`/${locale}/${event.basePath}/${event.slug}`}
       className="group relative block h-[460px] overflow-hidden ghost-border md:h-[520px]"
+      onClick={onInteract}
     >
       <Image
         alt={event.title}

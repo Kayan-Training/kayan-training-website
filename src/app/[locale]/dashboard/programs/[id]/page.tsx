@@ -180,9 +180,9 @@ export default async function EditProgramPage({
     seoDescriptionAr: trAr?.seoDescription ?? "",
     trainerIds: event.trainers.map((et) => et.trainerId),
     categories: event.categories.map((ec) => ec.categoryId),
-    agenda: event.agendaSessions.map((s, i) => {
+    agenda: event.agendaSessions.map((s) => {
       const agendaMeta = Array.isArray(galleryDetails.agenda)
-        ? galleryDetails.agenda.find((entry) => (entry.order ?? -1) === i)
+        ? galleryDetails.agenda.find((entry) => (entry.order ?? -1) === s.order)
         : undefined;
       return ({
       day: s.day,
