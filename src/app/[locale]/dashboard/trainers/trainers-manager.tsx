@@ -105,7 +105,12 @@ function TrainerForm({
 
       <div>
         <label className={labelCls}>Profile Image</label>
-        <ImagePickerField fetchMedia={fetchTrainerMediaAction} value={form.imageUrl} onChange={(v) => set("imageUrl", v)} />
+        <ImagePickerField
+          fetchMedia={fetchTrainerMediaAction}
+          previewFit="contain"
+          value={form.imageUrl}
+          onChange={(v) => set("imageUrl", v)}
+        />
       </div>
       <div>
         <div className="mb-2 flex items-center justify-between gap-2">

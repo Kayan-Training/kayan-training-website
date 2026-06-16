@@ -118,6 +118,10 @@ export async function updateEventAction(
         meetingPlatform: values.meetingLink ? values.meetingPlatform : null,
         paymentMethods: values.paymentMethods,
         bankTransferDetails: {
+          map: {
+            showEmbed: values.showMapEmbed,
+            url: values.googleMapsLink || null,
+          },
           payment: {
             bankName: values.bankName || null,
             accountName: values.bankAccountName || null,
@@ -321,6 +325,10 @@ export async function createEventAction(
         meetingPlatform: values.meetingLink ? values.meetingPlatform : null,
         paymentMethods: values.paymentMethods,
         bankTransferDetails: {
+          map: {
+            showEmbed: values.showMapEmbed,
+            url: values.googleMapsLink || null,
+          },
           payment: {
             bankName: values.bankName || null,
             accountName: values.bankAccountName || null,

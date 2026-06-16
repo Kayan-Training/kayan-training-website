@@ -3,6 +3,72 @@
  */
 import { db } from "@/lib/db";
 
+function buildGoogleMapsEmbedUrl(
+  rawUrl: string | null | undefined,
+  fallbackLocation?: string | null,
+) {
+  const trimmedUrl = rawUrl?.trim() ?? "";
+  const fallback = fallbackLocation?.trim() ?? "";
+  const source = trimmedUrl || fallback;
+
+  if (!source) return "";
+
+  try {
+    const parsed = new URL(source);
+    const host = parsed.hostname.toLowerCase();
+
+    if (
+      host.includes("google.") &&
+      parsed.pathname.includes("/maps/embed")
+    ) {
+      return parsed.toString();
+    }
+
+    const q =
+      parsed.searchParams.get("q") ??
+      parsed.searchParams.get("query") ??
+      parsed.searchParams.get("destination");
+    if (q?.trim()) {
+      return `https://www.google.com/maps?q=${encodeURIComponent(q.trim())}&output=embed`;
+    }
+
+    const placeMatch = parsed.pathname.match(/\/place\/([^/]+)/i);
+    if (placeMatch?.[1]) {
+      const place = decodeURIComponent(placeMatch[1]).replace(/\+/g, " ");
+      return `https://www.google.com/maps?q=${encodeURIComponent(place)}&output=embed`;
+    }
+
+    const coordMatch = parsed.pathname.match(
+      /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/,
+    );
+    if (coordMatch) {
+      const coords = `${coordMatch[1]},${coordMatch[2]}`;
+      return `https://www.google.com/maps?q=${encodeURIComponent(coords)}&output=embed`;
+    }
+
+    const searchMatch = parsed.pathname.match(/\/search\/([^/]+)/i);
+    if (searchMatch?.[1]) {
+      const searchTerm = decodeURIComponent(searchMatch[1]).replace(/\+/g, " ");
+      return `https://www.google.com/maps?q=${encodeURIComponent(searchTerm)}&output=embed`;
+    }
+
+    if (
+      (host.includes("google.") || host.includes("goo.gl")) &&
+      fallback
+    ) {
+      return `https://www.google.com/maps?q=${encodeURIComponent(fallback)}&output=embed`;
+    }
+
+    return `https://www.google.com/maps?q=${encodeURIComponent(source)}&output=embed`;
+  } catch {
+    if (fallback) {
+      return `https://www.google.com/maps?q=${encodeURIComponent(fallback)}&output=embed`;
+    }
+
+    return `https://www.google.com/maps?q=${encodeURIComponent(source)}&output=embed`;
+  }
+}
+
 export async function getLocalizedEvents(
   locale: "ar" | "en",
   take = 48,
@@ -293,6 +359,12 @@ export async function getEventDetailBySlug(
           };
         }).ui
       : undefined;
+  const mapConfig =
+    event.bankTransferDetails && typeof event.bankTransferDetails === "object"
+      ? (event.bankTransferDetails as {
+          map?: { showEmbed?: boolean; url?: string | null };
+        }).map
+      : undefined;
   const sidebarUiConfig = uiConfig?.sidebar;
   const galleryIds = Array.isArray(galleryConfig?.mediaIds)
     ? (galleryConfig?.mediaIds ?? []).filter((id): id is string => typeof id === "string" && id.length > 0)
@@ -351,19 +423,15 @@ export async function getEventDetailBySlug(
       typeof uiConfig?.registrationOpenLabel?.[locale] === "string"
         ? (uiConfig.registrationOpenLabel[locale] ?? "").trim()
         : "",
-    googleMapsLink: event.googleMapsLink ?? "",
-    mapEmbedUrl:
-      event.bankTransferDetails &&
-      typeof event.bankTransferDetails === "object" &&
-      (event.bankTransferDetails as { map?: { url?: string | null } }).map?.url
-        ? ((event.bankTransferDetails as { map?: { url?: string | null } }).map?.url ?? "")
-        : "",
-    showMapEmbed:
-      Boolean(
-        event.bankTransferDetails &&
-          typeof event.bankTransferDetails === "object" &&
-          (event.bankTransferDetails as { map?: { showEmbed?: boolean } }).map?.showEmbed,
-      ),
+    googleMapsLink: event.googleMapsLink ?? mapConfig?.url ?? "",
+    mapEmbedUrl: buildGoogleMapsEmbedUrl(
+      event.googleMapsLink ?? mapConfig?.url ?? "",
+      (typeof uiConfig?.location?.[locale] === "string" &&
+      uiConfig.location[locale]!.trim().length > 0)
+        ? uiConfig.location[locale]!.trim()
+        : event.location,
+    ),
+    showMapEmbed: event.showMapEmbed || Boolean(mapConfig?.showEmbed),
     bankTransfer:
       event.bankTransferDetails && typeof event.bankTransferDetails === "object"
         ? {

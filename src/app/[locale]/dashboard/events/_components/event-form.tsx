@@ -130,6 +130,8 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { ButtonGroup } from "@/components/ui/button-group";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { UploadProgress } from "@/components/ui/upload-progress";
@@ -1919,7 +1921,12 @@ export function EventForm({
     createdAt: string;
   }>;
   submitLabel: string;
-  trainerOptions: Array<{ label: string; value: string }>;
+  trainerOptions: Array<{
+    imageUrl?: string;
+    label: string;
+    subtitle?: string;
+    value: string;
+  }>;
 }) {
   const enableOverdriveHints =
     process.env.NEXT_PUBLIC_EVENT_FORM_OVERDRIVE === "1";
@@ -1928,6 +1935,7 @@ export function EventForm({
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
   const isSavingRef = useRef(false);
+  const isDiscardingDraftRef = useRef(false);
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [activeLocale, setActiveLocale] = useState<"en" | "ar">(
@@ -2010,10 +2018,8 @@ export function EventForm({
       highlighted: item.highlighted ?? false,
     };
   });
-
-  // ── Form ──────────────────────────────────────────────────────────────────
-  const form = useForm<EventFormValues>({
-    defaultValues: {
+  const initialFormValues = useMemo<EventFormValues>(
+    () => ({
       capacity: "",
       categories: [],
       contentAr: "",
@@ -2074,7 +2080,13 @@ export function EventForm({
       type: "onsite",
       ...defaultValues,
       agenda: normalizedAgendaDefaults,
-    },
+    }),
+    [defaultValues, normalizedAgendaDefaults],
+  );
+
+  // ── Form ──────────────────────────────────────────────────────────────────
+  const form = useForm<EventFormValues>({
+    defaultValues: initialFormValues,
     resolver: zodResolver(eventSchema),
   });
 
@@ -2490,6 +2502,7 @@ export function EventForm({
   useEffect(() => {
     if (!form.formState.isDirty) return;
     const timer = setTimeout(() => {
+      if (isDiscardingDraftRef.current) return;
       try {
         sessionStorage.setItem(
           draftStorageKey,
@@ -2503,6 +2516,7 @@ export function EventForm({
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       if (isSavingRef.current) return;
+      if (isDiscardingDraftRef.current) return;
       if (!form.formState.isDirty) return;
       try {
         sessionStorage.setItem(
@@ -2517,8 +2531,17 @@ export function EventForm({
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [draftStorageKey, form, form.formState.isDirty]);
 
+  function discardDraft() {
+    isDiscardingDraftRef.current = true;
+    try {
+      sessionStorage.removeItem(draftStorageKey);
+    } catch {}
+    form.reset(initialFormValues);
+    isDiscardingDraftRef.current = false;
+  }
+
   function addTrainer() {
-    const id = trainerCandidate || availableTrainers[0]?.value;
+    const id = trainerCandidate;
     if (!id) return;
     form.setValue(
       "trainerIds",
@@ -2896,29 +2919,43 @@ export function EventForm({
 
           {/* Sticky actions */}
           <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 bg-white/95 px-4 py-2.5 backdrop-blur-sm sm:px-5 lg:top-[45px] lg:flex-nowrap lg:px-7">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Content
               </span>
-              <div className="flex rounded-md border border-zinc-200 bg-zinc-50 p-0.5">
+              <RadioGroup
+                className="grid w-full grid-cols-2 gap-0 rounded-[4px] shadow-xs md:w-auto"
+                value={activeLocale}
+                onValueChange={(value) => setActiveLocale(value as "en" | "ar")}
+              >
                 {(["en", "ar"] as const).map((loc) => (
-                  <button
+                  <div
                     className={cn(
-                      "rounded px-2.5 py-1 text-[11px] font-bold tracking-widest transition-all",
-                      activeLocale === loc
-                        ? "bg-white text-teal-600 shadow-sm"
-                        : "text-zinc-400 hover:text-zinc-600",
+                      "border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border px-3 py-1.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10",
                     )}
                     key={loc}
-                    type="button"
-                    onClick={() => setActiveLocale(loc)}
                   >
-                    {loc.toUpperCase()}
-                  </button>
+                    <RadioGroupItem
+                      aria-label={`${loc.toUpperCase()} locale`}
+                      className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                      id={`event-toolbar-locale-${loc}`}
+                      value={loc}
+                    />
+                    <Label
+                      className={cn(
+                        "cursor-pointer text-[11px] font-semibold",
+                        loc === "ar" ? "font-[alexandria]" : "",
+                      )}
+                      dir={loc === "ar" ? "rtl" : "ltr"}
+                      htmlFor={`event-toolbar-locale-${loc}`}
+                    >
+                      {loc === "en" ? "English" : "العربية"}
+                    </Label>
+                  </div>
                 ))}
-              </div>
+              </RadioGroup>
             </div>
-            <div className="flex w-full items-center gap-2 sm:w-auto">
+            <div className="flex w-full flex-wrap items-center justify-end gap-1.5 sm:w-auto">
               <span
                 className={cn(
                   "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide",
@@ -2935,24 +2972,36 @@ export function EventForm({
                 />
                 {statusLabels[status]}
               </span>
-              <Link
-                className={cn(
-                  "inline-flex h-8 flex-1 items-center justify-center rounded-md border border-zinc-200 px-3 text-[12px] font-medium text-zinc-500 transition-colors hover:border-zinc-300 hover:text-zinc-800 sm:flex-none",
-                )}
-                href={`/${locale}/dashboard/programs`}
+              <ButtonGroup
+                className="h-9 rounded-[4px]"
+                style={{ "--radius": "4px" } as React.CSSProperties}
               >
-                Discard
-              </Link>
-              <Button
-                className="h-8 flex-1 bg-teal-600 px-3 text-[12px] font-semibold hover:bg-teal-700 sm:flex-none"
-                disabled={isPending}
-                type="submit"
-              >
-                {isPending && (
-                  <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                {form.formState.isDirty ? (
+                  <Button
+                    className="h-9"
+                    type="button"
+                    variant="ghost"
+                    onClick={discardDraft}
+                  >
+                    Discard Draft
+                  </Button>
+                ) : (
+                  <Button
+                    className="h-9"
+                    render={<Link href={`/${locale}/dashboard/programs`} />}
+                    type="button"
+                    variant="ghost"
+                  >
+                    Back
+                  </Button>
                 )}
-                {isPending ? "Saving…" : submitLabel}
-              </Button>
+                <Button className="h-9" disabled={isPending} type="submit">
+                  {isPending && (
+                    <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                  )}
+                  {isPending ? "Saving…" : submitLabel}
+                </Button>
+              </ButtonGroup>
             </div>
           </div>
 
@@ -4938,9 +4987,7 @@ export function EventForm({
                         </Select>
                         <Button
                           className="h-9 shrink-0 bg-teal-600 text-[13px] hover:bg-teal-700"
-                          disabled={
-                            !trainerCandidate && availableTrainers.length === 0
-                          }
+                          disabled={!trainerCandidate}
                           type="button"
                           onClick={addTrainer}
                         >
@@ -4975,15 +5022,24 @@ export function EventForm({
                                     >
                                       <X className="size-2.5" />
                                     </button>
-                                    <div className="flex h-20 items-center justify-center bg-gradient-to-br from-teal-50 to-zinc-100">
-                                      <Users className="size-7 text-zinc-200" />
+                                    <div className="flex h-24 items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-zinc-100">
+                                      {trainer.imageUrl ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                          alt={trainer.label}
+                                          className="h-full w-full object-cover"
+                                          src={trainer.imageUrl}
+                                        />
+                                      ) : (
+                                        <Users className="size-7 text-zinc-200" />
+                                      )}
                                     </div>
                                     <div className="px-3 pb-3 pt-2.5">
                                       <p className="truncate text-[13px] font-semibold text-zinc-800">
                                         {trainer.label}
                                       </p>
                                       <p className="mt-0.5 text-[11.5px] text-zinc-400">
-                                        Trainer
+                                        {trainer.subtitle?.trim() || "Trainer"}
                                       </p>
                                     </div>
                                     <button

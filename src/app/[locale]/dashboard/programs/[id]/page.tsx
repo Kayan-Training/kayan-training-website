@@ -55,7 +55,10 @@ export default async function EditProgramPage({
         },
       },
     }),
-    db.trainer.findMany({ include: { translations: true }, orderBy: { sortOrder: "asc" } }),
+    db.trainer.findMany({
+      include: { avatar: true, translations: true },
+      orderBy: { sortOrder: "asc" },
+    }),
     db.category.findMany({ include: { translations: true }, orderBy: { slug: "asc" } }),
   ]);
 
@@ -221,8 +224,13 @@ export default async function EditProgramPage({
   };
 
   const trainerOptions = allTrainers.map((t) => ({
+    imageUrl: t.imageUrl ?? t.avatar?.url ?? "",
     value: t.id,
     label: t.translations.find((tr) => tr.locale === "en")?.name ?? t.name ?? t.id,
+    subtitle:
+      t.translations.find((tr) => tr.locale === "en")?.title ??
+      t.specialization ??
+      "",
   }));
 
   const categoryOptions = allCategories.map((c) => ({

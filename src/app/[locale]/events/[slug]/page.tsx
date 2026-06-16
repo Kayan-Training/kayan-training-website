@@ -455,6 +455,7 @@ export default async function EventDetailPage({
                 startDate={startDate}
                 endDate={endDate}
               />
+              <VenueMapSection event={event} locale={activeLocale} />
             </div>
           </aside>
         </section>
@@ -542,6 +543,7 @@ export default async function EventDetailPage({
               startDate={startDate}
               endDate={endDate}
             />
+            <VenueMapSection event={event} locale={activeLocale} />
           </div>
         </aside>
       </div>
@@ -652,6 +654,48 @@ function EventMetaCard({
         value={<PhoneText>+968 9538 3138</PhoneText>}
       />
     </div>
+  );
+}
+
+function VenueMapSection({
+  event,
+  locale,
+}: {
+  event: NonNullable<Awaited<ReturnType<typeof getEventDetailBySlug>>>;
+  locale: "ar" | "en";
+}) {
+  if (!event.showMapEmbed || !event.mapEmbedUrl) return null;
+
+  return (
+    <section className="overflow-hidden ghost-border bg-surface-container-lowest">
+      <div className="border-b border-outline-variant/20 px-6 py-4">
+        <h2 className="text-base font-semibold">
+          {locale === "ar" ? "الموقع على الخريطة" : "Location Map"}
+        </h2>
+      </div>
+      <div>
+        <iframe
+          allowFullScreen
+          className="h-[320px] w-full border-0"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          src={event.mapEmbedUrl}
+          title={locale === "ar" ? "خريطة الموقع" : "Venue map"}
+        />
+      </div>
+      {event.googleMapsLink ? (
+        <div className="border-t border-outline-variant/20 px-6 py-4">
+          <a
+            className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary transition-colors hover:text-secondary"
+            href={event.googleMapsLink}
+            rel="noreferrer"
+            target="_blank"
+          >
+            {locale === "ar" ? "فتح في خرائط Google" : "Open in Google Maps"}
+          </a>
+        </div>
+      ) : null}
+    </section>
   );
 }
 

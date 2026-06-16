@@ -21,9 +21,11 @@ import { z } from "zod";
 
 import { RichTextEditor } from "@/components/dashboard/rich-text-editor";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -155,6 +157,9 @@ export function PostForm({
 }) {
   const router = useRouter();
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const lastAutoSlugRef = useRef(
+    defaultValues?.titleEn ? toSlug(defaultValues.titleEn) : "",
+  );
   const [isPending, startTransition] = useTransition();
   const [activeLocale, setActiveLocale] = useState<"en" | "ar">("en");
   const [activeSection, setActiveSection] = useState<SectionId>("identity");
@@ -292,43 +297,64 @@ export function PostForm({
           onSubmit={form.handleSubmit(handleSubmit)}
         >
           {/* Toolbar */}
-          <div className="flex items-center justify-between border-b border-zinc-100 bg-white/80 px-6 py-3">
+          <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-border/50 bg-card/90 px-4 py-3 backdrop-blur-sm sm:px-6">
             <div className="flex items-center gap-3">
-              <span className="text-[13px] font-semibold text-zinc-800">
+              <span className="text-[13px] font-semibold text-foreground">
                 {postId ? "Edit Post" : "New Post"}
               </span>
               {slug ? (
-                <span className="font-mono text-[11px] text-zinc-400">/{slug}</span>
+                <span className="font-mono text-[11px] text-muted-foreground">/{slug}</span>
               ) : null}
             </div>
-            <div className="flex items-center gap-2">
-              {/* Locale toggle */}
-              <div className="flex rounded-md border border-zinc-200">
+            <div className="flex flex-wrap items-center justify-end gap-1.5">
+              <RadioGroup
+                className="grid w-full grid-cols-2 gap-0 rounded-[4px] shadow-xs md:w-auto"
+                value={activeLocale}
+                onValueChange={(value) => setActiveLocale(value as "en" | "ar")}
+              >
                 {(["en", "ar"] as const).map((loc) => (
-                  <button
+                  <div
                     className={cn(
-                      "px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors",
-                      activeLocale === loc
-                        ? "bg-teal-600 text-white"
-                        : "text-zinc-500 hover:bg-zinc-50",
+                      "border-input has-data-checked:border-primary/50 has-data-checked:bg-primary/10 has-data-checked:text-primary relative -ml-px flex items-center justify-center border px-3 py-1.5 outline-none first:ml-0 first:rounded-l-[4px] last:rounded-r-[4px] has-data-checked:z-10",
                     )}
                     key={loc}
-                    type="button"
-                    onClick={() => setActiveLocale(loc)}
                   >
-                    {loc === "en" ? "EN" : "AR"}
-                  </button>
+                    <RadioGroupItem
+                      aria-label={`${loc.toUpperCase()} locale`}
+                      className="absolute size-0 border-0 p-0 opacity-0 after:absolute after:inset-0"
+                      id={`post-toolbar-locale-${loc}`}
+                      value={loc}
+                    />
+                    <Label
+                      className={cn(
+                        "cursor-pointer text-[11px] font-semibold",
+                        loc === "ar" ? "font-[alexandria]" : "",
+                      )}
+                      dir={loc === "ar" ? "rtl" : "ltr"}
+                      htmlFor={`post-toolbar-locale-${loc}`}
+                    >
+                      {loc === "en" ? "English" : "العربية"}
+                    </Label>
+                  </div>
                 ))}
-              </div>
-              <Button
-                className="h-8 bg-teal-600 px-4 text-xs text-white hover:bg-teal-700"
-                disabled={isPending}
-                size="sm"
-                type="submit"
+              </RadioGroup>
+              <ButtonGroup
+                className="h-9 rounded-[4px]"
+                style={{ "--radius": "4px" } as React.CSSProperties}
               >
-                {isPending ? <Loader2 className="size-3.5 animate-spin" /> : null}
-                {submitLabel}
-              </Button>
+                <Button
+                  className="h-9"
+                  render={<Link href={`/${locale}/dashboard/blog`} />}
+                  type="button"
+                  variant="ghost"
+                >
+                  Discard
+                </Button>
+                <Button className="h-9" disabled={isPending} type="submit">
+                  {isPending ? <Loader2 className="size-3.5 animate-spin" /> : null}
+                  {submitLabel}
+                </Button>
+              </ButtonGroup>
             </div>
           </div>
 
@@ -359,10 +385,17 @@ export function PostForm({
                                 className={inputCls}
                                 placeholder="Post title in English"
                                 onChange={(e) => {
+                                  const nextTitle = e.target.value;
+                                  const currentSlug = form.getValues("slug");
+                                  const nextAutoSlug = toSlug(nextTitle);
                                   field.onChange(e);
-                                  if (!form.getValues("slug")) {
-                                    setValue("slug", toSlug(e.target.value));
+                                  if (
+                                    !currentSlug ||
+                                    currentSlug === lastAutoSlugRef.current
+                                  ) {
+                                    setValue("slug", nextAutoSlug);
                                   }
+                                  lastAutoSlugRef.current = nextAutoSlug;
                                 }}
                               />
                             </FormControl>
@@ -384,7 +417,9 @@ export function PostForm({
                                 className={inputCls}
                                 placeholder="post-url-slug"
                                 onBlur={(e) => {
-                                  field.onChange(toSlug(e.target.value));
+                                  const normalizedSlug = toSlug(e.target.value);
+                                  field.onChange(normalizedSlug);
+                                  lastAutoSlugRef.current = normalizedSlug;
                                 }}
                               />
                             </FormControl>

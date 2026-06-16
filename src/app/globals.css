@@ -601,10 +601,6 @@ a[href^="tel:"] {
   [dir="rtl"] {
     @apply font-[alexandria];
   }
-  input[dir="rtl"],
-  textarea[dir="rtl"] {
-    @apply text-[11px] md:text-[11px] leading-1.5;
-  }
 }
 
 /*---break---
