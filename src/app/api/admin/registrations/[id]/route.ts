@@ -4,6 +4,7 @@
 import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/session";
 
 function toCsv(rows: Array<Record<string, string>>) {
   if (!rows.length) {
@@ -11,7 +12,10 @@ function toCsv(rows: Array<Record<string, string>>) {
   }
 
   const headers = Object.keys(rows[0]);
-  const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
+  const escape = (value: string) => {
+    const safe = /^[=+\-@]/.test(value) ? `'${value}` : value;
+    return `"${safe.replace(/"/g, '""')}"`;
+  };
 
   const lines = [headers.join(",")];
 
@@ -23,6 +27,11 @@ function toCsv(rows: Array<Record<string, string>>) {
 }
 
 export async function GET(request: Request) {
+  const session = await requireAdminSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   if (!process.env.DATABASE_URL) {
     return NextResponse.json({ error: "Database is not configured." }, { status: 500 });
   }
