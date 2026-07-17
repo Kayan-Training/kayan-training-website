@@ -3,8 +3,13 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/session";
 
 export async function fetchCategoryMediaAction(): Promise<{ id: string; originalName: string; url: string }[]> {
+  const session = await requireAdminSession();
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
   const media = await db.media.findMany({
     where: { mimeType: { startsWith: "image/" } },
     orderBy: { createdAt: "desc" },
@@ -24,6 +29,10 @@ export async function createCategory(
   image: string,
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   if (!slug || !nameEn || !nameAr) return { error: "Slug and names required" };
   try {
     await db.category.create({
@@ -59,6 +68,10 @@ export async function updateCategory(
   image: string,
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   if (!slug || !nameEn || !nameAr) return { error: "Slug and names required" };
   try {
     await db.category.update({
@@ -83,6 +96,10 @@ export async function updateCategory(
 }
 
 export async function deleteCategory(id: string, locale: string): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     await db.category.delete({ where: { id } });
     revalidatePath(`/${locale}/dashboard/categories`);
@@ -96,6 +113,10 @@ export async function saveCategoryOrder(
   ids: string[],
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   if (!Array.isArray(ids) || ids.length === 0) return { error: "No categories to reorder." };
   try {
     const normalizedIds = Array.from(

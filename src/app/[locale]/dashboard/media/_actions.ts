@@ -3,9 +3,14 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/session";
 import { deleteFromS3ByKey } from "@/lib/storage/s3";
 
 export async function deleteMedia(id: string, locale: string): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     const media = await db.media.findUnique({ where: { id } });
     if (!media) {
@@ -27,6 +32,10 @@ export async function upsertMediaTranslations(
   translations: Array<{ locale: string; title: string; altText: string; description: string }>,
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     for (const t of translations) {
       await db.mediaTranslation.upsert({

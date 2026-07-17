@@ -4,9 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/session";
 import type { PostFormValues } from "./_components/post-form";
 
 export async function fetchMediaAction(): Promise<{ id: string; originalName: string; url: string; mimeType: string }[]> {
+  const session = await requireAdminSession();
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
   const items = await db.media.findMany({
     where: { mimeType: { startsWith: "image/" } },
     orderBy: { createdAt: "desc" },
@@ -20,6 +25,10 @@ export async function updatePostAction(
   locale: string,
   values: PostFormValues,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     await db.post.update({
       where: { id },
@@ -92,6 +101,10 @@ export async function createPostAction(
   locale: string,
   values: PostFormValues,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   let createdId: string;
   try {
     const created = await db.post.create({
@@ -140,6 +153,10 @@ export async function deletePostsAction(
   locale: string,
   ids: string[],
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   if (!ids.length) return { error: "No posts selected." };
 
   try {

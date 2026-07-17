@@ -5,8 +5,13 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { isSystemPage } from "@/lib/pages/block-types";
+import { requireAdminSession } from "@/lib/session";
 
 export async function fetchMediaAction(): Promise<{ id: string; originalName: string; url: string; mimeType: string }[]> {
+  const session = await requireAdminSession();
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
   const items = await db.media.findMany({
     select: { id: true, originalName: true, url: true, mimeType: true },
     orderBy: { createdAt: "desc" },
@@ -24,6 +29,10 @@ export async function fetchMediaPageAction(
   totalPages: number;
   total: number;
 }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
   const safePageSize = Math.max(1, Math.min(60, pageSize));
   const safePage = Math.max(1, page);
   const total = await db.media.count();
@@ -53,6 +62,10 @@ export async function updatePageAction(
     blocksAr: unknown;
   },
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     await db.page.update({ where: { id }, data: { status: values.status } });
 
@@ -250,6 +263,10 @@ export async function translateBlockAction(
   sourceLocale: "en" | "ar",
   targetLocale: "en" | "ar",
 ): Promise<{ block?: unknown; error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     const isEnabled =
       process.env.ENABLE_BLOCK_TRANSLATION === "1" &&
@@ -277,6 +294,10 @@ export async function translateBlockAction(
 }
 
 export async function createPageAction(locale: string, formData: FormData): Promise<void> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return;
+  }
   const slug = String(formData.get("slug") ?? "").trim();
   const titleEn = String(formData.get("titleEn") ?? "").trim();
   const titleAr = String(formData.get("titleAr") ?? "").trim();
@@ -298,6 +319,10 @@ export async function createPageAction(locale: string, formData: FormData): Prom
 }
 
 export async function deletePageAction(locale: string, id: string): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     const page = await db.page.findUnique({
       where: { id },

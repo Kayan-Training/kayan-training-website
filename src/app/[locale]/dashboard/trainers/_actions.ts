@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/session";
 
 export type TrainerPayload = {
   email: string;
@@ -17,6 +18,10 @@ export type TrainerPayload = {
 };
 
 export async function fetchTrainerMediaAction(): Promise<{ id: string; originalName: string; url: string }[]> {
+  const session = await requireAdminSession();
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
   const media = await db.media.findMany({
     where: { mimeType: { startsWith: "image/" } },
     orderBy: { createdAt: "desc" },
@@ -46,6 +51,10 @@ export async function createTrainer(
   payload: TrainerPayload,
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   const validation = validateTrainer(payload);
   if (validation.error) return validation;
 
@@ -93,6 +102,10 @@ export async function updateTrainer(
   payload: TrainerPayload,
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   const validation = validateTrainer(payload);
   if (validation.error) return validation;
 
@@ -155,6 +168,10 @@ export async function deleteTrainer(
   id: string,
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     await db.trainer.delete({ where: { id } });
     revalidatePath(`/${locale}/dashboard/trainers`);
@@ -172,6 +189,10 @@ export async function saveTrainerOrder(
   ids: string[],
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   if (!Array.isArray(ids) || ids.length === 0) {
     return { error: "No trainers to reorder." };
   }
