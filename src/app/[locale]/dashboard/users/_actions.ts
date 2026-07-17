@@ -3,8 +3,13 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/session";
 
 export async function setUserRole(id: string, role: string, locale: string): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     await db.user.update({ where: { id }, data: { role } });
     revalidatePath(`/${locale}/dashboard/users`);
@@ -19,6 +24,10 @@ export async function toggleBanUser(
   banned: boolean,
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     await db.user.update({
       where: { id },
