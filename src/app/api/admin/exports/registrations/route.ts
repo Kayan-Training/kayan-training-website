@@ -12,7 +12,10 @@ function toCsv(rows: Array<Record<string, string>>) {
   }
 
   const headers = Object.keys(rows[0]);
-  const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
+  const escape = (value: string) => {
+    const safe = /^[=+\-@]/.test(value) ? `'${value}` : value;
+    return `"${safe.replace(/"/g, '""')}"`;
+  };
 
   const lines = [headers.join(",")];
 
