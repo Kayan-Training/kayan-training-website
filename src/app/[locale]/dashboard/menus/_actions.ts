@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/session";
 
 export async function createMenuItem(
   menuId: string,
@@ -14,6 +15,10 @@ export async function createMenuItem(
   order: number,
   locale: string,
 ): Promise<{ error?: string; item?: { id: string; type: string; url: string | null; targetId: string | null; labelEn: string; labelAr: string; order: number } }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   if (!labelEn || !labelAr) return { error: "Both labels are required." };
   const normalizedUrl = url?.trim() ?? null;
   const shouldFallbackToLink = type !== "link" && !targetId && Boolean(normalizedUrl);
@@ -62,6 +67,10 @@ export async function updateMenuItem(
   targetId: string | null,
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   if (!labelEn || !labelAr) return { error: "Both labels are required." };
   const normalizedUrl = url?.trim() ?? null;
   const shouldFallbackToLink = type !== "link" && !targetId && Boolean(normalizedUrl);
@@ -95,6 +104,10 @@ export async function updateMenuItem(
 }
 
 export async function deleteMenuItem(id: string, locale: string): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     await db.menuItem.delete({ where: { id } });
     revalidatePath(`/${locale}/dashboard/menus`);
@@ -108,6 +121,10 @@ export async function reorderMenuItems(
   ids: string[],
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     await Promise.all(ids.map((id, i) => db.menuItem.update({ where: { id }, data: { order: i } })));
     revalidatePath(`/${locale}/dashboard/menus`);
@@ -121,6 +138,10 @@ export async function updateHeaderCta(
   locale: string,
   payload: { labelEn: string; labelAr: string; url: string },
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   const labelEn = payload.labelEn.trim();
   const labelAr = payload.labelAr.trim();
   const url = payload.url.trim();
