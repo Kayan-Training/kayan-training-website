@@ -5,13 +5,17 @@ import {
   registrationConfirmationTemplate,
 } from "@/lib/email/templates";
 
-export async function hasExistingRegistrationForEmail(eventId: string, email: string): Promise<boolean> {
+export async function hasExistingRegistrationForEmail(
+  eventId: string,
+  email: string,
+  client: Pick<typeof db, "$queryRaw"> = db,
+): Promise<boolean> {
   const normalizedEmail = email.trim().toLowerCase();
   if (!normalizedEmail) {
     return false;
   }
 
-  const result = await db.$queryRaw<Array<{ exists: boolean }>>`
+  const result = await client.$queryRaw<Array<{ exists: boolean }>>`
     SELECT EXISTS (
       SELECT 1
       FROM "Registration" r
@@ -42,7 +46,6 @@ export async function createRegistration(input: {
   const amount = Number.isFinite(amountNumber) ? amountNumber : 0;
   const event = await db.event.findUnique({
     include: {
-      registrations: { select: { id: true } },
       translations: {
         take: 1,
         where: { locale: input.locale },
@@ -60,54 +63,64 @@ export async function createRegistration(input: {
   if (event.registrationDeadline && event.registrationDeadline < new Date()) {
     throw new Error("Registration deadline passed.");
   }
-  if (event.capacity && event.registrations.length >= event.capacity) {
-    await db.event.update({
-      data: { registrationsOpen: false },
-      where: { id: event.id },
-    });
-    throw new Error("Event capacity reached.");
-  }
-  if (await hasExistingRegistrationForEmail(input.eventId, input.registrantEmail)) {
-    throw new Error("A registration already exists for this email.");
-  }
 
-  const registration = await db.registration.create({
-    data: {
-      amount,
-      eventId: input.eventId,
-      formData: {
-        email: input.registrantEmail,
-        emailNormalized: input.registrantEmail.trim().toLowerCase(),
-        locale: input.locale,
-        name: input.registrantName,
-        ...(input.extraFormData ?? {}),
-      },
-      paymentMethod: input.paymentMethod,
-      paymentStatus: input.paymentMethod === "free" ? "paid" : "pending",
-      status: input.paymentMethod === "free" ? "confirmed" : "submitted",
-      userId: input.userId ?? null,
-    },
-  });
+  const registration = await db.$transaction(
+    async (tx) => {
+      if (event.capacity) {
+        const currentCount = await tx.registration.count({ where: { eventId: event.id } });
+        if (currentCount >= event.capacity) {
+          await tx.event.update({
+            data: { registrationsOpen: false },
+            where: { id: event.id },
+          });
+          throw new Error("Event capacity reached.");
+        }
+      }
 
-  await db.payment.create({
-    data: {
-      method: input.paymentMethod,
-      registrationId: registration.id,
-      status: input.paymentMethod === "free" ? "paid" : "pending",
-    },
-  });
+      if (await hasExistingRegistrationForEmail(input.eventId, input.registrantEmail, tx)) {
+        throw new Error("A registration already exists for this email.");
+      }
 
-  if (event.capacity) {
-    const total = await db.registration.count({
-      where: { eventId: event.id },
-    });
-    if (total >= event.capacity && event.registrationsOpen) {
-      await db.event.update({
-        data: { registrationsOpen: false },
-        where: { id: event.id },
+      const created = await tx.registration.create({
+        data: {
+          amount,
+          eventId: input.eventId,
+          formData: {
+            email: input.registrantEmail,
+            emailNormalized: input.registrantEmail.trim().toLowerCase(),
+            locale: input.locale,
+            name: input.registrantName,
+            ...(input.extraFormData ?? {}),
+          },
+          paymentMethod: input.paymentMethod,
+          paymentStatus: input.paymentMethod === "free" ? "paid" : "pending",
+          status: input.paymentMethod === "free" ? "confirmed" : "submitted",
+          userId: input.userId ?? null,
+        },
       });
-    }
-  }
+
+      await tx.payment.create({
+        data: {
+          method: input.paymentMethod,
+          registrationId: created.id,
+          status: input.paymentMethod === "free" ? "paid" : "pending",
+        },
+      });
+
+      if (event.capacity) {
+        const total = await tx.registration.count({ where: { eventId: event.id } });
+        if (total >= event.capacity && event.registrationsOpen) {
+          await tx.event.update({
+            data: { registrationsOpen: false },
+            where: { id: event.id },
+          });
+        }
+      }
+
+      return created;
+    },
+    { isolationLevel: "Serializable" },
+  );
 
   const eventTitle = event?.translations[0]?.title ?? event?.slug ?? "Event";
   const mail = registrationConfirmationTemplate({
