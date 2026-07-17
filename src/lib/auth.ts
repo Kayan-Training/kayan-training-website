@@ -22,7 +22,10 @@ const hasGoogleOAuth =
   Boolean(process.env.GOOGLE_CLIENT_ID) && Boolean(process.env.GOOGLE_CLIENT_SECRET);
 
 const authBaseUrl = process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-const authSecret = process.env.BETTER_AUTH_SECRET ?? "dev-only-better-auth-secret-change-me";
+const authSecret = process.env.BETTER_AUTH_SECRET;
+if (!authSecret) {
+  throw new Error("BETTER_AUTH_SECRET environment variable is required.");
+}
 const trustedOrigins = (process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? "")
   .split(",")
   .map((origin) => origin.trim())
