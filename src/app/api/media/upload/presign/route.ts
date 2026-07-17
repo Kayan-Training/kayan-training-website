@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { getServerSession } from "@/lib/session";
 import {
   S3_ALLOWED_MIME_TYPES,
   S3_MAX_UPLOAD_BYTES,
@@ -14,6 +15,11 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const session = await getServerSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const parsed = bodySchema.safeParse(await request.json());
 
   if (!parsed.success) {
