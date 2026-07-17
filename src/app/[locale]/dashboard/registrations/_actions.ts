@@ -3,12 +3,17 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/session";
 
 export async function verifyPayment(
   registrationId: string,
   note: string,
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     await db.registration.update({
       where: { id: registrationId },
@@ -30,6 +35,10 @@ export async function rejectPayment(
   reason: string,
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     await db.registration.update({
       where: { id: registrationId },
@@ -51,6 +60,10 @@ export async function bulkUpdateRegistrationStatus(
   status: string,
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     await db.registration.updateMany({ where: { id: { in: ids } }, data: { status } });
     revalidatePath(`/${locale}/dashboard/registrations`);
@@ -64,6 +77,10 @@ export async function deleteRegistrations(
   ids: string[],
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     await db.registration.deleteMany({ where: { id: { in: ids } } });
     revalidatePath(`/${locale}/dashboard/registrations`);
@@ -78,6 +95,10 @@ export async function cancelRegistration(
   reason: string,
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     await db.registration.update({
       where: { id },
@@ -106,6 +127,10 @@ export async function updateRegistrationAdmin(
   },
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     const existing = await db.registration.findUnique({
       where: { id: input.id },
@@ -173,6 +198,10 @@ export async function createRegistrationAdmin(
   },
   locale: string,
 ): Promise<{ error?: string }> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
   try {
     const event = await db.event.findUnique({
       where: { id: input.eventId },
