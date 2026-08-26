@@ -41,11 +41,11 @@ export function sanitizeFilename(filename: string): string {
 }
 
 export function getS3Config(): S3Config | null {
-  const region = process.env.AWS_REGION;
-  const bucket = process.env.AWS_S3_BUCKET;
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-  const customPublicBase = process.env.AWS_S3_PUBLIC_BASE_URL;
+  const region = process.env.S3_REGION;
+  const bucket = process.env.S3_BUCKET;
+  const accessKeyId = process.env.S3_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
+  const customPublicBase = process.env.S3_PUBLIC_BASE_URL;
 
   if (!region || !bucket || !accessKeyId || !secretAccessKey) {
     return null;

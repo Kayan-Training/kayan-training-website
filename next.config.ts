@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
-const awsRegion = process.env.AWS_REGION;
-const awsBucket = process.env.AWS_S3_BUCKET;
-const s3PublicBase = process.env.AWS_S3_PUBLIC_BASE_URL;
+const awsRegion = process.env.S3_REGION;
+const awsBucket = process.env.S3_BUCKET;
+const s3PublicBase = process.env.S3_PUBLIC_BASE_URL;
 
 function getHostnameFromUrl(value: string | undefined): string | null {
   if (!value) return null;
