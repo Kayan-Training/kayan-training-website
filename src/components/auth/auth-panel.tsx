@@ -13,7 +13,9 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
+import { Spinner } from "@/components/ui/spinner";
 import { signIn, signOut, signUp, useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
@@ -136,7 +138,6 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState("");
 
   async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
     return new Promise<T>((resolve, reject) => {
@@ -159,7 +160,6 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
   async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsLoading(true);
-    setMessage("");
     try {
       const result = await withTimeout(
         signIn.email({
@@ -177,13 +177,15 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
           email,
           locale,
         });
-        setMessage(result.error.message ?? t.signInError);
+        toast.error(result.error.message ?? t.signInError);
+        setIsLoading(false);
         return;
       }
       const role = (result.data?.user as { role?: string } | undefined)?.role;
       router.push(
         role === "admin" ? `/${locale}/dashboard` : `/${locale}/events`,
       );
+      // isLoading stays true until this component unmounts on navigation.
     } catch (error) {
       const timedOut = error instanceof Error && error.message === "AUTH_REQUEST_TIMEOUT";
       console.error("[AuthPanel] Sign-in request threw", {
@@ -192,14 +194,13 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
         email,
         locale,
       });
-      setMessage(
+      toast.error(
         timedOut
           ? locale === "ar"
             ? "انتهت مهلة تسجيل الدخول. يرجى المحاولة مرة أخرى."
             : "Login timed out. Please try again."
           : t.signInError,
       );
-    } finally {
       setIsLoading(false);
     }
   }
@@ -207,7 +208,7 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
   async function handleRegister(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!agree) {
-      setMessage(
+      toast.error(
         locale === "ar"
           ? "يرجى الموافقة على الشروط."
           : "Please agree to the terms.",
@@ -215,16 +216,15 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
       return;
     }
     if (!isPasswordValid(password)) {
-      setMessage(t.passwordWeak);
+      toast.error(t.passwordWeak);
       return;
     }
     if (password !== confirmPassword) {
-      setMessage(t.passwordMismatch);
+      toast.error(t.passwordMismatch);
       return;
     }
 
     setIsLoading(true);
-    setMessage("");
     try {
       const result = await withTimeout(
         signUp.email({
@@ -242,11 +242,13 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
           email,
           locale,
         });
-        setMessage(result.error.message ?? t.signUpError);
+        toast.error(result.error.message ?? t.signUpError);
+        setIsLoading(false);
         return;
       }
 
       router.push(`/${locale}/events`);
+      // isLoading stays true until this component unmounts on navigation.
     } catch (error) {
       const timedOut = error instanceof Error && error.message === "AUTH_REQUEST_TIMEOUT";
       console.error("[AuthPanel] Sign-up request threw", {
@@ -255,14 +257,13 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
         email,
         locale,
       });
-      setMessage(
+      toast.error(
         timedOut
           ? locale === "ar"
             ? "انتهت مهلة إنشاء الحساب. يرجى المحاولة مرة أخرى."
             : "Sign-up timed out. Please try again."
           : t.signUpError,
       );
-    } finally {
       setIsLoading(false);
     }
   }
@@ -351,7 +352,7 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
               </div>
               <div className="relative">
                 <input
-                  className={`${inputClass} pe-10`}
+                  className={`${inputClass} pe-11`}
                   dir="ltr"
                   onChange={(event) => setPassword(event.target.value)}
                   required
@@ -359,7 +360,7 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
                   value={password}
                 />
                 <button
-                  className="absolute end-0 top-1/2 -translate-y-1/2 text-outline"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-outline transition-colors hover:text-on-surface cursor-pointer"
                   onClick={() => setShowPassword((value) => !value)}
                   type="button"
                 >
@@ -382,16 +383,20 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
               </span>
             </label>
             <button
-              className="flex w-full items-center justify-center gap-2 bg-primary py-4 text-xs font-bold uppercase tracking-widest text-foreground hover:bg-secondary cursor-pointer"
+              className="flex w-full items-center justify-center gap-2 bg-primary py-4 text-xs font-bold uppercase tracking-widest text-foreground hover:bg-secondary cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
               disabled={isLoading}
               type="submit"
             >
               <span>{isLoading ? t.loading : t.login}</span>
-              <HugeiconsIcon
-                className="dir-arrow"
-                icon={ArrowRight01Icon}
-                strokeWidth={2}
-              />
+              {isLoading ? (
+                <Spinner className="size-4" />
+              ) : (
+                <HugeiconsIcon
+                  className="dir-arrow"
+                  icon={ArrowRight01Icon}
+                  strokeWidth={2}
+                />
+              )}
             </button>
             <p className="text-center text-xs text-on-surface-variant">
               {t.noAccount}{" "}
@@ -443,7 +448,7 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
               </label>
               <div className="relative">
                 <input
-                  className={`${inputClass} pe-10`}
+                  className={`${inputClass} pe-11`}
                   dir="ltr"
                   minLength={8}
                   onChange={(event) => setPassword(event.target.value)}
@@ -452,7 +457,7 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
                   value={password}
                 />
                 <button
-                  className="absolute end-0 top-1/2 -translate-y-1/2 text-outline"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-outline transition-colors hover:text-on-surface cursor-pointer"
                   onClick={() => setShowRegisterPassword((value) => !value)}
                   type="button"
                 >
@@ -526,7 +531,7 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
               </label>
               <div className="relative">
                 <input
-                  className={`${inputClass} pe-10`}
+                  className={`${inputClass} pe-11`}
                   dir="ltr"
                   minLength={8}
                   onChange={(event) => setConfirmPassword(event.target.value)}
@@ -535,7 +540,7 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
                   value={confirmPassword}
                 />
                 <button
-                  className="absolute end-0 top-1/2 -translate-y-1/2 text-outline"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-outline transition-colors hover:text-on-surface cursor-pointer"
                   onClick={() => setShowConfirmPassword((value) => !value)}
                   type="button"
                 >
@@ -586,10 +591,11 @@ export function AuthPanel({ locale }: { locale: "ar" | "en" }) {
               </span>
             </label>
             <button
-              className="flex w-full items-center justify-center gap-2 bg-primary py-4 text-xs font-bold uppercase tracking-widest text-foreground hover:bg-secondary cursor-pointer"
+              className="flex w-full items-center justify-center gap-2 bg-primary py-4 text-xs font-bold uppercase tracking-widest text-foreground hover:bg-secondary cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
               disabled={isLoading}
               type="submit"
             >
+              {isLoading && <Spinner className="size-4" />}
               <span>{isLoading ? t.loading : t.create}</span>
             </button>
             <p className="text-center text-xs text-on-surface-variant">
