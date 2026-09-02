@@ -95,6 +95,14 @@ import { RichTextEditor } from "@/components/dashboard/rich-text-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -287,6 +295,59 @@ const agendaTypeLabels = {
   workshop: "Workshop",
   panel: "Panel",
 } as const;
+
+type ParsedAgendaRow = {
+  day: number;
+  time: string;
+  title: string;
+  titleEn: string;
+  titleAr: string;
+  trainerId: string;
+  speakerNamesEn: string[];
+  speakerNamesAr: string[];
+  highlighted: boolean;
+  type: keyof typeof agendaTypeLabels;
+};
+
+function parseAgendaPasteText(
+  text: string,
+  day: number,
+): ParsedAgendaRow[] {
+  const validTypes = Object.keys(agendaTypeLabels) as Array<
+    keyof typeof agendaTypeLabels
+  >;
+  return text
+    .split(/\r\n|\r|\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map((line) => (line.includes("\t") ? line.split("\t") : line.split(/ {2,}/)))
+    .filter((cells, index) => {
+      if (index !== 0) return true;
+      const first = (cells[0] ?? "").trim().toLowerCase();
+      return first !== "time";
+    })
+    .map((cells) => {
+      const [time = "", titleEn = "", titleAr = "", typeRaw = "", speakers = ""] =
+        cells.map((c) => c.trim());
+      const normalizedType = typeRaw.toLowerCase() as keyof typeof agendaTypeLabels;
+      return {
+        day,
+        time,
+        title: "",
+        titleEn,
+        titleAr,
+        trainerId: "",
+        speakerNamesEn: speakers
+          .split(/[,;]/)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0),
+        speakerNamesAr: [],
+        highlighted: false,
+        type: validTypes.includes(normalizedType) ? normalizedType : "talk",
+      };
+    })
+    .filter((row) => row.time.length > 0 || row.titleEn.length > 0);
+}
 const fieldTypeLabels = {
   text: "Text",
   email: "Email",
@@ -1944,6 +2005,8 @@ export function EventForm({
   const [activeSection, setActiveSection] = useState<SectionId>("identity");
   const [activeDay, setActiveDay] = useState(1);
   const [manualDays, setManualDays] = useState<number[]>([]);
+  const [agendaPasteOpen, setAgendaPasteOpen] = useState(false);
+  const [agendaPasteText, setAgendaPasteText] = useState("");
   const [openFieldId, setOpenFieldId] = useState<string | null>(null);
   const [newFieldType, setNewFieldType] = useState<
     "text" | "email" | "textarea" | "select"
@@ -4664,6 +4727,17 @@ export function EventForm({
                           >
                             <Plus className="size-3" /> Add Day
                           </button>
+                          <button
+                            className="inline-flex items-center gap-1 rounded-full border border-dashed border-zinc-300 px-3 py-1 text-[11.5px] font-semibold text-zinc-400 transition-colors hover:border-teal-400 hover:text-teal-600"
+                            type="button"
+                            onClick={() => {
+                              setAgendaPasteText("");
+                              setAgendaPasteOpen(true);
+                            }}
+                          >
+                            <ClipboardList className="size-3" /> Paste
+                            schedule
+                          </button>
                         </div>
                         {agendaInvalidTitleCount > 0 ? (
                           <p className="mt-1 text-right text-[11px] font-medium text-amber-600">
@@ -4927,6 +5001,71 @@ export function EventForm({
                       >
                         <Plus className="mr-1.5 size-3.5" /> Add session
                       </Button>
+
+                      <Dialog
+                        onOpenChange={setAgendaPasteOpen}
+                        open={agendaPasteOpen}
+                      >
+                        <DialogContent className="max-w-lg">
+                          <DialogHeader>
+                            <DialogTitle>Paste schedule</DialogTitle>
+                            <DialogDescription>
+                              Copy a range from Excel (Time, Title EN, Title
+                              AR, Type, Speaker) and paste it below. Rows are
+                              added to {formatDayLabel(activeDay, startDate)}.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <Textarea
+                            className="h-48 font-mono text-[12.5px]"
+                            onChange={(e) =>
+                              setAgendaPasteText(e.target.value)
+                            }
+                            placeholder={
+                              "09:00\tOpening Remarks\tكلمة افتتاحية\ttalk\tJane Doe"
+                            }
+                            value={agendaPasteText}
+                          />
+                          <p className="text-[11.5px] text-zinc-400">
+                            {
+                              parseAgendaPasteText(agendaPasteText, activeDay)
+                                .length
+                            }{" "}
+                            row(s) detected
+                          </p>
+                          <DialogFooter>
+                            <Button
+                              onClick={() => setAgendaPasteOpen(false)}
+                              type="button"
+                              variant="outline"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                const rows = parseAgendaPasteText(
+                                  agendaPasteText,
+                                  activeDay,
+                                );
+                                if (rows.length === 0) {
+                                  toast.error(
+                                    "No rows found in pasted text",
+                                  );
+                                  return;
+                                }
+                                agenda.append(rows);
+                                setAgendaPasteOpen(false);
+                                setAgendaPasteText("");
+                                toast.success(
+                                  `Imported ${rows.length} session(s)`,
+                                );
+                              }}
+                            >
+                              Import
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                     </FieldSet>
                   )}
 
