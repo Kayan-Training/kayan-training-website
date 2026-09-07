@@ -237,12 +237,12 @@ export async function getFeaturedPrograms(locale: "ar" | "en", take = 8) {
 export async function getEventDetailBySlug(
   locale: "ar" | "en",
   slug: string,
-  options?: { kind?: "event" | "training_course" },
+  options?: { kind?: "event" | "training_course"; includeDrafts?: boolean },
 ) {
   const event = await db.event.findFirst({
     where: {
       slug,
-      status: "published",
+      ...(options?.includeDrafts ? {} : { status: "published" }),
       ...(options?.kind ? { eventKind: options.kind } : {}),
     },
     include: {

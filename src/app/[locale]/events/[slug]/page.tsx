@@ -227,10 +227,12 @@ export default async function EventDetailPage({
 }) {
   const { locale, slug } = await params;
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
-  const [event, session] = await Promise.all([
-    getEventDetailBySlug(activeLocale, slug, { kind: "event" }),
-    getServerSession(),
-  ]);
+  const session = await getServerSession();
+  const isAdmin = session?.user?.role === "admin";
+  const event = await getEventDetailBySlug(activeLocale, slug, {
+    kind: "event",
+    includeDrafts: isAdmin,
+  });
 
   if (!event) notFound();
   const basePath: "events" = "events";
@@ -250,7 +252,7 @@ export default async function EventDetailPage({
     event.excerpt ?? "",
   );
   const adminEdit =
-    session?.user?.role === "admin" ? (
+    isAdmin ? (
       <Link
         className="ghost-border inline-flex items-center px-4 py-2 text-xs uppercase tracking-widest text-on-surface-variant hover:text-primary"
         href={`/${activeLocale}/dashboard/programs/${event.id}`}
