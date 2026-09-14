@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
 import { FeaturedCountdown } from "@/components/events/featured-countdown";
 import { AgendaDayTabs } from "@/components/events/agenda-day-tabs";
 import { ProgramGallery } from "@/components/events/program-gallery";
+import { CurrencySymbol } from "@/components/ui/currency-symbol";
 import { PhoneText } from "@/components/ui/phone-text";
 import {
   getEventDetailBySlug,
@@ -137,11 +138,25 @@ function RegisterCard({
   const progress = capacity
     ? Math.min(100, Math.round((taken / capacity) * 100))
     : 0;
-  const priceLabel = event.isFree
-    ? locale === "ar"
-      ? "مجاني"
-      : "Free"
-    : `${event.price} OMR`;
+  const lowestTier =
+    event.priceTiers.length > 0
+      ? event.priceTiers.reduce(
+          (min, t) => (t.price < min.price ? t : min),
+          event.priceTiers[0],
+        )
+      : null;
+  const priceLabel = event.isFree ? (
+    locale === "ar" ? "مجاني" : "Free"
+  ) : lowestTier ? (
+    <>
+      {locale === "ar" ? "يبدأ من " : "Starting from "}
+      <CurrencySymbol currency={lowestTier.currency} /> {lowestTier.price}
+    </>
+  ) : (
+    <>
+      {event.price} <CurrencySymbol currency="OMR" />
+    </>
+  );
   const showSeatsFulfillment = event.showSidebarSeatsFulfillment !== false;
   const showPaymentSummary = event.showSidebarPayment !== false;
   const hasStarted = new Date(event.startDate).getTime() <= Date.now();
@@ -169,7 +184,13 @@ function RegisterCard({
       {canRegister && showPaymentSummary ? (
         <div className="mb-6 flex items-baseline gap-2">
           <span className="font-mono text-3xl font-semibold text-on-surface">
-            {priceLabel}
+            {lowestTier ? (
+              <a href="#pricing" className="hover:underline">
+                {priceLabel}
+              </a>
+            ) : (
+              priceLabel
+            )}
           </span>
         </div>
       ) : null}
@@ -215,6 +236,15 @@ function RegisterCard({
               : "Registration confirmation is sent by email."}
           </p>
         </>
+      )}
+      {event.brochureUrl && (
+        <a
+          href={event.brochureUrl}
+          download
+          className="ghost-border mt-3 block w-full py-3 text-center text-sm font-medium hover:bg-surface-container"
+        >
+          {locale === "ar" ? "تحميل الكتيب" : "Download Brochure"}
+        </a>
       )}
     </div>
   );
