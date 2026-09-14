@@ -26,6 +26,8 @@
 docs
 .source
 assets
+!assets/fonts
+!assets/fonts/**
 .example
 .redesign
 output
