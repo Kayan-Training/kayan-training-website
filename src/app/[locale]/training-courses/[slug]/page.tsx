@@ -1,8 +1,13 @@
 import {
+  ArrowDown01Icon,
   ArrowRight01Icon,
   Calendar03Icon,
   Clock01Icon,
+  Download01Icon,
+  File02Icon,
+  Image02Icon,
   Location01Icon,
+  Pdf02Icon,
   TelephoneIcon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
@@ -22,6 +27,7 @@ import {
   getEventDetailBySlug,
   getLocalizedEvents,
 } from "@/lib/content/queries";
+import { getDownloadFileCategory } from "@/lib/downloads/get-download-file-category";
 import { isSupportedLocale } from "@/lib/i18n/config";
 import { buildAbsoluteUrl, buildMetadataWithLocaleAlternates, jsonLdScript } from "@/lib/seo";
 import { getServerSession } from "@/lib/session";
@@ -258,6 +264,58 @@ function RegisterCard({
           </p>
         </>
       )}
+      <DownloadsAccordion downloads={event.downloads} eventId={event.id} locale={locale} />
+    </div>
+  );
+}
+
+function DownloadsAccordion({
+  downloads,
+  eventId,
+  locale,
+}: {
+  downloads: NonNullable<Awaited<ReturnType<typeof getEventDetailBySlug>>>["downloads"];
+  eventId: string;
+  locale: "ar" | "en";
+}) {
+  if (downloads.length === 0) return null;
+  const toggleId = `downloads-toggle-${eventId}`;
+  return (
+    <div className="ghost-border mt-3 bg-surface-container-low [&:has(input:checked)_.downloads-chevron]:rotate-180">
+      <input className="peer sr-only" defaultChecked id={toggleId} type="checkbox" />
+      <label
+        className="flex cursor-pointer items-center justify-center gap-2 py-3 text-sm font-medium text-on-surface transition-colors hover:text-secondary"
+        htmlFor={toggleId}
+      >
+        <HugeiconsIcon icon={Download01Icon} size={16} />
+        {locale === "ar" ? "التنزيلات" : "Downloads"}
+        <HugeiconsIcon
+          className="downloads-chevron transition-transform duration-300"
+          icon={ArrowDown01Icon}
+          size={14}
+        />
+      </label>
+      <div className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out peer-checked:grid-rows-[1fr]">
+        <div className="overflow-hidden">
+          {downloads.map((item, index) => {
+            const category = getDownloadFileCategory(item.mimeType);
+            const ItemIcon =
+              category === "pdf" ? Pdf02Icon : category === "image" ? Image02Icon : File02Icon;
+            return (
+              <a
+                key={item.id}
+                href={item.fileUrl}
+                download
+                className="flex items-center gap-2 border-t border-outline-variant/20 px-4 py-3 text-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+                style={{ transitionDelay: `${index * 60}ms` }}
+              >
+                <HugeiconsIcon icon={ItemIcon} size={16} />
+                {item.label}
+              </a>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
