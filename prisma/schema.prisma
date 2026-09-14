@@ -197,6 +197,7 @@ model EventTranslation {
   description      Json?
   seoTitle         String?
   seoDescription   String?
+  seoImage         String?
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
@@ -466,6 +467,7 @@ model PageTranslation {
   blocks         Json?
   seoTitle       String?
   seoDescription String?
+  seoImage       String?
 
   page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
 

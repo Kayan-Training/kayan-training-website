@@ -151,6 +151,7 @@ export async function getLocalizedEvents(
     registrationOpenLabel:
       typeof registrationOpenLabel === "string" ? registrationOpenLabel.trim() : "",
     seoDescription: event.translations[0]?.seoDescription ?? event.translations[0]?.shortDescription ?? "",
+    seoImage: event.translations[0]?.seoImage ?? null,
     seoTitle: event.translations[0]?.seoTitle ?? event.translations[0]?.title ?? event.slug,
     slug: event.slug,
     eventKind: (event as { eventKind?: string }).eventKind ?? "event",
@@ -464,6 +465,7 @@ export async function getEventDetailBySlug(
       price: event.price.toString(),
       paymentMethods: event.paymentMethods as "both" | "card" | "bank",
       seoDescription: event.translations[0]?.seoDescription ?? event.translations[0]?.shortDescription ?? "",
+      seoImage: event.translations[0]?.seoImage ?? null,
     seoTitle: event.translations[0]?.seoTitle ?? event.translations[0]?.title ?? event.slug,
     location:
       (typeof uiConfig?.location?.[locale] === "string" && uiConfig.location[locale]!.trim().length > 0)
@@ -789,6 +791,7 @@ export async function getStaticPageBySlug(locale: "ar" | "en", slug: string) {
 
   return {
     seoDescription: page.translations[0]?.seoDescription ?? "",
+    seoImage: page.translations[0]?.seoImage ?? null,
     seoTitle: page.translations[0]?.seoTitle ?? page.translations[0]?.title ?? page.slug,
     slug: page.slug,
     title: page.translations[0]?.title ?? page.slug,
