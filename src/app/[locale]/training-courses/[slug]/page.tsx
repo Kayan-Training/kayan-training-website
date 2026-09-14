@@ -33,6 +33,10 @@ import { isSupportedLocale } from "@/lib/i18n/config";
 import { buildAbsoluteUrl, buildMetadataWithLocaleAlternates, jsonLdScript } from "@/lib/seo";
 import { getServerSession } from "@/lib/session";
 
+function isExternalCtaUrl(url: string) {
+  return /^https?:\/\//i.test(url);
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -271,8 +275,8 @@ function RegisterCard({
             key={cta.id}
             href={cta.url}
             className="mb-3 flex w-full items-center justify-center gap-2 bg-primary py-4 text-xs uppercase tracking-widest text-primary-foreground transition-colors hover:bg-secondary"
-            target={cta.url.startsWith("http") ? "_blank" : undefined}
-            rel={cta.url.startsWith("http") ? "noreferrer" : undefined}
+            target={isExternalCtaUrl(cta.url) ? "_blank" : undefined}
+            rel={isExternalCtaUrl(cta.url) ? "noreferrer" : undefined}
           >
             {cta.label}
           </Link>
@@ -281,8 +285,8 @@ function RegisterCard({
             key={cta.id}
             href={cta.url}
             className="ghost-border mb-3 flex w-full items-center justify-center gap-2 py-4 text-xs uppercase tracking-widest transition-colors hover:bg-surface-container"
-            target={cta.url.startsWith("http") ? "_blank" : undefined}
-            rel={cta.url.startsWith("http") ? "noreferrer" : undefined}
+            target={isExternalCtaUrl(cta.url) ? "_blank" : undefined}
+            rel={isExternalCtaUrl(cta.url) ? "noreferrer" : undefined}
           >
             {cta.label}
           </Link>
@@ -304,12 +308,15 @@ function DownloadsAccordion({
 }) {
   if (downloads.length === 0) return null;
   const toggleId = `downloads-toggle-${eventId}`;
+  const contentId = `downloads-content-${eventId}`;
   return (
     <div className="ghost-border mt-3 bg-surface-container-low [&:has(input:checked)_.downloads-chevron]:rotate-180">
       <input className="peer sr-only" id={toggleId} type="checkbox" />
       <label
+        aria-controls={contentId}
         className="flex cursor-pointer items-center justify-center gap-2 py-3 text-sm font-medium text-on-surface transition-colors hover:text-secondary"
         htmlFor={toggleId}
+        role="button"
       >
         <HugeiconsIcon icon={Download01Icon} size={16} />
         {locale === "ar" ? "التنزيلات" : "Downloads"}
@@ -319,9 +326,12 @@ function DownloadsAccordion({
           size={14}
         />
       </label>
-      <div className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out peer-checked:grid-rows-[1fr]">
+      <div
+        className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out peer-checked:grid-rows-[1fr]"
+        id={contentId}
+      >
         <div className="overflow-hidden">
-          {downloads.map((item, index) => {
+          {downloads.map((item) => {
             const category = getDownloadFileCategory(item.mimeType);
             const ItemIcon =
               category === "pdf" ? Pdf02Icon : category === "image" ? Image02Icon : File02Icon;
@@ -330,8 +340,9 @@ function DownloadsAccordion({
                 key={item.id}
                 href={item.fileUrl}
                 download
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-2 border-t border-outline-variant/20 px-4 py-3 text-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
-                style={{ transitionDelay: `${index * 60}ms` }}
               >
                 <HugeiconsIcon icon={ItemIcon} size={16} />
                 {item.label}
@@ -366,7 +377,7 @@ function PricingSection({
         {tiers.map((tier) => (
           <div
             key={tier.id}
-            className="group flex flex-col gap-4 border border-outline-variant/20 p-7 transition-all duration-300 hover:-translate-y-1 hover:border-secondary/40"
+            className="flex flex-col gap-4 border border-outline-variant/20 p-7 transition-all duration-300 hover:-translate-y-1 hover:border-secondary/40"
           >
             <div className="flex h-10 w-10 items-center justify-center border border-secondary/40 bg-secondary/15 text-secondary">
               <HugeiconsIcon icon={Ticket01Icon} size={20} strokeWidth={1.5} />

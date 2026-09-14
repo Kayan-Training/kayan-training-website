@@ -209,7 +209,10 @@ const downloadItemSchema = z.object({
 const sidebarCtaItemSchema = z.object({
   labelEn: z.string().min(1, "Label (English) is required"),
   labelAr: z.string().min(1, "Label (Arabic) is required"),
-  url: z.string().min(1, "URL is required"),
+  url: z.string().min(1, "URL is required").refine(
+    (v) => /^(https?:\/\/|mailto:|tel:|\/)/i.test(v),
+    "URL must start with https://, http://, mailto:, tel:, or /",
+  ),
   style: z.enum(["primary", "secondary"]),
 });
 
@@ -2054,9 +2057,13 @@ export function EventForm({
   const [isCoverUploading, setIsCoverUploading] = useState(false);
   const [coverUploadProgress, setCoverUploadProgress] = useState(0);
   const [coverUploadStatus, setCoverUploadStatus] = useState("");
-  const [isDownloadUploading, setIsDownloadUploading] = useState(false);
-  const [downloadUploadProgress, setDownloadUploadProgress] = useState(0);
-  const [downloadUploadStatus, setDownloadUploadStatus] = useState("");
+  const [downloadUploadingByIndex, setDownloadUploadingByIndex] = useState<
+    Record<number, boolean>
+  >({});
+  const [downloadUploadProgressByIndex, setDownloadUploadProgressByIndex] =
+    useState<Record<number, number>>({});
+  const [downloadUploadStatusByIndex, setDownloadUploadStatusByIndex] =
+    useState<Record<number, string>>({});
   const [coverLibraryOpen, setCoverLibraryOpen] = useState(false);
   const [coverLibraryLoading, setCoverLibraryLoading] = useState(false);
   const [coverLibraryPage, setCoverLibraryPage] = useState(1);
@@ -2219,6 +2226,20 @@ export function EventForm({
       const next = new Set(prev);
       if (next.has(index)) next.delete(index);
       else next.add(index);
+      return next;
+    });
+  }
+
+  function movePriceTier(from: number, to: number) {
+    priceTiers.move(from, to);
+    setExpandedTiers((prev) => {
+      const fromExpanded = prev.has(from);
+      const toExpanded = prev.has(to);
+      const next = new Set(prev);
+      next.delete(from);
+      next.delete(to);
+      if (fromExpanded) next.add(to);
+      if (toExpanded) next.add(from);
       return next;
     });
   }
@@ -2758,13 +2779,21 @@ export function EventForm({
 
   async function uploadDownloadFile(index: number, file: File | undefined) {
     if (!file) return;
-    setIsDownloadUploading(true);
-    setDownloadUploadProgress(0);
-    setDownloadUploadStatus("");
+    setDownloadUploadingByIndex((prev) => ({ ...prev, [index]: true }));
+    setDownloadUploadProgressByIndex((prev) => ({ ...prev, [index]: 0 }));
+    setDownloadUploadStatusByIndex((prev) => ({ ...prev, [index]: "" }));
     try {
       const media = await uploadMediaFile(file, {
-        onProgress: (percent) => setDownloadUploadProgress(percent),
-        onStatus: (status) => setDownloadUploadStatus(status),
+        onProgress: (percent) =>
+          setDownloadUploadProgressByIndex((prev) => ({
+            ...prev,
+            [index]: percent,
+          })),
+        onStatus: (status) =>
+          setDownloadUploadStatusByIndex((prev) => ({
+            ...prev,
+            [index]: status,
+          })),
       });
       form.setValue(`downloads.${index}.fileUrl`, media.url, {
         shouldDirty: true,
@@ -2776,7 +2805,7 @@ export function EventForm({
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Upload failed.");
     } finally {
-      setIsDownloadUploading(false);
+      setDownloadUploadingByIndex((prev) => ({ ...prev, [index]: false }));
     }
   }
 
@@ -4709,7 +4738,7 @@ export function EventForm({
                                             className="cursor-pointer"
                                             disabled={index === 0}
                                             onClick={() =>
-                                              priceTiers.move(
+                                              movePriceTier(
                                                 index,
                                                 index - 1,
                                               )
@@ -4727,7 +4756,7 @@ export function EventForm({
                                               priceTiers.fields.length - 1
                                             }
                                             onClick={() =>
-                                              priceTiers.move(
+                                              movePriceTier(
                                                 index,
                                                 index + 1,
                                               )
@@ -5181,7 +5210,7 @@ export function EventForm({
                       <SectionHeader
                         description="Files visitors can download from the public page (brochure, registration details, etc.)."
                         icon={Download}
-                        number="07"
+                        number="12"
                         title="Downloads"
                       />
                       <div className="space-y-4">
@@ -5209,6 +5238,13 @@ export function EventForm({
                           const fileUrl = form.watch(`downloads.${index}.fileUrl`);
                           const mimeType = form.watch(`downloads.${index}.mimeType`);
                           const category = getDownloadFileCategory(mimeType || "");
+                          const isDownloadUploading = Boolean(
+                            downloadUploadingByIndex[index],
+                          );
+                          const downloadUploadProgress =
+                            downloadUploadProgressByIndex[index] ?? 0;
+                          const downloadUploadStatus =
+                            downloadUploadStatusByIndex[index] ?? "";
                           const CategoryIcon =
                             category === "pdf"
                               ? FileText
@@ -5315,6 +5351,7 @@ export function EventForm({
                               )}
                               <input
                                 id={`download-input-${index}`}
+                                accept="application/pdf,image/jpeg,image/png,image/webp,image/avif,image/svg+xml"
                                 className="sr-only"
                                 type="file"
                                 onChange={(e) =>
@@ -5353,7 +5390,7 @@ export function EventForm({
                       <SectionHeader
                         description="Extra buttons shown in the public sidebar, below Register."
                         icon={SquareMousePointer}
-                        number="08"
+                        number="13"
                         title="Sidebar CTAs"
                       />
                       <div className="space-y-4">
