@@ -21,6 +21,9 @@ const s3HostFromBucket =
 const s3HostFromCustomBase = getHostnameFromUrl(s3PublicBase);
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: __dirname,
+  },
   images: {
     qualities: [72, 75],
     remotePatterns: [

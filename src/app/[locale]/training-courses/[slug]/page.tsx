@@ -283,7 +283,7 @@ function DownloadsAccordion({
   const toggleId = `downloads-toggle-${eventId}`;
   return (
     <div className="ghost-border mt-3 bg-surface-container-low [&:has(input:checked)_.downloads-chevron]:rotate-180">
-      <input className="peer sr-only" defaultChecked id={toggleId} type="checkbox" />
+      <input className="peer sr-only" id={toggleId} type="checkbox" />
       <label
         className="flex cursor-pointer items-center justify-center gap-2 py-3 text-sm font-medium text-on-surface transition-colors hover:text-secondary"
         htmlFor={toggleId}
