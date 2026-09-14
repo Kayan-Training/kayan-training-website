@@ -679,7 +679,22 @@ function EventMetaCard({
       <DetailItem
         icon={TelephoneIcon}
         label={locale === "ar" ? "للاستفسار" : "Enquiries"}
-        value={<PhoneText>+968 9538 3138</PhoneText>}
+        value={
+          <div className="flex flex-col gap-1">
+            {event.enquiriesNumbers.map((c) => (
+              <a
+                key={c.number}
+                href={`tel:${c.number.replace(/\s+/g, "")}`}
+                className="hover:underline"
+              >
+                {c.label && (
+                  <span className="text-on-surface-variant text-xs">{c.label}: </span>
+                )}
+                <PhoneText>{c.number}</PhoneText>
+              </a>
+            ))}
+          </div>
+        }
       />
     </div>
   );
