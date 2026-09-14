@@ -250,6 +250,41 @@ function RegisterCard({
   );
 }
 
+function PricingSection({
+  tiers,
+  locale,
+}: {
+  tiers: NonNullable<Awaited<ReturnType<typeof getEventDetailBySlug>>>["priceTiers"];
+  locale: "ar" | "en";
+}) {
+  if (tiers.length === 0) return null;
+  return (
+    <section id="pricing" className="mx-auto max-w-[1440px] px-6 py-12 md:px-10">
+      <h2 className="mb-6 text-2xl font-semibold">
+        {locale === "ar" ? "رسوم اشتراك المندوبين" : "Delegate Enrollment Fees"}
+      </h2>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {tiers.map((tier) => (
+          <div key={tier.id} className="ghost-border bg-surface-container-highest space-y-2 p-6">
+            <h3 className="text-lg font-semibold">{tier.title}</h3>
+            <div className="font-mono text-2xl font-semibold">
+              <CurrencySymbol currency={tier.currency} /> {tier.price}
+              {tier.secondaryDisplayPrice && (
+                <span className="ml-2 text-sm font-normal text-on-surface-variant">
+                  ({tier.secondaryDisplayPrice})
+                </span>
+              )}
+            </div>
+            {tier.description && (
+              <p className="text-sm text-on-surface-variant">{tier.description}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default async function EventDetailPage({
   params,
 }: {
@@ -491,6 +526,7 @@ export default async function EventDetailPage({
             </div>
           </aside>
         </section>
+        <PricingSection locale={activeLocale} tiers={event.priceTiers} />
       </main>
     );
   }
@@ -579,6 +615,7 @@ export default async function EventDetailPage({
           </div>
         </aside>
       </div>
+      <PricingSection locale={activeLocale} tiers={event.priceTiers} />
       <section className="mx-auto max-w-[1440px] px-6 pb-16 md:px-10">
         <h2 className="mb-6 border-b border-outline-variant/20 pb-3 text-xl font-semibold">
           {activeLocale === "ar" ? "فعاليات أخرى قد تهمك" : "Other Events You May Like"}
