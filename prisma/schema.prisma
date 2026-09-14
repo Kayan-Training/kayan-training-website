@@ -151,7 +151,6 @@ model Event {
   location             String?
   featuredImageId      String?
   coverImage           String?
-  brochureUrl          String?
   pricingHeadingEn     String?
   pricingHeadingAr     String?
   isFeatured           Boolean   @default(false)

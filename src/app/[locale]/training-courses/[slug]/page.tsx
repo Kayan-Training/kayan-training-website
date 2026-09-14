@@ -258,15 +258,6 @@ function RegisterCard({
           </p>
         </>
       )}
-      {event.brochureUrl && (
-        <a
-          href={event.brochureUrl}
-          download
-          className="ghost-border mt-3 block w-full py-3 text-center text-sm font-medium hover:bg-surface-container"
-        >
-          {locale === "ar" ? "تحميل الكتيب" : "Download Brochure"}
-        </a>
-      )}
     </div>
   );
 }

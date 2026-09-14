@@ -125,7 +125,6 @@ export default async function EditProgramPage({
     type: event.type as EventFormValues["type"],
     language: (event.language ?? "both") as EventFormValues["language"],
     coverImage: event.coverImage ?? "",
-    brochureUrl: event.brochureUrl ?? "",
     contactNumbers: event.contactNumbers.map((c) => ({
       number: c.number,
       labelEn: c.labelEn ?? "",

@@ -211,7 +211,6 @@ const eventSchema = z.object({
   agenda: z.array(agendaItemSchema),
   priceTiers: z.array(priceTierItemSchema),
   contactNumbers: z.array(contactNumberItemSchema),
-  brochureUrl: z.string(),
   capacity: z.string(),
   categories: z.array(z.string()),
   contentAr: z.string(),
@@ -2166,7 +2165,6 @@ export function EventForm({
       type: "onsite",
       priceTiers: [],
       contactNumbers: [],
-      brochureUrl: "",
       ...defaultValues,
       agenda: normalizedAgendaDefaults,
     }),
@@ -2715,7 +2713,6 @@ export function EventForm({
         onProgress: (percent) => setBrochureUploadProgress(percent),
         onStatus: (status) => setBrochureUploadStatus(status),
       });
-      form.setValue("brochureUrl", media.url, { shouldDirty: true });
       toast.success("Brochure uploaded.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Upload failed.");

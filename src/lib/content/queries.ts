@@ -624,7 +624,6 @@ export async function getEventDetailBySlug(
     priceTiers,
     contactNumbers,
     enquiriesNumbers,
-    brochureUrl: event.brochureUrl,
   };
 }
 
