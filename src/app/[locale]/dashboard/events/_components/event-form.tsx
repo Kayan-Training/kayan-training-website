@@ -2182,6 +2182,7 @@ export function EventForm({
     control: form.control,
     name: "registrationFields",
   });
+  const priceTiers = useFieldArray({ control: form.control, name: "priceTiers" });
 
   // ── Watched values ────────────────────────────────────────────────────────
   const eventType = form.watch("type");
@@ -4269,6 +4270,191 @@ export function EventForm({
                               />
                             </Field>
                           </FieldGroup>
+
+                          <div className="mt-6 space-y-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="text-sm font-medium">
+                                  Price Tiers (optional)
+                                </h4>
+                                <p className="text-muted-foreground text-xs">
+                                  Add tiers (e.g. Early Bird, Standard) to
+                                  replace the single price above with pricing
+                                  cards. Leave empty to keep using the single
+                                  price field.
+                                </p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="cursor-pointer"
+                                onClick={() =>
+                                  priceTiers.append({
+                                    titleEn: "",
+                                    titleAr: "",
+                                    descriptionEn: "",
+                                    descriptionAr: "",
+                                    price: 0,
+                                    currency: "OMR",
+                                    secondaryDisplayPrice: "",
+                                  })
+                                }
+                              >
+                                Add Tier
+                              </Button>
+                            </div>
+
+                            {priceTiers.fields.map((field, index) => (
+                              <div
+                                key={field.id}
+                                className="ghost-border space-y-3 rounded p-4"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="grid flex-1 grid-cols-2 gap-3">
+                                    <div>
+                                      <Label>Title (English)</Label>
+                                      <Input
+                                        value={form.watch(
+                                          `priceTiers.${index}.titleEn`,
+                                        )}
+                                        onChange={(e) =>
+                                          form.setValue(
+                                            `priceTiers.${index}.titleEn`,
+                                            e.target.value,
+                                            { shouldDirty: true },
+                                          )
+                                        }
+                                        placeholder="Super Early Bird"
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label>Title (Arabic)</Label>
+                                      <Input
+                                        dir="rtl"
+                                        value={form.watch(
+                                          `priceTiers.${index}.titleAr`,
+                                        )}
+                                        onChange={(e) =>
+                                          form.setValue(
+                                            `priceTiers.${index}.titleAr`,
+                                            e.target.value,
+                                            { shouldDirty: true },
+                                          )
+                                        }
+                                        placeholder="الحجز المبكر جداً"
+                                      />
+                                    </div>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    className="cursor-pointer rounded"
+                                    size="icon-sm"
+                                    variant="destructive"
+                                    onClick={() => priceTiers.remove(index)}
+                                  >
+                                    <HugeiconsIcon
+                                      icon={Delete02Icon}
+                                      className="text-destructive"
+                                    />
+                                  </Button>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <Label>Description (English)</Label>
+                                    <Textarea
+                                      value={form.watch(
+                                        `priceTiers.${index}.descriptionEn`,
+                                      )}
+                                      onChange={(e) =>
+                                        form.setValue(
+                                          `priceTiers.${index}.descriptionEn`,
+                                          e.target.value,
+                                          { shouldDirty: true },
+                                        )
+                                      }
+                                      placeholder="Until 20 Sep 2026. Limited to the first 30 delegates."
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label>Description (Arabic)</Label>
+                                    <Textarea
+                                      dir="rtl"
+                                      value={form.watch(
+                                        `priceTiers.${index}.descriptionAr`,
+                                      )}
+                                      onChange={(e) =>
+                                        form.setValue(
+                                          `priceTiers.${index}.descriptionAr`,
+                                          e.target.value,
+                                          { shouldDirty: true },
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-3">
+                                  <div>
+                                    <Label>Price</Label>
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      step="0.01"
+                                      value={form.watch(
+                                        `priceTiers.${index}.price`,
+                                      )}
+                                      onChange={(e) =>
+                                        form.setValue(
+                                          `priceTiers.${index}.price`,
+                                          Number(e.target.value),
+                                          { shouldDirty: true },
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label>Currency</Label>
+                                    <Input
+                                      value={form.watch(
+                                        `priceTiers.${index}.currency`,
+                                      )}
+                                      onChange={(e) =>
+                                        form.setValue(
+                                          `priceTiers.${index}.currency`,
+                                          e.target.value,
+                                          { shouldDirty: true },
+                                        )
+                                      }
+                                      placeholder="OMR"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label>
+                                      Secondary display price (optional)
+                                    </Label>
+                                    <Input
+                                      value={form.watch(
+                                        `priceTiers.${index}.secondaryDisplayPrice`,
+                                      )}
+                                      onChange={(e) =>
+                                        form.setValue(
+                                          `priceTiers.${index}.secondaryDisplayPrice`,
+                                          e.target.value,
+                                          {
+                                            shouldDirty: true,
+                                          },
+                                        )
+                                      }
+                                      placeholder="USD 650"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
                           {visibility.showBankDetails && (
                             <FieldSet className="rounded-xl border border-zinc-200 bg-white p-4">
                               <FieldLegend>Bank Transfer Details</FieldLegend>
