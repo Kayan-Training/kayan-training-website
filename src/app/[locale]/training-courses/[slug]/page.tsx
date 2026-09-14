@@ -9,6 +9,7 @@ import {
   Location01Icon,
   Pdf02Icon,
   TelephoneIcon,
+  Ticket01Icon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -322,31 +323,42 @@ function DownloadsAccordion({
 
 function PricingSection({
   tiers,
+  heading,
   locale,
 }: {
   tiers: NonNullable<Awaited<ReturnType<typeof getEventDetailBySlug>>>["priceTiers"];
+  heading: string;
   locale: "ar" | "en";
 }) {
   if (tiers.length === 0) return null;
   return (
-    <section id="pricing" className="mx-auto max-w-[1440px] px-6 py-12 md:px-10">
-      <h2 className="mb-6 text-2xl font-semibold">
-        {locale === "ar" ? "رسوم اشتراك المندوبين" : "Delegate Enrollment Fees"}
+    <section id="pricing" className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 md:py-24">
+      <span className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.35em] text-primary">
+        {locale === "ar" ? "التسجيل" : "Registration"}
+      </span>
+      <h2 className="mb-10 text-[clamp(1.75rem,3vw,2.5rem)] font-semibold leading-tight text-on-surface">
+        {heading}
       </h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tiers.map((tier) => (
-          <div key={tier.id} className="ghost-border bg-surface-container-highest space-y-2 p-6">
-            <h3 className="text-lg font-semibold">{tier.title}</h3>
-            <div className="font-mono text-2xl font-semibold">
+          <div
+            key={tier.id}
+            className="group flex flex-col gap-4 border border-outline-variant/20 p-7 transition-all duration-300 hover:-translate-y-1 hover:border-secondary/40"
+          >
+            <div className="flex h-10 w-10 items-center justify-center border border-secondary/40 bg-secondary/15 text-secondary">
+              <HugeiconsIcon icon={Ticket01Icon} size={20} strokeWidth={1.5} />
+            </div>
+            <h3 className="text-lg font-semibold text-on-surface">{tier.title}</h3>
+            <div className="flex items-baseline gap-2 font-mono text-3xl font-semibold text-secondary">
               <CurrencySymbol currency={tier.currency} /> {tier.price}
               {tier.secondaryDisplayPrice && (
-                <span className="ml-2 text-sm font-normal text-on-surface-variant">
+                <span className="text-sm font-normal text-on-surface-variant">
                   ({tier.secondaryDisplayPrice})
                 </span>
               )}
             </div>
             {tier.description && (
-              <p className="text-sm text-on-surface-variant">{tier.description}</p>
+              <p className="text-sm leading-relaxed text-on-surface-variant">{tier.description}</p>
             )}
           </div>
         ))}
@@ -591,7 +603,7 @@ export default async function TrainingCourseDetailPage({
             </div>
           </aside>
         </section>
-        <PricingSection locale={activeLocale} tiers={event.priceTiers} />
+        <PricingSection heading={event.pricingHeading} locale={activeLocale} tiers={event.priceTiers} />
       </main>
     );
   }
@@ -684,7 +696,6 @@ export default async function TrainingCourseDetailPage({
           </div>
         </aside>
       </div>
-      <PricingSection locale={activeLocale} tiers={event.priceTiers} />
       <section className="mx-auto max-w-[1440px] px-6 pb-16 md:px-10">
         <h2 className="mb-6 border-b border-outline-variant/20 pb-3 text-xl font-semibold">
           {activeLocale === "ar" ? "دورات أخرى قد تهمك" : "Other Training Courses You May Like"}
@@ -720,6 +731,7 @@ export default async function TrainingCourseDetailPage({
             ))}
         </div>
       </section>
+      <PricingSection heading={event.pricingHeading} locale={activeLocale} tiers={event.priceTiers} />
     </main>
   );
 }
