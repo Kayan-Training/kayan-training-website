@@ -154,7 +154,7 @@ function RegisterCard({
     </>
   ) : (
     <>
-      {event.price} <CurrencySymbol currency="OMR" />
+      <CurrencySymbol currency="OMR" /> {event.price}
     </>
   );
   const showSeatsFulfillment = event.showSidebarSeatsFulfillment !== false;
@@ -722,9 +722,9 @@ function EventMetaCard({
         label={locale === "ar" ? "للاستفسار" : "Enquiries"}
         value={
           <div className="flex flex-col gap-1">
-            {event.enquiriesNumbers.map((c) => (
+            {event.enquiriesNumbers.map((c, i) => (
               <a
-                key={c.number}
+                key={`${c.number}-${i}`}
                 href={`tel:${c.number.replace(/\s+/g, "")}`}
                 className="hover:underline"
               >

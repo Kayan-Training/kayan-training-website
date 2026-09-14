@@ -2962,7 +2962,8 @@ export function EventForm({
           } else if (
             first.startsWith("location") ||
             first.startsWith("googleMapsLink") ||
-            first.startsWith("showMapEmbed")
+            first.startsWith("showMapEmbed") ||
+            first.startsWith("contactNumbers")
           ) {
             setActiveSection("location");
           } else if (
@@ -4348,6 +4349,77 @@ export function EventForm({
                           />
                         </Field>
                       </FieldGroup>
+
+                      <div className="mt-6 space-y-2">
+                        <Label>Brochure (PDF)</Label>
+                        <input
+                          ref={brochureInputRef}
+                          accept="application/pdf"
+                          className="sr-only"
+                          type="file"
+                          onChange={(e) =>
+                            void uploadBrochure(e.target.files?.[0])
+                          }
+                        />
+                        {form.watch("brochureUrl") ? (
+                          <div className="ghost-border flex items-center justify-between rounded p-3">
+                            <a
+                              href={form.watch("brochureUrl")}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary truncate text-sm underline"
+                            >
+                              {form.watch("brochureUrl").split("/").pop()}
+                            </a>
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="cursor-pointer"
+                                onClick={() =>
+                                  brochureInputRef.current?.click()
+                                }
+                              >
+                                Replace
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                className="cursor-pointer"
+                                onClick={() =>
+                                  form.setValue("brochureUrl", "", {
+                                    shouldDirty: true,
+                                  })
+                                }
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="cursor-pointer"
+                            disabled={isBrochureUploading}
+                            onClick={() =>
+                              brochureInputRef.current?.click()
+                            }
+                          >
+                            {isBrochureUploading
+                              ? "Uploading..."
+                              : "Upload Brochure PDF"}
+                          </Button>
+                        )}
+                        <UploadProgress
+                          isActive={isBrochureUploading}
+                          percent={brochureUploadProgress}
+                          status={brochureUploadStatus}
+                        />
+                      </div>
+
                       {!visibility.showPriceAndPayments ? (
                         <Note>
                           This event is free — price and payment fields are
@@ -4585,76 +4657,6 @@ export function EventForm({
                                 </div>
                               </div>
                             ))}
-                          </div>
-
-                          <div className="mt-6 space-y-2">
-                            <Label>Brochure (PDF)</Label>
-                            <input
-                              ref={brochureInputRef}
-                              accept="application/pdf"
-                              className="sr-only"
-                              type="file"
-                              onChange={(e) =>
-                                void uploadBrochure(e.target.files?.[0])
-                              }
-                            />
-                            {form.watch("brochureUrl") ? (
-                              <div className="ghost-border flex items-center justify-between rounded p-3">
-                                <a
-                                  href={form.watch("brochureUrl")}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary truncate text-sm underline"
-                                >
-                                  {form.watch("brochureUrl").split("/").pop()}
-                                </a>
-                                <div className="flex gap-2">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="cursor-pointer"
-                                    onClick={() =>
-                                      brochureInputRef.current?.click()
-                                    }
-                                  >
-                                    Replace
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="sm"
-                                    className="cursor-pointer"
-                                    onClick={() =>
-                                      form.setValue("brochureUrl", "", {
-                                        shouldDirty: true,
-                                      })
-                                    }
-                                  >
-                                    Remove
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="cursor-pointer"
-                                disabled={isBrochureUploading}
-                                onClick={() =>
-                                  brochureInputRef.current?.click()
-                                }
-                              >
-                                {isBrochureUploading
-                                  ? "Uploading..."
-                                  : "Upload Brochure PDF"}
-                              </Button>
-                            )}
-                            <UploadProgress
-                              isActive={isBrochureUploading}
-                              percent={brochureUploadProgress}
-                              status={brochureUploadStatus}
-                            />
                           </div>
 
                           {visibility.showBankDetails && (

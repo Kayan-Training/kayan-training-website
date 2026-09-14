@@ -5,7 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Building2, CalendarDays, ChevronDown, CreditCard, Landmark, MapPin, UserRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { CurrencySymbol } from "@/components/ui/currency-symbol";
 
@@ -78,11 +78,22 @@ export function EventRegisterForm({
       : event.paymentMethods === "bank"
         ? "bank"
         : "card";
-  const ticketLabel = event.isFree
-    ? locale === "ar"
-      ? "تذكرة عامة - مجاني"
-      : "General Ticket - Free"
-    : `${locale === "ar" ? "تذكرة عامة" : "General Ticket"} - OMR ${event.price}`;
+  const selectedTier = priceTiers.find((tier) => tier.id === selectedTierId);
+  const ticketLabel: ReactNode = event.isFree ? (
+    locale === "ar" ? (
+      "تذكرة عامة - مجاني"
+    ) : (
+      "General Ticket - Free"
+    )
+  ) : priceTiers.length > 0 && selectedTier ? (
+    <>
+      {selectedTier.title} - <CurrencySymbol currency={selectedTier.currency} /> {selectedTier.price}
+    </>
+  ) : (
+    <>
+      {locale === "ar" ? "تذكرة عامة" : "General Ticket"} - <CurrencySymbol currency="OMR" /> {event.price}
+    </>
+  );
   const paymentLabel =
     ticketPaymentMethod === "free"
       ? (locale === "ar" ? "مجاني" : "Free")
@@ -176,7 +187,7 @@ export function EventRegisterForm({
                 {priceTiers.map((tier) => (
                   <label
                     key={tier.id}
-                    className={`ghost-border cursor-pointer space-y-1 rounded p-4 ${
+                    className={`ghost-border cursor-pointer space-y-1 rounded p-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary ${
                       selectedTierId === tier.id ? "border-primary bg-primary-container" : ""
                     }`}
                   >
