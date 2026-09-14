@@ -46,6 +46,8 @@ export default async function EditProgramPage({
         agendaSessions: { orderBy: { order: "asc" } },
         categories: true,
         formFields: { include: { translations: true }, orderBy: { order: "asc" } },
+        contactNumbers: { orderBy: { order: "asc" } },
+        priceTiers: { orderBy: { order: "asc" }, include: { translations: true } },
         registrations: {
           include: {
             user: { select: { name: true, email: true } },
@@ -123,6 +125,25 @@ export default async function EditProgramPage({
     type: event.type as EventFormValues["type"],
     language: (event.language ?? "both") as EventFormValues["language"],
     coverImage: event.coverImage ?? "",
+    brochureUrl: event.brochureUrl ?? "",
+    contactNumbers: event.contactNumbers.map((c) => ({
+      number: c.number,
+      labelEn: c.labelEn ?? "",
+      labelAr: c.labelAr ?? "",
+    })),
+    priceTiers: event.priceTiers.map((tier) => {
+      const trEn = tier.translations.find((t) => t.locale === "en");
+      const trAr = tier.translations.find((t) => t.locale === "ar");
+      return {
+        titleEn: trEn?.title ?? "",
+        titleAr: trAr?.title ?? "",
+        descriptionEn: trEn?.description ?? "",
+        descriptionAr: trAr?.description ?? "",
+        price: Number(tier.price),
+        currency: tier.currency,
+        secondaryDisplayPrice: tier.secondaryDisplayPrice ?? "",
+      };
+    }),
     heroProgramLogo: galleryDetails.hero?.programLogo ?? "",
     heroCollaboratorLogos: Array.isArray(galleryDetails.hero?.collaboratorLogos)
       ? (galleryDetails.hero?.collaboratorLogos ?? []).join("\n")

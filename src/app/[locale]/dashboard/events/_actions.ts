@@ -120,6 +120,7 @@ export async function updateEventAction(
         type: values.type,
         language: values.language,
         coverImage: values.coverImage || null,
+        brochureUrl: values.brochureUrl || null,
         location: values.locationEn.trim() || values.locationAr.trim() || values.location || null,
         capacity: values.capacity ? Number(values.capacity) : null,
         startDate: new Date(values.startDate),
@@ -296,6 +297,39 @@ export async function updateEventAction(
             create: [
               { locale: "en", label: field.labelEn, placeholder: field.placeholderEn || null },
               { locale: "ar", label: field.labelAr, placeholder: field.placeholderAr || null },
+            ],
+          },
+        },
+      });
+    }
+
+    await db.eventContactNumber.deleteMany({ where: { eventId: id } });
+    if (values.contactNumbers.length > 0) {
+      await db.eventContactNumber.createMany({
+        data: values.contactNumbers.map((c, i) => ({
+          eventId: id,
+          number: c.number,
+          labelEn: c.labelEn || null,
+          labelAr: c.labelAr || null,
+          order: i,
+        })),
+      });
+    }
+
+    await db.eventPriceTier.deleteMany({ where: { eventId: id } });
+    for (let i = 0; i < values.priceTiers.length; i++) {
+      const tier = values.priceTiers[i];
+      await db.eventPriceTier.create({
+        data: {
+          eventId: id,
+          price: tier.price,
+          currency: tier.currency || "OMR",
+          secondaryDisplayPrice: tier.secondaryDisplayPrice || null,
+          order: i,
+          translations: {
+            create: [
+              { locale: "en", title: tier.titleEn, description: tier.descriptionEn || null },
+              { locale: "ar", title: tier.titleAr, description: tier.descriptionAr || null },
             ],
           },
         },
