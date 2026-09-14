@@ -46,18 +46,13 @@ export async function generateMetadata({
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
   const event = await getEventDetailBySlug(activeLocale, slug);
   if (!event) return {};
-  return {
-    ...buildMetadataWithLocaleAlternates({
-      description: event.seoDescription || event.excerpt || event.title,
-      locale: activeLocale,
-      path: `/events/${slug}`,
-      title: event.seoTitle || event.title,
-    }),
-    openGraph: {
-      title: event.seoTitle || event.title,
-      images: event.coverImage ? [event.coverImage] : [],
-    },
-  };
+  return buildMetadataWithLocaleAlternates({
+    description: event.seoDescription || event.excerpt || event.title,
+    image: event.seoImage || event.coverImage,
+    locale: activeLocale,
+    path: `/events/${slug}`,
+    title: event.seoTitle || event.title,
+  });
 }
 
 function formatDate(date: Date, locale: "ar" | "en") {

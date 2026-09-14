@@ -18,15 +18,13 @@ export async function generateMetadata({
   const activeLocale = isSupportedLocale(locale) ? locale : "ar";
   const post = await getPostDetailBySlug(activeLocale, slug);
   if (!post) return {};
-  return {
-    ...buildMetadataWithLocaleAlternates({
-      description: post.seoDescription || post.excerpt || post.title,
-      locale: activeLocale,
-      path: `/blog/${slug}`,
-      title: post.seoTitle || post.title,
-    }),
-    openGraph: post.seoImage ? { images: [{ url: post.seoImage }] } : undefined,
-  };
+  return buildMetadataWithLocaleAlternates({
+    description: post.seoDescription || post.excerpt || post.title,
+    image: post.seoImage || post.coverImage,
+    locale: activeLocale,
+    path: `/blog/${slug}`,
+    title: post.seoTitle || post.title,
+  });
 }
 
 function readPostBody(content: unknown): string {

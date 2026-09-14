@@ -20,6 +20,7 @@ export async function generateMetadata({
   if (!data) return {};
   return buildMetadataWithLocaleAlternates({
     description: data.seoDescription || data.title,
+    image: data.seoImage,
     locale: activeLocale,
     path: `/${page}`,
     title: data.seoTitle || data.title,
