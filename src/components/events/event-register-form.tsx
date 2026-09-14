@@ -7,6 +7,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { CurrencySymbol } from "@/components/ui/currency-symbol";
+
 type FormField = {
   id: string;
   label: string;
@@ -24,6 +26,7 @@ export function EventRegisterForm({
   initialRegistrant,
   isLoggedIn,
   locale,
+  priceTiers,
   slug,
   submitAction,
 }: {
@@ -54,6 +57,7 @@ export function EventRegisterForm({
   };
   isLoggedIn: boolean;
   locale: "ar" | "en";
+  priceTiers: { id: string; title: string; description: string | null; price: number; currency: string }[];
   slug: string;
   submitAction: (formData: FormData) => void;
 }) {
@@ -61,6 +65,7 @@ export function EventRegisterForm({
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [registerForAnother, setRegisterForAnother] = useState(false);
+  const [selectedTierId, setSelectedTierId] = useState(priceTiers[0]?.id ?? "");
   const [email, setEmail] = useState(initialRegistrant.email);
   const [emailCheckState, setEmailCheckState] = useState<EmailCheckState>("idle");
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<"bank" | "card" | "free">(
@@ -161,6 +166,40 @@ export function EventRegisterForm({
 
         <form action={submitAction}>
           <input name="paymentMethod" type="hidden" value={ticketPaymentMethod} />
+
+          {priceTiers.length > 0 && (
+            <div className="mb-6 space-y-3">
+              <span className="mb-2 block text-[11px] uppercase tracking-widest text-on-surface-variant">
+                {locale === "ar" ? "اختر باقة السعر" : "Select a pricing option"}
+              </span>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {priceTiers.map((tier) => (
+                  <label
+                    key={tier.id}
+                    className={`ghost-border cursor-pointer space-y-1 rounded p-4 ${
+                      selectedTierId === tier.id ? "border-primary bg-primary-container" : ""
+                    }`}
+                  >
+                    <input
+                      checked={selectedTierId === tier.id}
+                      className="sr-only"
+                      name="priceTierId"
+                      type="radio"
+                      value={tier.id}
+                      onChange={() => setSelectedTierId(tier.id)}
+                    />
+                    <div className="font-medium">{tier.title}</div>
+                    <div className="font-mono text-lg font-semibold">
+                      <CurrencySymbol currency={tier.currency} /> {tier.price}
+                    </div>
+                    {tier.description && (
+                      <div className="text-on-surface-variant text-xs">{tier.description}</div>
+                    )}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           {step === 1 ? (
             <section>

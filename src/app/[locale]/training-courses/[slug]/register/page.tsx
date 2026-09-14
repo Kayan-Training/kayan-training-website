@@ -91,6 +91,7 @@ export default async function EventRegisterPage({
       }}
       isLoggedIn={Boolean(session)}
       locale={activeLocale}
+      priceTiers={eventData.priceTiers}
       slug={slug}
       submitAction={submitAction}
     />
