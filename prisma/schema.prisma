@@ -151,6 +151,7 @@ model Event {
   location             String?
   featuredImageId      String?
   coverImage           String?
+  brochureUrl          String?
   isFeatured           Boolean   @default(false)
   language             String    @default("both")
   capacity             Int?
@@ -180,6 +181,8 @@ model Event {
   formFields     RegistrationFormField[]
   registrations  Registration[]
   categories     EventCategory[]
+  contactNumbers EventContactNumber[]
+  priceTiers     EventPriceTier[]
 }
 
 model EventTranslation {
@@ -253,6 +256,46 @@ model AgendaSession {
 
   event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   trainer Trainer? @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+}
+
+model EventContactNumber {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  number    String
+  labelEn   String?
+  labelAr   String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+}
+
+model EventPriceTier {
+  id                    String                       @id @default(cuid())
+  eventId               String
+  event                 Event                        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  price                 Decimal
+  currency              String                       @default("OMR")
+  secondaryDisplayPrice String?
+  order                 Int                          @default(0)
+  translations          EventPriceTierTranslation[]
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+
+  @@index([eventId])
+}
+
+model EventPriceTierTranslation {
+  id          String         @id @default(cuid())
+  tierId      String
+  tier        EventPriceTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  locale      String
+  title       String
+  description String?        @db.Text
+
+  @@unique([tierId, locale])
 }
 
 model EventScheduleItem {
