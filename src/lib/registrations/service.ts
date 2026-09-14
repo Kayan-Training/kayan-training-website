@@ -38,6 +38,13 @@ export async function createRegistration(input: {
   extraFormData?: Record<string, string>;
   locale: "ar" | "en";
   paymentMethod: "bank" | "card" | "free";
+  // `priceTierId` is accepted here only for interface symmetry with the caller and is not
+  // independently re-validated against the DB: the caller (a server action running in the
+  // same request as `getEventDetailBySlug`) already resolved `input.amount` from that
+  // server-rendered, DB-sourced `eventData`, which is not client-editable. This function does
+  // not persist the tier id (no such column exists on `Registration` in this plan's schema) —
+  // it only ever trusts the already-resolved `amount`.
+  priceTierId?: string;
   registrantEmail: string;
   registrantName: string;
   userId?: string;
