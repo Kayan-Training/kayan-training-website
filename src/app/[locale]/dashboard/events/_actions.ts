@@ -211,6 +211,8 @@ export async function updateEventAction(
         },
         showMapEmbed: values.showMapEmbed,
         googleMapsLink: values.googleMapsLink || null,
+        pricingHeadingEn: values.pricingHeadingEn || null,
+        pricingHeadingAr: values.pricingHeadingAr || null,
       },
     });
 
@@ -335,6 +337,20 @@ export async function updateEventAction(
       });
     }
 
+    await db.eventDownload.deleteMany({ where: { eventId: id } });
+    if (values.downloads.length > 0) {
+      await db.eventDownload.createMany({
+        data: values.downloads.map((d, i) => ({
+          eventId: id,
+          fileUrl: d.fileUrl,
+          mimeType: d.mimeType,
+          labelEn: d.labelEn,
+          labelAr: d.labelAr,
+          order: i,
+        })),
+      });
+    }
+
     revalidatePath(`/${locale}/dashboard/programs`);
     revalidatePath(`/${locale}/events`);
     revalidatePath(`/${locale}/training-courses`);
@@ -455,6 +471,8 @@ export async function createEventAction(
         },
         showMapEmbed: values.showMapEmbed,
         googleMapsLink: values.googleMapsLink || null,
+        pricingHeadingEn: values.pricingHeadingEn || null,
+        pricingHeadingAr: values.pricingHeadingAr || null,
         translations: {
           create: [
             {
@@ -521,6 +539,18 @@ export async function createEventAction(
                       { locale: "ar", title: t.titleAr, description: t.descriptionAr || null },
                     ],
                   },
+                })),
+              }
+            : undefined,
+        downloads:
+          values.downloads.length > 0
+            ? {
+                create: values.downloads.map((d, i) => ({
+                  fileUrl: d.fileUrl,
+                  mimeType: d.mimeType,
+                  labelEn: d.labelEn,
+                  labelAr: d.labelAr,
+                  order: i,
                 })),
               }
             : undefined,
