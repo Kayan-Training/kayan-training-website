@@ -2183,6 +2183,10 @@ export function EventForm({
     name: "registrationFields",
   });
   const priceTiers = useFieldArray({ control: form.control, name: "priceTiers" });
+  const contactNumbers = useFieldArray({
+    control: form.control,
+    name: "contactNumbers",
+  });
 
   // ── Watched values ────────────────────────────────────────────────────────
   const eventType = form.watch("type");
@@ -4036,6 +4040,107 @@ export function EventForm({
                           </FieldGroup>
                         </>
                       )}
+
+                      {/* Enquiry numbers: optional per-event override of the site-wide contact number */}
+                      <div className="mt-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="text-sm font-medium">
+                              Enquiry Numbers (optional)
+                            </h4>
+                            <p className="text-muted-foreground text-xs">
+                              Shown on the public page instead of the
+                              site-wide default number. Leave empty to use the
+                              default.
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="cursor-pointer"
+                            onClick={() =>
+                              contactNumbers.append({
+                                number: "",
+                                labelEn: "",
+                                labelAr: "",
+                              })
+                            }
+                          >
+                            Add Number
+                          </Button>
+                        </div>
+
+                        {contactNumbers.fields.map((field, index) => (
+                          <div
+                            key={field.id}
+                            className="ghost-border flex items-start gap-3 rounded p-4"
+                          >
+                            <div className="grid flex-1 grid-cols-3 gap-3">
+                              <div>
+                                <Label>Number</Label>
+                                <Input
+                                  value={form.watch(
+                                    `contactNumbers.${index}.number`,
+                                  )}
+                                  onChange={(e) =>
+                                    form.setValue(
+                                      `contactNumbers.${index}.number`,
+                                      e.target.value,
+                                      { shouldDirty: true },
+                                    )
+                                  }
+                                  placeholder="+968 9538 3138"
+                                />
+                              </div>
+                              <div>
+                                <Label>Label (English, optional)</Label>
+                                <Input
+                                  value={form.watch(
+                                    `contactNumbers.${index}.labelEn`,
+                                  )}
+                                  onChange={(e) =>
+                                    form.setValue(
+                                      `contactNumbers.${index}.labelEn`,
+                                      e.target.value,
+                                      { shouldDirty: true },
+                                    )
+                                  }
+                                  placeholder="Sponsorship"
+                                />
+                              </div>
+                              <div>
+                                <Label>Label (Arabic, optional)</Label>
+                                <Input
+                                  dir="rtl"
+                                  value={form.watch(
+                                    `contactNumbers.${index}.labelAr`,
+                                  )}
+                                  onChange={(e) =>
+                                    form.setValue(
+                                      `contactNumbers.${index}.labelAr`,
+                                      e.target.value,
+                                      { shouldDirty: true },
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              className="cursor-pointer rounded"
+                              size="icon-sm"
+                              variant="destructive"
+                              onClick={() => contactNumbers.remove(index)}
+                            >
+                              <HugeiconsIcon
+                                icon={Delete02Icon}
+                                className="text-destructive"
+                              />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
 
                       {/* Online / Hybrid: meeting platform + link */}
                       {visibility.showOnlineFields && (
