@@ -33,6 +33,7 @@ export type EventFormHealthInputs = {
   hasStartDate: boolean;
   hasEndDate: boolean;
   downloadsCount: number;
+  sidebarCtasCount: number;
 };
 
 export type SectionHealth = Record<
@@ -110,6 +111,7 @@ export function computeSectionHealth(input: EventFormHealthInputs): SectionHealt
         path.startsWith("galleryMode") || path.startsWith("galleryMediaIds"),
     ).length,
     downloads: errorPaths.filter((path) => path.startsWith("downloads.")).length,
+    sidebarCtas: errorPaths.filter((path) => path.startsWith("sidebarCtas.")).length,
     agenda: errorPaths.filter((path) => path.startsWith("agenda.")).length,
     trainers: errorPaths.filter((path) => path.startsWith("trainerIds")).length,
     categories: errorPaths.filter((path) => path.startsWith("categories"))
@@ -136,6 +138,7 @@ export function computeSectionHealth(input: EventFormHealthInputs): SectionHealt
     content: hasShortEn || hasShortAr || hasContentEn || hasContentAr,
     gallery: galleryMediaCount > 0 || galleryMode === "hidden",
     downloads: true,
+    sidebarCtas: true,
     agenda: agendaCount > 0,
     trainers: selectedTrainerCount > 0,
     categories: selectedCategoryCount > 0,

@@ -6,6 +6,7 @@ export type EventFormSectionId =
   | "content"
   | "gallery"
   | "downloads"
+  | "sidebarCtas"
   | "agenda"
   | "trainers"
   | "categories"

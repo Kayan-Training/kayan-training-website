@@ -185,6 +185,7 @@ model Event {
   contactNumbers EventContactNumber[]
   priceTiers     EventPriceTier[]
   downloads      EventDownload[]
+  sidebarCtas    EventSidebarCta[]
 }
 
 model EventTranslation {
@@ -282,6 +283,21 @@ model EventDownload {
   mimeType  String
   labelEn   String
   labelAr   String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+}
+
+model EventSidebarCta {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  labelEn   String
+  labelAr   String
+  url       String
+  style     String   @default("secondary")
   order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

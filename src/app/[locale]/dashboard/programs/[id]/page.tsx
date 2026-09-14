@@ -49,6 +49,7 @@ export default async function EditProgramPage({
         contactNumbers: { orderBy: { order: "asc" } },
         priceTiers: { orderBy: { order: "asc" }, include: { translations: true } },
         downloads: { orderBy: { order: "asc" } },
+        sidebarCtas: { orderBy: { order: "asc" } },
         registrations: {
           include: {
             user: { select: { name: true, email: true } },
@@ -151,6 +152,12 @@ export default async function EditProgramPage({
       labelAr: d.labelAr,
       fileUrl: d.fileUrl,
       mimeType: d.mimeType,
+    })),
+    sidebarCtas: event.sidebarCtas.map((c) => ({
+      labelEn: c.labelEn,
+      labelAr: c.labelAr,
+      url: c.url,
+      style: c.style as "primary" | "secondary",
     })),
     heroProgramLogo: galleryDetails.hero?.programLogo ?? "",
     heroCollaboratorLogos: Array.isArray(galleryDetails.hero?.collaboratorLogos)

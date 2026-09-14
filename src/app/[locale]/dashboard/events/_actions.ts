@@ -351,6 +351,20 @@ export async function updateEventAction(
       });
     }
 
+    await db.eventSidebarCta.deleteMany({ where: { eventId: id } });
+    if (values.sidebarCtas.length > 0) {
+      await db.eventSidebarCta.createMany({
+        data: values.sidebarCtas.map((c, i) => ({
+          eventId: id,
+          labelEn: c.labelEn,
+          labelAr: c.labelAr,
+          url: c.url,
+          style: c.style,
+          order: i,
+        })),
+      });
+    }
+
     revalidatePath(`/${locale}/dashboard/programs`);
     revalidatePath(`/${locale}/events`);
     revalidatePath(`/${locale}/training-courses`);
@@ -550,6 +564,18 @@ export async function createEventAction(
                   mimeType: d.mimeType,
                   labelEn: d.labelEn,
                   labelAr: d.labelAr,
+                  order: i,
+                })),
+              }
+            : undefined,
+        sidebarCtas:
+          values.sidebarCtas.length > 0
+            ? {
+                create: values.sidebarCtas.map((c, i) => ({
+                  labelEn: c.labelEn,
+                  labelAr: c.labelAr,
+                  url: c.url,
+                  style: c.style,
                   order: i,
                 })),
               }

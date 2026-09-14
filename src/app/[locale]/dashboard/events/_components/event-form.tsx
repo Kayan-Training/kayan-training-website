@@ -63,6 +63,7 @@ import {
   Plus,
   Search,
   Settings2,
+  SquareMousePointer,
   Star,
   Tag,
   Trash2,
@@ -205,6 +206,13 @@ const downloadItemSchema = z.object({
   mimeType: z.string().min(1),
 });
 
+const sidebarCtaItemSchema = z.object({
+  labelEn: z.string().min(1, "Label (English) is required"),
+  labelAr: z.string().min(1, "Label (Arabic) is required"),
+  url: z.string().min(1, "URL is required"),
+  style: z.enum(["primary", "secondary"]),
+});
+
 const registrationFieldSchema = z.object({
   id: z.string(),
   labelAr: z.string().min(1),
@@ -222,6 +230,7 @@ const eventSchema = z.object({
   priceTiers: z.array(priceTierItemSchema),
   contactNumbers: z.array(contactNumberItemSchema),
   downloads: z.array(downloadItemSchema),
+  sidebarCtas: z.array(sidebarCtaItemSchema),
   pricingHeadingEn: z.string(),
   pricingHeadingAr: z.string(),
   capacity: z.string(),
@@ -2178,6 +2187,7 @@ export function EventForm({
       priceTiers: [],
       contactNumbers: [],
       downloads: [],
+      sidebarCtas: [],
       pricingHeadingEn: "",
       pricingHeadingAr: "",
       ...defaultValues,
@@ -2229,6 +2239,7 @@ export function EventForm({
     name: "contactNumbers",
   });
   const downloads = useFieldArray({ control: form.control, name: "downloads" });
+  const sidebarCtas = useFieldArray({ control: form.control, name: "sidebarCtas" });
 
   // ── Watched values ────────────────────────────────────────────────────────
   const eventType = form.watch("type");
@@ -2380,6 +2391,7 @@ export function EventForm({
     { icon: AlignLeft, id: "content", label: "Content" },
     { icon: ImageIcon, id: "gallery", label: "Gallery" },
     { icon: Download, id: "downloads", label: "Downloads" },
+    { icon: SquareMousePointer, id: "sidebarCtas", label: "Sidebar CTAs" },
     { icon: LayoutList, id: "agenda", label: "Agenda" },
     { icon: Users, id: "trainers", label: "Trainers" },
     { icon: Tag, id: "categories", label: "Categories" },
@@ -2407,6 +2419,7 @@ export function EventForm({
     return computeSectionHealth({
       agendaCount: agenda.fields.length,
       downloadsCount: downloads.fields.length,
+      sidebarCtasCount: sidebarCtas.fields.length,
       errorPaths: formErrorPaths,
       eventType,
       galleryMediaCount: galleryMediaIds.length,
@@ -2440,6 +2453,7 @@ export function EventForm({
   }, [
     agenda.fields.length,
     downloads.fields.length,
+    sidebarCtas.fields.length,
     eventType,
     form,
     formErrorPaths,
@@ -5330,6 +5344,121 @@ export function EventForm({
                             </div>
                           );
                         })}
+                      </div>
+                    </FieldSet>
+                  )}
+
+                  {activeSection === "sidebarCtas" && (
+                    <FieldSet>
+                      <SectionHeader
+                        description="Extra buttons shown in the public sidebar, below Register."
+                        icon={SquareMousePointer}
+                        number="08"
+                        title="Sidebar CTAs"
+                      />
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="cursor-pointer"
+                            onClick={() =>
+                              sidebarCtas.append({
+                                labelEn: "",
+                                labelAr: "",
+                                url: "",
+                                style: "secondary",
+                              })
+                            }
+                          >
+                            Add CTA Button
+                          </Button>
+                        </div>
+                        {sidebarCtas.fields.map((field, index) => (
+                          <div
+                            key={field.id}
+                            className="rounded-xl border border-zinc-200 bg-white p-4 space-y-3"
+                          >
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label>Label (English)</Label>
+                                <Input
+                                  value={form.watch(`sidebarCtas.${index}.labelEn`)}
+                                  onChange={(e) =>
+                                    form.setValue(
+                                      `sidebarCtas.${index}.labelEn`,
+                                      e.target.value,
+                                      { shouldDirty: true },
+                                    )
+                                  }
+                                  placeholder="View Sponsorship Pack"
+                                />
+                              </div>
+                              <div>
+                                <Label>Label (Arabic)</Label>
+                                <Input
+                                  dir="rtl"
+                                  value={form.watch(`sidebarCtas.${index}.labelAr`)}
+                                  onChange={(e) =>
+                                    form.setValue(
+                                      `sidebarCtas.${index}.labelAr`,
+                                      e.target.value,
+                                      { shouldDirty: true },
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label>URL</Label>
+                                <Input
+                                  value={form.watch(`sidebarCtas.${index}.url`)}
+                                  onChange={(e) =>
+                                    form.setValue(
+                                      `sidebarCtas.${index}.url`,
+                                      e.target.value,
+                                      { shouldDirty: true },
+                                    )
+                                  }
+                                  placeholder="https://..."
+                                />
+                              </div>
+                              <div>
+                                <Label>Style</Label>
+                                <select
+                                  className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm"
+                                  value={form.watch(`sidebarCtas.${index}.style`)}
+                                  onChange={(e) =>
+                                    form.setValue(
+                                      `sidebarCtas.${index}.style`,
+                                      e.target.value as "primary" | "secondary",
+                                      { shouldDirty: true },
+                                    )
+                                  }
+                                >
+                                  <option value="primary">Primary</option>
+                                  <option value="secondary">Secondary</option>
+                                </select>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="cursor-pointer"
+                              onClick={() => sidebarCtas.remove(index)}
+                            >
+                              <HugeiconsIcon
+                                icon={Delete02Icon}
+                                className="text-destructive"
+                              />
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
                       </div>
                     </FieldSet>
                   )}
