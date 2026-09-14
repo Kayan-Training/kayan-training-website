@@ -2033,6 +2033,10 @@ export function EventForm({
   const [isCoverUploading, setIsCoverUploading] = useState(false);
   const [coverUploadProgress, setCoverUploadProgress] = useState(0);
   const [coverUploadStatus, setCoverUploadStatus] = useState("");
+  const [isBrochureUploading, setIsBrochureUploading] = useState(false);
+  const [brochureUploadProgress, setBrochureUploadProgress] = useState(0);
+  const [brochureUploadStatus, setBrochureUploadStatus] = useState("");
+  const brochureInputRef = useRef<HTMLInputElement>(null);
   const [coverLibraryOpen, setCoverLibraryOpen] = useState(false);
   const [coverLibraryLoading, setCoverLibraryLoading] = useState(false);
   const [coverLibraryPage, setCoverLibraryPage] = useState(1);
@@ -2694,6 +2698,29 @@ export function EventForm({
       toast.error(err instanceof Error ? err.message : "Upload failed.");
     } finally {
       setIsCoverUploading(false);
+    }
+  }
+
+  async function uploadBrochure(file: File | undefined) {
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      toast.error("Please select a PDF file.");
+      return;
+    }
+    setIsBrochureUploading(true);
+    setBrochureUploadProgress(0);
+    setBrochureUploadStatus("");
+    try {
+      const media = await uploadMediaFile(file, {
+        onProgress: (percent) => setBrochureUploadProgress(percent),
+        onStatus: (status) => setBrochureUploadStatus(status),
+      });
+      form.setValue("brochureUrl", media.url, { shouldDirty: true });
+      toast.success("Brochure uploaded.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setIsBrochureUploading(false);
     }
   }
 
@@ -4558,6 +4585,76 @@ export function EventForm({
                                 </div>
                               </div>
                             ))}
+                          </div>
+
+                          <div className="mt-6 space-y-2">
+                            <Label>Brochure (PDF)</Label>
+                            <input
+                              ref={brochureInputRef}
+                              accept="application/pdf"
+                              className="sr-only"
+                              type="file"
+                              onChange={(e) =>
+                                void uploadBrochure(e.target.files?.[0])
+                              }
+                            />
+                            {form.watch("brochureUrl") ? (
+                              <div className="ghost-border flex items-center justify-between rounded p-3">
+                                <a
+                                  href={form.watch("brochureUrl")}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary truncate text-sm underline"
+                                >
+                                  {form.watch("brochureUrl").split("/").pop()}
+                                </a>
+                                <div className="flex gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="cursor-pointer"
+                                    onClick={() =>
+                                      brochureInputRef.current?.click()
+                                    }
+                                  >
+                                    Replace
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    className="cursor-pointer"
+                                    onClick={() =>
+                                      form.setValue("brochureUrl", "", {
+                                        shouldDirty: true,
+                                      })
+                                    }
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="cursor-pointer"
+                                disabled={isBrochureUploading}
+                                onClick={() =>
+                                  brochureInputRef.current?.click()
+                                }
+                              >
+                                {isBrochureUploading
+                                  ? "Uploading..."
+                                  : "Upload Brochure PDF"}
+                              </Button>
+                            )}
+                            <UploadProgress
+                              isActive={isBrochureUploading}
+                              percent={brochureUploadProgress}
+                              status={brochureUploadStatus}
+                            />
                           </div>
 
                           {visibility.showBankDetails && (
