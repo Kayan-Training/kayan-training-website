@@ -152,6 +152,8 @@ model Event {
   featuredImageId      String?
   coverImage           String?
   brochureUrl          String?
+  pricingHeadingEn     String?
+  pricingHeadingAr     String?
   isFeatured           Boolean   @default(false)
   language             String    @default("both")
   capacity             Int?
@@ -183,6 +185,7 @@ model Event {
   categories     EventCategory[]
   contactNumbers EventContactNumber[]
   priceTiers     EventPriceTier[]
+  downloads      EventDownload[]
 }
 
 model EventTranslation {
@@ -265,6 +268,21 @@ model EventContactNumber {
   number    String
   labelEn   String?
   labelAr   String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+}
+
+model EventDownload {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  fileUrl   String
+  mimeType  String
+  labelEn   String
+  labelAr   String
   order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
