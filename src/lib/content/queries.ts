@@ -2,6 +2,7 @@
  * Content query helpers for localized public pages.
  */
 import { db } from "@/lib/db";
+import { getLocalizedSiteSettings } from "@/lib/settings";
 
 function buildGoogleMapsEmbedUrl(
   rawUrl: string | null | undefined,
@@ -296,6 +297,11 @@ export async function getEventDetailBySlug(
           id: true,
         },
       },
+      contactNumbers: { orderBy: { order: "asc" } },
+      priceTiers: {
+        orderBy: { order: "asc" },
+        include: { translations: true },
+      },
     },
   });
 
@@ -391,6 +397,30 @@ export async function getEventDetailBySlug(
       uploadedBy: item.uploadedBy.name ?? item.uploadedBy.email ?? "Unknown",
       createdAt: item.createdAt.toISOString(),
     }));
+
+  const priceTiers = event.priceTiers.map((tier) => {
+    const translation = tier.translations.find((t) => t.locale === locale);
+    const fallback = tier.translations.find((t) => t.locale !== locale);
+    return {
+      id: tier.id,
+      title: translation?.title ?? fallback?.title ?? "",
+      description: translation?.description ?? fallback?.description ?? null,
+      price: Number(tier.price),
+      currency: tier.currency,
+      secondaryDisplayPrice: tier.secondaryDisplayPrice,
+    };
+  });
+
+  const contactNumbers = event.contactNumbers.map((c) => ({
+    number: c.number,
+    label: locale === "ar" ? c.labelAr : c.labelEn,
+  }));
+
+  const siteSettings = await getLocalizedSiteSettings(locale);
+  const enquiriesNumbers =
+    contactNumbers.length > 0
+      ? contactNumbers
+      : [{ number: siteSettings.contactPhone, label: null }];
 
   return {
     id: event.id,
@@ -591,6 +621,10 @@ export async function getEventDetailBySlug(
       typeof sidebarUiConfig?.showPayment === "boolean"
         ? sidebarUiConfig.showPayment
         : true,
+    priceTiers,
+    contactNumbers,
+    enquiriesNumbers,
+    brochureUrl: event.brochureUrl,
   };
 }
 
