@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { EventRegisterForm } from "@/components/events/event-register-form";
 import { getEventDetailBySlug } from "@/lib/content/queries";
 import { isSupportedLocale } from "@/lib/i18n/config";
+import { resolveTierAmount } from "@/lib/registrations/resolve-tier-amount";
 import { createRegistration } from "@/lib/registrations/service";
 import { getServerSession } from "@/lib/session";
 
@@ -47,14 +48,13 @@ export default async function EventRegisterPage({
     }
 
     const submittedTierId = String(formData.get("priceTierId") ?? "").trim();
-    const selectedTier = submittedTierId
-      ? eventData.priceTiers.find((tier) => tier.id === submittedTierId)
-      : undefined;
     // If a tier id was submitted but doesn't match any tier belonging to THIS event
     // (tampered, stale, or copied from a different event), fall back to the flat event
     // price rather than trusting an unresolvable amount. `eventData` is server-fetched via
     // getEventDetailBySlug above and is not controllable by the submitted form data.
-    const amount = selectedTier ? String(selectedTier.price) : eventData.price;
+    const amount = String(
+      resolveTierAmount(eventData.priceTiers, Number(eventData.price), submittedTierId),
+    );
 
     await createRegistration({
       amount,

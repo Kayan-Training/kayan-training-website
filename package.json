@@ -13,7 +13,7 @@
     "format": "biome format --write .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "pnpm test:unit",
-    "test:unit": "echo \"No tests configured yet\"",
+    "test:unit": "vitest run",
     "test:matrix": "tsx scripts/test-event-form-visibility.ts",
     "test:health": "tsx scripts/test-event-form-health.ts",
     "test:rail": "tsx scripts/test-event-form-rail.ts",
@@ -22,7 +22,7 @@
     "test:event-form-ui": "tsx scripts/test-event-form-ui.ts",
     "test:event-form-keyboard": "tsx scripts/test-event-form-keyboard.ts",
     "audit:event-form": "tsx scripts/audit-event-form-runtime.ts",
-    "test:watch": "echo \"No tests configured yet\"",
+    "test:watch": "vitest",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
@@ -88,7 +88,8 @@
     "prisma": "^7.8.0",
     "tailwindcss": "^4.2.4",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
