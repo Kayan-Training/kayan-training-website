@@ -303,6 +303,7 @@ export async function getEventDetailBySlug(
         include: { translations: true },
       },
       downloads: { orderBy: { order: "asc" } },
+      sidebarCtas: { orderBy: { order: "asc" } },
     },
   });
 
@@ -422,6 +423,13 @@ export async function getEventDetailBySlug(
     fileUrl: d.fileUrl,
     mimeType: d.mimeType,
     label: locale === "ar" ? d.labelAr : d.labelEn,
+  }));
+
+  const sidebarCtas = event.sidebarCtas.map((c) => ({
+    id: c.id,
+    label: locale === "ar" ? c.labelAr : c.labelEn,
+    url: c.url,
+    style: c.style as "primary" | "secondary",
   }));
 
   const pricingHeading =
@@ -637,6 +645,7 @@ export async function getEventDetailBySlug(
     contactNumbers,
     enquiriesNumbers,
     downloads,
+    sidebarCtas,
     pricingHeading,
   };
 }

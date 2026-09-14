@@ -268,6 +268,29 @@ function RegisterCard({
           </p>
         </>
       )}
+      {event.sidebarCtas.map((cta) =>
+        cta.style === "primary" ? (
+          <Link
+            key={cta.id}
+            href={cta.url}
+            className="mb-3 flex w-full items-center justify-center gap-2 bg-primary py-4 text-xs uppercase tracking-widest text-primary-foreground transition-colors hover:bg-secondary"
+            target={cta.url.startsWith("http") ? "_blank" : undefined}
+            rel={cta.url.startsWith("http") ? "noreferrer" : undefined}
+          >
+            {cta.label}
+          </Link>
+        ) : (
+          <Link
+            key={cta.id}
+            href={cta.url}
+            className="ghost-border mb-3 flex w-full items-center justify-center gap-2 py-4 text-xs uppercase tracking-widest transition-colors hover:bg-surface-container"
+            target={cta.url.startsWith("http") ? "_blank" : undefined}
+            rel={cta.url.startsWith("http") ? "noreferrer" : undefined}
+          >
+            {cta.label}
+          </Link>
+        ),
+      )}
       <DownloadsAccordion downloads={event.downloads} eventId={event.id} locale={locale} />
     </div>
   );
