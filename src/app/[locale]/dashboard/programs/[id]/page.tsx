@@ -48,6 +48,7 @@ export default async function EditProgramPage({
         formFields: { include: { translations: true }, orderBy: { order: "asc" } },
         contactNumbers: { orderBy: { order: "asc" } },
         priceTiers: { orderBy: { order: "asc" }, include: { translations: true } },
+        downloads: { orderBy: { order: "asc" } },
         registrations: {
           include: {
             user: { select: { name: true, email: true } },
@@ -143,6 +144,14 @@ export default async function EditProgramPage({
         secondaryDisplayPrice: tier.secondaryDisplayPrice ?? "",
       };
     }),
+    pricingHeadingEn: event.pricingHeadingEn ?? "",
+    pricingHeadingAr: event.pricingHeadingAr ?? "",
+    downloads: event.downloads.map((d) => ({
+      labelEn: d.labelEn,
+      labelAr: d.labelAr,
+      fileUrl: d.fileUrl,
+      mimeType: d.mimeType,
+    })),
     heroProgramLogo: galleryDetails.hero?.programLogo ?? "",
     heroCollaboratorLogos: Array.isArray(galleryDetails.hero?.collaboratorLogos)
       ? (galleryDetails.hero?.collaboratorLogos ?? []).join("\n")
