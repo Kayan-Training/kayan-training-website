@@ -375,76 +375,49 @@ function PricingSection({
       ? event.externalRegistrationUrl
       : `/${locale}/${basePath}/${slug}/register`;
   const ctaLabel = locale === "ar" ? "اختر هذا الخيار" : "Select";
-  // Middle-priced tier reads as the intended "main" option without needing a
-  // dedicated admin flag — matches how these tiers are typically authored
-  // (a cheapest, a most-expensive, and a recommended one in between).
-  const sortedByPrice = [...tiers].sort((a, b) => a.price - b.price);
-  const featuredTierId = sortedByPrice[Math.floor((sortedByPrice.length - 1) / 2)]?.id;
 
   return (
-    <section
-      id="pricing"
-      className="border-y border-outline-variant/20 bg-surface-container-low"
-    >
-      <div className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 md:py-24">
-        <span className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.35em] text-primary">
-          {locale === "ar" ? "التسجيل" : "Registration"}
-        </span>
-        <h2 className="mb-10 text-[clamp(1.75rem,3vw,2.5rem)] font-semibold leading-tight text-on-surface">
-          {heading}
-        </h2>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          {tiers.map((tier) => {
-            const isFeatured = tier.id === featuredTierId && tiers.length > 1;
-            return (
-              <div
-                key={tier.id}
-                className={`relative flex flex-col gap-4 p-8 transition-all duration-300 hover:-translate-y-1 ${
-                  isFeatured
-                    ? "border-2 border-secondary/60 bg-surface-container"
-                    : "border border-outline-variant/20 bg-surface-container-lowest hover:border-secondary/40"
-                }`}
-              >
-                {isFeatured && (
-                  <span className="badge-teal absolute -top-3 start-8 font-body">
-                    {locale === "ar" ? "الأكثر اختياراً" : "Most Popular"}
+    <div className="mt-10" id="pricing">
+      <h2 className="mb-6 border-b border-outline-variant/20 pb-3 text-xl font-semibold">
+        {heading}
+      </h2>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {tiers.map((tier) => {
+          return (
+            <div
+              key={tier.id}
+              className="flex flex-col gap-3 border border-outline-variant/20 bg-surface-container-lowest p-6 transition-all duration-300 hover:-translate-y-1 hover:border-secondary/40"
+            >
+              <div className="flex h-9 w-9 items-center justify-center border border-secondary/40 bg-secondary/15 text-secondary">
+                <HugeiconsIcon icon={Ticket01Icon} size={18} strokeWidth={1.5} />
+              </div>
+              <h3 className="text-base font-semibold text-on-surface">{tier.title}</h3>
+              <div className="flex items-baseline gap-2 font-mono text-2xl font-semibold text-secondary">
+                <CurrencySymbol currency={tier.currency} /> {tier.price}
+                {tier.secondaryDisplayPrice && (
+                  <span className="text-xs font-normal text-on-surface-variant">
+                    ({tier.secondaryDisplayPrice})
                   </span>
                 )}
-                <div className="flex h-12 w-12 items-center justify-center border border-secondary/40 bg-secondary/15 text-secondary">
-                  <HugeiconsIcon icon={Ticket01Icon} size={22} strokeWidth={1.5} />
-                </div>
-                <h3 className="text-xl font-semibold text-on-surface">{tier.title}</h3>
-                <div className="flex items-baseline gap-2 font-mono text-4xl font-semibold text-secondary">
-                  <CurrencySymbol currency={tier.currency} /> {tier.price}
-                  {tier.secondaryDisplayPrice && (
-                    <span className="text-sm font-normal text-on-surface-variant">
-                      ({tier.secondaryDisplayPrice})
-                    </span>
-                  )}
-                </div>
-                {tier.description && (
-                  <p className="flex-1 text-sm leading-relaxed text-on-surface-variant">
-                    {tier.description}
-                  </p>
-                )}
-                <Link
-                  className={`mt-2 flex items-center justify-center gap-2 py-3.5 text-xs uppercase tracking-widest transition-colors ${
-                    isFeatured
-                      ? "bg-primary text-primary-foreground hover:bg-secondary"
-                      : "ghost-border text-on-surface hover:bg-surface-container"
-                  }`}
-                  href={registrationHref}
-                  rel={event.registrationType === "external" ? "noreferrer" : undefined}
-                  target={event.registrationType === "external" ? "_blank" : undefined}
-                >
-                  {ctaLabel}
-                </Link>
               </div>
-            );
-          })}
-        </div>
+              {tier.description && (
+                <p className="flex-1 text-xs leading-relaxed text-on-surface-variant">
+                  {tier.description}
+                </p>
+              )}
+              <Link
+                className="ghost-border flex items-center justify-center gap-2 py-2.5 text-[11px] uppercase tracking-widest text-on-surface transition-colors hover:bg-surface-container"
+                href={registrationHref}
+                rel={event.registrationType === "external" ? "noreferrer" : undefined}
+                target={event.registrationType === "external" ? "_blank" : undefined}
+              >
+                {ctaLabel}
+              </Link>
+            </div>
+          );
+        })}
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -646,14 +619,6 @@ export default async function TrainingCourseDetailPage({
           </div>
         </div>
 
-        <PricingSection
-          basePath={basePath}
-          event={event}
-          heading={event.pricingHeading}
-          locale={activeLocale}
-          slug={slug}
-        />
-
         <section
           id="details"
           className="mx-auto grid max-w-[1440px] grid-cols-12 gap-10 px-6 py-16 md:px-10 md:py-24 [&>*]:min-w-0"
@@ -677,6 +642,13 @@ export default async function TrainingCourseDetailPage({
             {showGallery && event.gallery.length > 0 ? (
               <ProgramGallery items={event.gallery} locale={activeLocale} />
             ) : null}
+            <PricingSection
+              basePath={basePath}
+              event={event}
+              heading={event.pricingHeading}
+              locale={activeLocale}
+              slug={slug}
+            />
           </div>
           <aside className="col-span-12 lg:col-span-5">
             <div className="sticky top-24 flex flex-col gap-4">
@@ -769,6 +741,13 @@ export default async function TrainingCourseDetailPage({
           {showGallery && event.gallery.length > 0 ? (
             <ProgramGallery items={event.gallery} locale={activeLocale} />
           ) : null}
+          <PricingSection
+            basePath={basePath}
+            event={event}
+            heading={event.pricingHeading}
+            locale={activeLocale}
+            slug={slug}
+          />
         </article>
         <aside className="col-span-12 lg:col-span-4">
           <div className="sticky top-24 flex flex-col gap-4">
@@ -784,13 +763,6 @@ export default async function TrainingCourseDetailPage({
           </div>
         </aside>
       </div>
-      <PricingSection
-        basePath={basePath}
-        event={event}
-        heading={event.pricingHeading}
-        locale={activeLocale}
-        slug={slug}
-      />
       <section className="mx-auto max-w-[1440px] px-6 pb-16 md:px-10">
         <h2 className="mb-6 border-b border-outline-variant/20 pb-3 text-xl font-semibold">
           {activeLocale === "ar" ? "دورات أخرى قد تهمك" : "Other Training Courses You May Like"}
