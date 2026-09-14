@@ -61,11 +61,22 @@ function formatDateRange(startDate: Date, endDate: Date, locale: "ar" | "en") {
     startDate.getUTCMonth() === endDate.getUTCMonth() &&
     startDate.getUTCDate() === endDate.getUTCDate();
   if (sameDay) return formatDate(startDate, locale);
-  const formatter = new Intl.DateTimeFormat(
-    locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB",
-    { dateStyle: "long" },
-  );
-  return `${formatter.format(startDate)} – ${formatter.format(endDate)}`;
+  const intlLocale = locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB";
+  const fullFormatter = new Intl.DateTimeFormat(intlLocale, {
+    dateStyle: "long",
+  });
+
+  const sameMonthYear =
+    startDate.getUTCFullYear() === endDate.getUTCFullYear() &&
+    startDate.getUTCMonth() === endDate.getUTCMonth();
+  if (sameMonthYear) {
+    const dayFormatter = new Intl.DateTimeFormat(intlLocale, {
+      day: "numeric",
+    });
+    return `${dayFormatter.format(startDate)} – ${fullFormatter.format(endDate)}`;
+  }
+
+  return `${fullFormatter.format(startDate)} – ${fullFormatter.format(endDate)}`;
 }
 
 function formatTimeRange(startDate: Date, endDate: Date, locale: "ar" | "en") {
