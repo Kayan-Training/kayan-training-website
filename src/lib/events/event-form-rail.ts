@@ -21,7 +21,7 @@ export function buildEventFormRailGroups(options: {
     {
       id: "experience",
       label: "Experience",
-      sectionIds: ["content", "gallery", "agenda"],
+      sectionIds: ["content", "gallery", "downloads", "agenda"],
     },
     {
       id: "people",

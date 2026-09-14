@@ -48,6 +48,7 @@ import {
   CircleDollarSign,
   ClipboardList,
   Download,
+  File as FileIconLucide,
   FileText,
   GripVertical,
   ImageIcon,
@@ -144,6 +145,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { UploadProgress } from "@/components/ui/upload-progress";
 import { uploadMediaFile } from "@/lib/client/media-upload";
+import { getDownloadFileCategory } from "@/lib/downloads/get-download-file-category";
 import { buildEventFormFixQueue } from "@/lib/events/event-form-fix-queue";
 import {
   computeHealthSummary,
@@ -195,6 +197,13 @@ const contactNumberItemSchema = z.object({
   labelAr: z.string(),
 });
 
+const downloadItemSchema = z.object({
+  labelEn: z.string().min(1, "Label (English) is required"),
+  labelAr: z.string().min(1, "Label (Arabic) is required"),
+  fileUrl: z.string().min(1, "File is required"),
+  mimeType: z.string().min(1),
+});
+
 const registrationFieldSchema = z.object({
   id: z.string(),
   labelAr: z.string().min(1),
@@ -211,6 +220,9 @@ const eventSchema = z.object({
   agenda: z.array(agendaItemSchema),
   priceTiers: z.array(priceTierItemSchema),
   contactNumbers: z.array(contactNumberItemSchema),
+  downloads: z.array(downloadItemSchema),
+  pricingHeadingEn: z.string(),
+  pricingHeadingAr: z.string(),
   capacity: z.string(),
   categories: z.array(z.string()),
   contentAr: z.string(),
@@ -2032,10 +2044,9 @@ export function EventForm({
   const [isCoverUploading, setIsCoverUploading] = useState(false);
   const [coverUploadProgress, setCoverUploadProgress] = useState(0);
   const [coverUploadStatus, setCoverUploadStatus] = useState("");
-  const [isBrochureUploading, setIsBrochureUploading] = useState(false);
-  const [brochureUploadProgress, setBrochureUploadProgress] = useState(0);
-  const [brochureUploadStatus, setBrochureUploadStatus] = useState("");
-  const brochureInputRef = useRef<HTMLInputElement>(null);
+  const [isDownloadUploading, setIsDownloadUploading] = useState(false);
+  const [downloadUploadProgress, setDownloadUploadProgress] = useState(0);
+  const [downloadUploadStatus, setDownloadUploadStatus] = useState("");
   const [coverLibraryOpen, setCoverLibraryOpen] = useState(false);
   const [coverLibraryLoading, setCoverLibraryLoading] = useState(false);
   const [coverLibraryPage, setCoverLibraryPage] = useState(1);
@@ -2165,6 +2176,9 @@ export function EventForm({
       type: "onsite",
       priceTiers: [],
       contactNumbers: [],
+      downloads: [],
+      pricingHeadingEn: "",
+      pricingHeadingAr: "",
       ...defaultValues,
       agenda: normalizedAgendaDefaults,
     }),
@@ -2189,6 +2203,7 @@ export function EventForm({
     control: form.control,
     name: "contactNumbers",
   });
+  const downloads = useFieldArray({ control: form.control, name: "downloads" });
 
   // ── Watched values ────────────────────────────────────────────────────────
   const eventType = form.watch("type");
@@ -2339,6 +2354,7 @@ export function EventForm({
     { icon: CircleDollarSign, id: "pricing", label: "Pricing" },
     { icon: AlignLeft, id: "content", label: "Content" },
     { icon: ImageIcon, id: "gallery", label: "Gallery" },
+    { icon: Download, id: "downloads", label: "Downloads" },
     { icon: LayoutList, id: "agenda", label: "Agenda" },
     { icon: Users, id: "trainers", label: "Trainers" },
     { icon: Tag, id: "categories", label: "Categories" },
@@ -2365,6 +2381,7 @@ export function EventForm({
       Boolean(value && value.trim().length > 0);
     return computeSectionHealth({
       agendaCount: agenda.fields.length,
+      downloadsCount: downloads.fields.length,
       errorPaths: formErrorPaths,
       eventType,
       galleryMediaCount: galleryMediaIds.length,
@@ -2397,6 +2414,7 @@ export function EventForm({
     });
   }, [
     agenda.fields.length,
+    downloads.fields.length,
     eventType,
     form,
     formErrorPaths,
@@ -2699,25 +2717,27 @@ export function EventForm({
     }
   }
 
-  async function uploadBrochure(file: File | undefined) {
+  async function uploadDownloadFile(index: number, file: File | undefined) {
     if (!file) return;
-    if (file.type !== "application/pdf") {
-      toast.error("Please select a PDF file.");
-      return;
-    }
-    setIsBrochureUploading(true);
-    setBrochureUploadProgress(0);
-    setBrochureUploadStatus("");
+    setIsDownloadUploading(true);
+    setDownloadUploadProgress(0);
+    setDownloadUploadStatus("");
     try {
       const media = await uploadMediaFile(file, {
-        onProgress: (percent) => setBrochureUploadProgress(percent),
-        onStatus: (status) => setBrochureUploadStatus(status),
+        onProgress: (percent) => setDownloadUploadProgress(percent),
+        onStatus: (status) => setDownloadUploadStatus(status),
       });
-      toast.success("Brochure uploaded.");
+      form.setValue(`downloads.${index}.fileUrl`, media.url, {
+        shouldDirty: true,
+      });
+      form.setValue(`downloads.${index}.mimeType`, media.mimeType, {
+        shouldDirty: true,
+      });
+      toast.success("File uploaded.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Upload failed.");
     } finally {
-      setIsBrochureUploading(false);
+      setIsDownloadUploading(false);
     }
   }
 
@@ -4249,6 +4269,33 @@ export function EventForm({
                         number="04"
                         title="Pricing"
                       />
+                      <div className="grid grid-cols-2 gap-3 mb-6">
+                        <div>
+                          <Label>Pricing section heading (English, optional)</Label>
+                          <Input
+                            value={form.watch("pricingHeadingEn")}
+                            onChange={(e) =>
+                              form.setValue("pricingHeadingEn", e.target.value, {
+                                shouldDirty: true,
+                              })
+                            }
+                            placeholder="Pricing"
+                          />
+                        </div>
+                        <div>
+                          <Label>Pricing section heading (Arabic, optional)</Label>
+                          <Input
+                            dir="rtl"
+                            value={form.watch("pricingHeadingAr")}
+                            onChange={(e) =>
+                              form.setValue("pricingHeadingAr", e.target.value, {
+                                shouldDirty: true,
+                              })
+                            }
+                            placeholder="الأسعار"
+                          />
+                        </div>
+                      </div>
                       <Note className="text-[11px]">
                         Dependency: `Registration Type` controls internal form
                         section visibility. `Mark as free event` controls
@@ -4346,76 +4393,6 @@ export function EventForm({
                           />
                         </Field>
                       </FieldGroup>
-
-                      <div className="mt-6 space-y-2">
-                        <Label>Brochure (PDF)</Label>
-                        <input
-                          ref={brochureInputRef}
-                          accept="application/pdf"
-                          className="sr-only"
-                          type="file"
-                          onChange={(e) =>
-                            void uploadBrochure(e.target.files?.[0])
-                          }
-                        />
-                        {form.watch("brochureUrl") ? (
-                          <div className="ghost-border flex items-center justify-between rounded p-3">
-                            <a
-                              href={form.watch("brochureUrl")}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary truncate text-sm underline"
-                            >
-                              {form.watch("brochureUrl").split("/").pop()}
-                            </a>
-                            <div className="flex gap-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="cursor-pointer"
-                                onClick={() =>
-                                  brochureInputRef.current?.click()
-                                }
-                              >
-                                Replace
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                className="cursor-pointer"
-                                onClick={() =>
-                                  form.setValue("brochureUrl", "", {
-                                    shouldDirty: true,
-                                  })
-                                }
-                              >
-                                Remove
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="cursor-pointer"
-                            disabled={isBrochureUploading}
-                            onClick={() =>
-                              brochureInputRef.current?.click()
-                            }
-                          >
-                            {isBrochureUploading
-                              ? "Uploading..."
-                              : "Upload Brochure PDF"}
-                          </Button>
-                        )}
-                        <UploadProgress
-                          isActive={isBrochureUploading}
-                          percent={brochureUploadProgress}
-                          status={brochureUploadStatus}
-                        />
-                      </div>
 
                       {!visibility.showPriceAndPayments ? (
                         <Note>
@@ -5069,7 +5046,183 @@ export function EventForm({
                   )}
 
                   {/* ─────────────────────────────────────────────────────────
-                  §07  AGENDA
+                  §07  DOWNLOADS
+                  Public-facing downloadable files (brochure, etc.)
+              ───────────────────────────────────────────────────────── */}
+                  {activeSection === "downloads" && (
+                    <FieldSet>
+                      <SectionHeader
+                        description="Files visitors can download from the public page (brochure, registration details, etc.)."
+                        icon={Download}
+                        number="07"
+                        title="Downloads"
+                      />
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="cursor-pointer"
+                            onClick={() =>
+                              downloads.append({
+                                labelEn: "",
+                                labelAr: "",
+                                fileUrl: "",
+                                mimeType: "",
+                              })
+                            }
+                          >
+                            Add Download
+                          </Button>
+                        </div>
+
+                        {downloads.fields.map((field, index) => {
+                          const fileUrl = form.watch(`downloads.${index}.fileUrl`);
+                          const mimeType = form.watch(`downloads.${index}.mimeType`);
+                          const category = getDownloadFileCategory(mimeType || "");
+                          const CategoryIcon =
+                            category === "pdf"
+                              ? FileText
+                              : category === "image"
+                                ? ImageIcon
+                                : FileIconLucide;
+                          return (
+                            <div
+                              key={field.id}
+                              className="rounded-xl border border-zinc-200 bg-white p-4 space-y-3"
+                            >
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <Label>Label (English)</Label>
+                                  <Input
+                                    value={form.watch(`downloads.${index}.labelEn`)}
+                                    onChange={(e) =>
+                                      form.setValue(
+                                        `downloads.${index}.labelEn`,
+                                        e.target.value,
+                                        { shouldDirty: true },
+                                      )
+                                    }
+                                    placeholder="Download Brochure"
+                                  />
+                                </div>
+                                <div>
+                                  <Label>Label (Arabic)</Label>
+                                  <Input
+                                    dir="rtl"
+                                    value={form.watch(`downloads.${index}.labelAr`)}
+                                    onChange={(e) =>
+                                      form.setValue(
+                                        `downloads.${index}.labelAr`,
+                                        e.target.value,
+                                        { shouldDirty: true },
+                                      )
+                                    }
+                                    placeholder="تحميل الكتيب"
+                                  />
+                                </div>
+                              </div>
+                              {fileUrl ? (
+                                <div className="flex items-center justify-between rounded border border-zinc-200 p-3">
+                                  <a
+                                    href={fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 truncate text-sm text-primary underline"
+                                  >
+                                    <CategoryIcon className="size-4 shrink-0" />
+                                    {fileUrl.split("/").pop()}
+                                  </a>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="cursor-pointer"
+                                      onClick={() =>
+                                        document
+                                          .getElementById(`download-input-${index}`)
+                                          ?.click()
+                                      }
+                                    >
+                                      Replace
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="destructive"
+                                      size="sm"
+                                      className="cursor-pointer"
+                                      onClick={() => {
+                                        form.setValue(
+                                          `downloads.${index}.fileUrl`,
+                                          "",
+                                          { shouldDirty: true },
+                                        );
+                                        form.setValue(
+                                          `downloads.${index}.mimeType`,
+                                          "",
+                                          { shouldDirty: true },
+                                        );
+                                      }}
+                                    >
+                                      Remove File
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="cursor-pointer"
+                                  disabled={isDownloadUploading}
+                                  onClick={() =>
+                                    document
+                                      .getElementById(`download-input-${index}`)
+                                      ?.click()
+                                  }
+                                >
+                                  {isDownloadUploading ? "Uploading..." : "Upload File"}
+                                </Button>
+                              )}
+                              <input
+                                id={`download-input-${index}`}
+                                className="sr-only"
+                                type="file"
+                                onChange={(e) =>
+                                  void uploadDownloadFile(index, e.target.files?.[0])
+                                }
+                              />
+                              {isDownloadUploading && (
+                                <UploadProgress
+                                  isActive={isDownloadUploading}
+                                  percent={downloadUploadProgress}
+                                  status={downloadUploadStatus}
+                                />
+                              )}
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                className="cursor-pointer"
+                                onClick={() => downloads.remove(index)}
+                              >
+                                <HugeiconsIcon
+                                  icon={Delete02Icon}
+                                  className="text-destructive"
+                                />
+                                Remove Item
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </FieldSet>
+                  )}
+
+                  {/* ─────────────────────────────────────────────────────────
+                  §08  AGENDA
                   Day tabs ·  table (time / title / type / speaker)
               ───────────────────────────────────────────────────────── */}
                   {activeSection === "agenda" && (

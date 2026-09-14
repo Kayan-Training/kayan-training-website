@@ -5,6 +5,7 @@ export type EventFormSectionId =
   | "pricing"
   | "content"
   | "gallery"
+  | "downloads"
   | "agenda"
   | "trainers"
   | "categories"
