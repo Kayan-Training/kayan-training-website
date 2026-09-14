@@ -331,6 +331,7 @@ export async function createEventAction(
         type: values.type,
         language: values.language,
         coverImage: values.coverImage || null,
+        brochureUrl: values.brochureUrl || null,
         location: values.locationEn.trim() || values.locationAr.trim() || values.location || null,
         capacity: values.capacity ? Number(values.capacity) : null,
         startDate: new Date(values.startDate),
@@ -462,6 +463,34 @@ export async function createEventAction(
         categories:
           values.categories.length > 0
             ? { create: values.categories.map((categoryId) => ({ categoryId })) }
+            : undefined,
+        contactNumbers:
+          values.contactNumbers.length > 0
+            ? {
+                create: values.contactNumbers.map((c, i) => ({
+                  number: c.number,
+                  labelEn: c.labelEn || null,
+                  labelAr: c.labelAr || null,
+                  order: i,
+                })),
+              }
+            : undefined,
+        priceTiers:
+          values.priceTiers.length > 0
+            ? {
+                create: values.priceTiers.map((t, i) => ({
+                  price: t.price,
+                  currency: t.currency || "OMR",
+                  secondaryDisplayPrice: t.secondaryDisplayPrice || null,
+                  order: i,
+                  translations: {
+                    create: [
+                      { locale: "en", title: t.titleEn, description: t.descriptionEn || null },
+                      { locale: "ar", title: t.titleAr, description: t.descriptionAr || null },
+                    ],
+                  },
+                })),
+              }
             : undefined,
       },
     });
