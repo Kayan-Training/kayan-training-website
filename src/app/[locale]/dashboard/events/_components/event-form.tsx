@@ -179,6 +179,22 @@ const agendaItemSchema = z.object({
   type: z.enum(["talk", "break", "workshop", "panel"]),
 });
 
+const priceTierItemSchema = z.object({
+  titleEn: z.string().min(1, "Title (English) is required"),
+  titleAr: z.string().min(1, "Title (Arabic) is required"),
+  descriptionEn: z.string(),
+  descriptionAr: z.string(),
+  price: z.number().min(0, "Price must be 0 or more"),
+  currency: z.string().min(1, "Currency is required"),
+  secondaryDisplayPrice: z.string(),
+});
+
+const contactNumberItemSchema = z.object({
+  number: z.string().min(1, "Number is required"),
+  labelEn: z.string(),
+  labelAr: z.string(),
+});
+
 const registrationFieldSchema = z.object({
   id: z.string(),
   labelAr: z.string().min(1),
@@ -193,6 +209,9 @@ const registrationFieldSchema = z.object({
 
 const eventSchema = z.object({
   agenda: z.array(agendaItemSchema),
+  priceTiers: z.array(priceTierItemSchema),
+  contactNumbers: z.array(contactNumberItemSchema),
+  brochureUrl: z.string(),
   capacity: z.string(),
   categories: z.array(z.string()),
   contentAr: z.string(),
@@ -2141,6 +2160,9 @@ export function EventForm({
       titleEn: "",
       trainerIds: [],
       type: "onsite",
+      priceTiers: [],
+      contactNumbers: [],
+      brochureUrl: "",
       ...defaultValues,
       agenda: normalizedAgendaDefaults,
     }),
