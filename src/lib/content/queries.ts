@@ -302,6 +302,7 @@ export async function getEventDetailBySlug(
         orderBy: { order: "asc" },
         include: { translations: true },
       },
+      downloads: { orderBy: { order: "asc" } },
     },
   });
 
@@ -415,6 +416,17 @@ export async function getEventDetailBySlug(
     number: c.number,
     label: locale === "ar" ? c.labelAr : c.labelEn,
   }));
+
+  const downloads = event.downloads.map((d) => ({
+    id: d.id,
+    fileUrl: d.fileUrl,
+    mimeType: d.mimeType,
+    label: locale === "ar" ? d.labelAr : d.labelEn,
+  }));
+
+  const pricingHeading =
+    (locale === "ar" ? event.pricingHeadingAr : event.pricingHeadingEn) ||
+    (locale === "ar" ? "الأسعار" : "Pricing");
 
   const siteSettings = await getLocalizedSiteSettings(locale);
   const enquiriesNumbers =
@@ -624,6 +636,8 @@ export async function getEventDetailBySlug(
     priceTiers,
     contactNumbers,
     enquiriesNumbers,
+    downloads,
+    pricingHeading,
   };
 }
 
