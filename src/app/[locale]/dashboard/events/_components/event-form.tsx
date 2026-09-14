@@ -45,6 +45,7 @@ import {
   CalendarDays,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   CircleDollarSign,
   ClipboardList,
   Download,
@@ -2199,6 +2200,30 @@ export function EventForm({
     name: "registrationFields",
   });
   const priceTiers = useFieldArray({ control: form.control, name: "priceTiers" });
+  const [expandedTiers, setExpandedTiers] = useState<Set<number>>(
+    () => new Set(priceTiers.fields.length <= 1 ? priceTiers.fields.map((_, i) => i) : []),
+  );
+
+  function toggleTierExpanded(index: number) {
+    setExpandedTiers((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  }
+
+  function removePriceTier(index: number) {
+    priceTiers.remove(index);
+    setExpandedTiers((prev) => {
+      const next = new Set<number>();
+      for (const i of prev) {
+        if (i === index) continue;
+        next.add(i > index ? i - 1 : i);
+      }
+      return next;
+    });
+  }
   const contactNumbers = useFieldArray({
     control: form.control,
     name: "contactNumbers",
@@ -4467,7 +4492,8 @@ export function EventForm({
                                 variant="outline"
                                 size="sm"
                                 className="cursor-pointer"
-                                onClick={() =>
+                                onClick={() => {
+                                  const newIndex = priceTiers.fields.length;
                                   priceTiers.append({
                                     titleEn: "",
                                     titleAr: "",
@@ -4476,161 +4502,248 @@ export function EventForm({
                                     price: 0,
                                     currency: "OMR",
                                     secondaryDisplayPrice: "",
-                                  })
-                                }
+                                  });
+                                  setExpandedTiers((prev) =>
+                                    new Set(prev).add(newIndex),
+                                  );
+                                }}
                               >
                                 Add Tier
                               </Button>
                             </div>
 
-                            {priceTiers.fields.map((field, index) => (
-                              <div
-                                key={field.id}
-                                className="ghost-border space-y-3 rounded p-4"
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="grid flex-1 grid-cols-2 gap-3">
-                                    <div>
-                                      <Label>Title (English)</Label>
-                                      <Input
-                                        value={form.watch(
-                                          `priceTiers.${index}.titleEn`,
-                                        )}
-                                        onChange={(e) =>
-                                          form.setValue(
-                                            `priceTiers.${index}.titleEn`,
-                                            e.target.value,
-                                            { shouldDirty: true },
-                                          )
-                                        }
-                                        placeholder="Super Early Bird"
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label>Title (Arabic)</Label>
-                                      <Input
-                                        dir="rtl"
-                                        value={form.watch(
-                                          `priceTiers.${index}.titleAr`,
-                                        )}
-                                        onChange={(e) =>
-                                          form.setValue(
-                                            `priceTiers.${index}.titleAr`,
-                                            e.target.value,
-                                            { shouldDirty: true },
-                                          )
-                                        }
-                                        placeholder="الحجز المبكر جداً"
-                                      />
-                                    </div>
-                                  </div>
-                                  <Button
+                            {priceTiers.fields.map((field, index) => {
+                              const isExpanded = expandedTiers.has(index);
+                              const titleEn = form.watch(
+                                `priceTiers.${index}.titleEn`,
+                              );
+                              const price = form.watch(
+                                `priceTiers.${index}.price`,
+                              );
+                              const currency = form.watch(
+                                `priceTiers.${index}.currency`,
+                              );
+                              const descriptionEn = form.watch(
+                                `priceTiers.${index}.descriptionEn`,
+                              );
+                              return (
+                                <div
+                                  key={field.id}
+                                  className="overflow-hidden rounded-xl border border-zinc-200 bg-white"
+                                >
+                                  <button
                                     type="button"
-                                    className="cursor-pointer rounded"
-                                    size="icon-sm"
-                                    variant="destructive"
-                                    onClick={() => priceTiers.remove(index)}
+                                    onClick={() => toggleTierExpanded(index)}
+                                    className="flex w-full cursor-pointer items-center gap-3 p-3.5 text-left"
                                   >
-                                    <HugeiconsIcon
-                                      icon={Delete02Icon}
-                                      className="text-destructive"
+                                    <span className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-[9px] border border-emerald-100 bg-emerald-50 text-emerald-600">
+                                      <CircleDollarSign className="size-4" />
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block truncate text-sm font-semibold text-zinc-900">
+                                        {titleEn || `Tier ${index + 1}`}
+                                      </span>
+                                      {descriptionEn && (
+                                        <span className="block truncate text-xs text-zinc-500">
+                                          {descriptionEn}
+                                        </span>
+                                      )}
+                                    </span>
+                                    <span className="shrink-0 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-xs font-bold tabular-nums text-emerald-700">
+                                      {price || 0} {currency || "OMR"}
+                                    </span>
+                                    <ChevronDown
+                                      className={`size-4 shrink-0 text-zinc-400 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
                                     />
-                                  </Button>
-                                </div>
+                                  </button>
+                                  {isExpanded && (
+                                    <div className="space-y-3.5 border-t border-zinc-200 p-4 pt-4">
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                          <Label>Title (English)</Label>
+                                          <Input
+                                            value={form.watch(
+                                              `priceTiers.${index}.titleEn`,
+                                            )}
+                                            onChange={(e) =>
+                                              form.setValue(
+                                                `priceTiers.${index}.titleEn`,
+                                                e.target.value,
+                                                { shouldDirty: true },
+                                              )
+                                            }
+                                            placeholder="Super Early Bird"
+                                          />
+                                        </div>
+                                        <div>
+                                          <Label>Title (Arabic)</Label>
+                                          <Input
+                                            dir="rtl"
+                                            value={form.watch(
+                                              `priceTiers.${index}.titleAr`,
+                                            )}
+                                            onChange={(e) =>
+                                              form.setValue(
+                                                `priceTiers.${index}.titleAr`,
+                                                e.target.value,
+                                                { shouldDirty: true },
+                                              )
+                                            }
+                                            placeholder="الحجز المبكر جداً"
+                                          />
+                                        </div>
+                                      </div>
 
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div>
-                                    <Label>Description (English)</Label>
-                                    <Textarea
-                                      value={form.watch(
-                                        `priceTiers.${index}.descriptionEn`,
-                                      )}
-                                      onChange={(e) =>
-                                        form.setValue(
-                                          `priceTiers.${index}.descriptionEn`,
-                                          e.target.value,
-                                          { shouldDirty: true },
-                                        )
-                                      }
-                                      placeholder="Until 20 Sep 2026. Limited to the first 30 delegates."
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label>Description (Arabic)</Label>
-                                    <Textarea
-                                      dir="rtl"
-                                      value={form.watch(
-                                        `priceTiers.${index}.descriptionAr`,
-                                      )}
-                                      onChange={(e) =>
-                                        form.setValue(
-                                          `priceTiers.${index}.descriptionAr`,
-                                          e.target.value,
-                                          { shouldDirty: true },
-                                        )
-                                      }
-                                    />
-                                  </div>
-                                </div>
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                          <Label>Description (English)</Label>
+                                          <Textarea
+                                            value={form.watch(
+                                              `priceTiers.${index}.descriptionEn`,
+                                            )}
+                                            onChange={(e) =>
+                                              form.setValue(
+                                                `priceTiers.${index}.descriptionEn`,
+                                                e.target.value,
+                                                { shouldDirty: true },
+                                              )
+                                            }
+                                            placeholder="Until 20 Sep 2026. Limited to the first 30 delegates."
+                                          />
+                                        </div>
+                                        <div>
+                                          <Label>Description (Arabic)</Label>
+                                          <Textarea
+                                            dir="rtl"
+                                            value={form.watch(
+                                              `priceTiers.${index}.descriptionAr`,
+                                            )}
+                                            onChange={(e) =>
+                                              form.setValue(
+                                                `priceTiers.${index}.descriptionAr`,
+                                                e.target.value,
+                                                { shouldDirty: true },
+                                              )
+                                            }
+                                          />
+                                        </div>
+                                      </div>
 
-                                <div className="grid grid-cols-3 gap-3">
-                                  <div>
-                                    <Label>Price</Label>
-                                    <Input
-                                      type="number"
-                                      min={0}
-                                      step="0.01"
-                                      value={form.watch(
-                                        `priceTiers.${index}.price`,
-                                      )}
-                                      onChange={(e) =>
-                                        form.setValue(
-                                          `priceTiers.${index}.price`,
-                                          Number(e.target.value),
-                                          { shouldDirty: true },
-                                        )
-                                      }
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label>Currency</Label>
-                                    <Input
-                                      value={form.watch(
-                                        `priceTiers.${index}.currency`,
-                                      )}
-                                      onChange={(e) =>
-                                        form.setValue(
-                                          `priceTiers.${index}.currency`,
-                                          e.target.value,
-                                          { shouldDirty: true },
-                                        )
-                                      }
-                                      placeholder="OMR"
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label>
-                                      Secondary display price (optional)
-                                    </Label>
-                                    <Input
-                                      value={form.watch(
-                                        `priceTiers.${index}.secondaryDisplayPrice`,
-                                      )}
-                                      onChange={(e) =>
-                                        form.setValue(
-                                          `priceTiers.${index}.secondaryDisplayPrice`,
-                                          e.target.value,
-                                          {
-                                            shouldDirty: true,
-                                          },
-                                        )
-                                      }
-                                      placeholder="USD 650"
-                                    />
-                                  </div>
+                                      <div className="grid grid-cols-3 gap-3">
+                                        <div>
+                                          <Label>Price</Label>
+                                          <Input
+                                            type="number"
+                                            min={0}
+                                            step="0.01"
+                                            value={form.watch(
+                                              `priceTiers.${index}.price`,
+                                            )}
+                                            onChange={(e) =>
+                                              form.setValue(
+                                                `priceTiers.${index}.price`,
+                                                Number(e.target.value),
+                                                { shouldDirty: true },
+                                              )
+                                            }
+                                          />
+                                        </div>
+                                        <div>
+                                          <Label>Currency</Label>
+                                          <Input
+                                            value={form.watch(
+                                              `priceTiers.${index}.currency`,
+                                            )}
+                                            onChange={(e) =>
+                                              form.setValue(
+                                                `priceTiers.${index}.currency`,
+                                                e.target.value,
+                                                { shouldDirty: true },
+                                              )
+                                            }
+                                            placeholder="OMR"
+                                          />
+                                        </div>
+                                        <div>
+                                          <Label>
+                                            Secondary display price (optional)
+                                          </Label>
+                                          <Input
+                                            value={form.watch(
+                                              `priceTiers.${index}.secondaryDisplayPrice`,
+                                            )}
+                                            onChange={(e) =>
+                                              form.setValue(
+                                                `priceTiers.${index}.secondaryDisplayPrice`,
+                                                e.target.value,
+                                                {
+                                                  shouldDirty: true,
+                                                },
+                                              )
+                                            }
+                                            placeholder="USD 650"
+                                          />
+                                        </div>
+                                      </div>
+
+                                      <div className="mt-3.5 flex items-center justify-between border-t border-dashed border-zinc-200 pt-3.5">
+                                        <div className="flex gap-1">
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon-sm"
+                                            className="cursor-pointer"
+                                            disabled={index === 0}
+                                            onClick={() =>
+                                              priceTiers.move(
+                                                index,
+                                                index - 1,
+                                              )
+                                            }
+                                          >
+                                            <ChevronUp className="size-4" />
+                                          </Button>
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon-sm"
+                                            className="cursor-pointer"
+                                            disabled={
+                                              index ===
+                                              priceTiers.fields.length - 1
+                                            }
+                                            onClick={() =>
+                                              priceTiers.move(
+                                                index,
+                                                index + 1,
+                                              )
+                                            }
+                                          >
+                                            <ChevronDown className="size-4" />
+                                          </Button>
+                                        </div>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className="cursor-pointer text-red-500 hover:text-red-600"
+                                          onClick={() =>
+                                            removePriceTier(index)
+                                          }
+                                        >
+                                          <HugeiconsIcon
+                                            icon={Delete02Icon}
+                                            className="mr-1.5"
+                                            size={14}
+                                          />
+                                          Remove this tier
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
 
                           {visibility.showBankDetails && (
