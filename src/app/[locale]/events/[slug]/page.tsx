@@ -55,6 +55,19 @@ function formatDate(date: Date, locale: "ar" | "en") {
   }).format(date);
 }
 
+function formatDateRange(startDate: Date, endDate: Date, locale: "ar" | "en") {
+  const sameDay =
+    startDate.getUTCFullYear() === endDate.getUTCFullYear() &&
+    startDate.getUTCMonth() === endDate.getUTCMonth() &&
+    startDate.getUTCDate() === endDate.getUTCDate();
+  if (sameDay) return formatDate(startDate, locale);
+  const formatter = new Intl.DateTimeFormat(
+    locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB",
+    { dateStyle: "long" },
+  );
+  return `${formatter.format(startDate)} – ${formatter.format(endDate)}`;
+}
+
 function formatTimeRange(startDate: Date, endDate: Date, locale: "ar" | "en") {
   const formatter = new Intl.DateTimeFormat(
     locale === "ar" ? "ar-OM-u-nu-latn" : "en-GB",
@@ -574,7 +587,7 @@ export default async function EventDetailPage({
           <div className="mb-10 flex flex-wrap items-center gap-5 border-b border-outline-variant/20 pb-8">
             <MetaInline
               icon={Calendar03Icon}
-              value={formatDate(startDate, activeLocale)}
+              value={formatDateRange(startDate, endDate, activeLocale)}
             />
             {showTime ? (
               <MetaInline
@@ -688,7 +701,7 @@ function EventMetaCard({
       <DetailItem
         icon={Calendar03Icon}
         label={locale === "ar" ? "التاريخ" : "Date"}
-        value={formatDate(startDate, locale)}
+        value={formatDateRange(startDate, endDate, locale)}
       />
       {showTime ? (
         <DetailItem
