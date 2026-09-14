@@ -356,46 +356,93 @@ function DownloadsAccordion({
 }
 
 function PricingSection({
-  tiers,
+  event,
   heading,
   locale,
+  basePath,
+  slug,
 }: {
-  tiers: NonNullable<Awaited<ReturnType<typeof getEventDetailBySlug>>>["priceTiers"];
+  event: NonNullable<Awaited<ReturnType<typeof getEventDetailBySlug>>>;
   heading: string;
   locale: "ar" | "en";
+  basePath: "events" | "training-courses";
+  slug: string;
 }) {
+  const tiers = event.priceTiers;
   if (tiers.length === 0) return null;
+  const registrationHref =
+    event.registrationType === "external" && event.externalRegistrationUrl
+      ? event.externalRegistrationUrl
+      : `/${locale}/${basePath}/${slug}/register`;
+  const ctaLabel = locale === "ar" ? "اختر هذا الخيار" : "Select";
+  // Middle-priced tier reads as the intended "main" option without needing a
+  // dedicated admin flag — matches how these tiers are typically authored
+  // (a cheapest, a most-expensive, and a recommended one in between).
+  const sortedByPrice = [...tiers].sort((a, b) => a.price - b.price);
+  const featuredTierId = sortedByPrice[Math.floor((sortedByPrice.length - 1) / 2)]?.id;
+
   return (
-    <section id="pricing" className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 md:py-24">
-      <span className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.35em] text-primary">
-        {locale === "ar" ? "التسجيل" : "Registration"}
-      </span>
-      <h2 className="mb-10 text-[clamp(1.75rem,3vw,2.5rem)] font-semibold leading-tight text-on-surface">
-        {heading}
-      </h2>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {tiers.map((tier) => (
-          <div
-            key={tier.id}
-            className="flex flex-col gap-4 border border-outline-variant/20 p-7 transition-all duration-300 hover:-translate-y-1 hover:border-secondary/40"
-          >
-            <div className="flex h-10 w-10 items-center justify-center border border-secondary/40 bg-secondary/15 text-secondary">
-              <HugeiconsIcon icon={Ticket01Icon} size={20} strokeWidth={1.5} />
-            </div>
-            <h3 className="text-lg font-semibold text-on-surface">{tier.title}</h3>
-            <div className="flex items-baseline gap-2 font-mono text-3xl font-semibold text-secondary">
-              <CurrencySymbol currency={tier.currency} /> {tier.price}
-              {tier.secondaryDisplayPrice && (
-                <span className="text-sm font-normal text-on-surface-variant">
-                  ({tier.secondaryDisplayPrice})
-                </span>
-              )}
-            </div>
-            {tier.description && (
-              <p className="text-sm leading-relaxed text-on-surface-variant">{tier.description}</p>
-            )}
-          </div>
-        ))}
+    <section
+      id="pricing"
+      className="border-y border-outline-variant/20 bg-surface-container-low"
+    >
+      <div className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 md:py-24">
+        <span className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.35em] text-primary">
+          {locale === "ar" ? "التسجيل" : "Registration"}
+        </span>
+        <h2 className="mb-10 text-[clamp(1.75rem,3vw,2.5rem)] font-semibold leading-tight text-on-surface">
+          {heading}
+        </h2>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          {tiers.map((tier) => {
+            const isFeatured = tier.id === featuredTierId && tiers.length > 1;
+            return (
+              <div
+                key={tier.id}
+                className={`relative flex flex-col gap-4 p-8 transition-all duration-300 hover:-translate-y-1 ${
+                  isFeatured
+                    ? "border-2 border-secondary/60 bg-surface-container"
+                    : "border border-outline-variant/20 bg-surface-container-lowest hover:border-secondary/40"
+                }`}
+              >
+                {isFeatured && (
+                  <span className="badge-teal absolute -top-3 start-8 font-body">
+                    {locale === "ar" ? "الأكثر اختياراً" : "Most Popular"}
+                  </span>
+                )}
+                <div className="flex h-12 w-12 items-center justify-center border border-secondary/40 bg-secondary/15 text-secondary">
+                  <HugeiconsIcon icon={Ticket01Icon} size={22} strokeWidth={1.5} />
+                </div>
+                <h3 className="text-xl font-semibold text-on-surface">{tier.title}</h3>
+                <div className="flex items-baseline gap-2 font-mono text-4xl font-semibold text-secondary">
+                  <CurrencySymbol currency={tier.currency} /> {tier.price}
+                  {tier.secondaryDisplayPrice && (
+                    <span className="text-sm font-normal text-on-surface-variant">
+                      ({tier.secondaryDisplayPrice})
+                    </span>
+                  )}
+                </div>
+                {tier.description && (
+                  <p className="flex-1 text-sm leading-relaxed text-on-surface-variant">
+                    {tier.description}
+                  </p>
+                )}
+                <Link
+                  className={`mt-2 flex items-center justify-center gap-2 py-3.5 text-xs uppercase tracking-widest transition-colors ${
+                    isFeatured
+                      ? "bg-primary text-primary-foreground hover:bg-secondary"
+                      : "ghost-border text-on-surface hover:bg-surface-container"
+                  }`}
+                  href={registrationHref}
+                  rel={event.registrationType === "external" ? "noreferrer" : undefined}
+                  target={event.registrationType === "external" ? "_blank" : undefined}
+                >
+                  {ctaLabel}
+                </Link>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
@@ -599,6 +646,14 @@ export default async function TrainingCourseDetailPage({
           </div>
         </div>
 
+        <PricingSection
+          basePath={basePath}
+          event={event}
+          heading={event.pricingHeading}
+          locale={activeLocale}
+          slug={slug}
+        />
+
         <section
           id="details"
           className="mx-auto grid max-w-[1440px] grid-cols-12 gap-10 px-6 py-16 md:px-10 md:py-24 [&>*]:min-w-0"
@@ -637,7 +692,6 @@ export default async function TrainingCourseDetailPage({
             </div>
           </aside>
         </section>
-        <PricingSection heading={event.pricingHeading} locale={activeLocale} tiers={event.priceTiers} />
       </main>
     );
   }
@@ -730,6 +784,13 @@ export default async function TrainingCourseDetailPage({
           </div>
         </aside>
       </div>
+      <PricingSection
+        basePath={basePath}
+        event={event}
+        heading={event.pricingHeading}
+        locale={activeLocale}
+        slug={slug}
+      />
       <section className="mx-auto max-w-[1440px] px-6 pb-16 md:px-10">
         <h2 className="mb-6 border-b border-outline-variant/20 pb-3 text-xl font-semibold">
           {activeLocale === "ar" ? "دورات أخرى قد تهمك" : "Other Training Courses You May Like"}
@@ -765,7 +826,6 @@ export default async function TrainingCourseDetailPage({
             ))}
         </div>
       </section>
-      <PricingSection heading={event.pricingHeading} locale={activeLocale} tiers={event.priceTiers} />
     </main>
   );
 }
