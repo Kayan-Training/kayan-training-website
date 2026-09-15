@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
+import sharp from "sharp";
 
 const OG_WIDTH = 1200;
 const OG_HEIGHT = 630;
@@ -57,13 +58,37 @@ function KayanLogoMark() {
   );
 }
 
+// Satori/resvg (the renderer behind next/og) can only decode png/jpeg/gif, so
+// real webp cover photos are re-encoded first. Satori embeds the result as a
+// base64 data URI inside the intermediate SVG it hands to resvg, so it also
+// has to be resized down to the OG canvas and compressed — an unresized
+// full-photo PNG can run into the multi-MB range and trip resvg's XML
+// attribute-size limit ("Buffer size limit exceeded, try XML_PARSE_HUGE").
+async function resolveBackgroundImage(url: string): Promise<string | undefined> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return undefined;
+    const source = Buffer.from(await response.arrayBuffer());
+    const jpeg = await sharp(source)
+      .resize(OG_WIDTH, OG_HEIGHT, { fit: "cover" })
+      .jpeg({ quality: 80 })
+      .toBuffer();
+    return `data:image/jpeg;base64,${jpeg.toString("base64")}`;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function buildOgImage(input: {
   title: string;
   subtitle?: string;
   backgroundImageUrl?: string;
   locale: "ar" | "en";
 }) {
-  const { title, subtitle, backgroundImageUrl, locale } = input;
+  const { title, subtitle, locale } = input;
+  const backgroundImageUrl = input.backgroundImageUrl
+    ? await resolveBackgroundImage(input.backgroundImageUrl)
+    : undefined;
   const fonts = await loadFonts();
   const fontFamily = locale === "ar" ? "IBM Plex Sans Arabic" : "Montserrat";
 
