@@ -245,7 +245,7 @@ export function EventsListingClient({
                     }}
                     labels={{
                       details: locale === "ar" ? "التفاصيل" : "Details",
-                      detailsAndRegister: locale === "ar" ? "التفاصيل والتسجيل" : "Details & Register",
+                      detailsAndRegister: locale === "ar" ? "التفاصيل والتسجيل" : "Details & Registration",
                       featured: locale === "ar" ? "برنامج مميّز" : "Featured Program",
                       registrationClosed:
                         locale === "ar"

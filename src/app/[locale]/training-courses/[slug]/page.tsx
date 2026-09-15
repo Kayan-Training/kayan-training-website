@@ -158,7 +158,6 @@ function RegisterCard({
   locale: "ar" | "en";
   slug: string;
 }) {
-  const contentNoun = locale === "ar" ? "الدورة" : "course";
   const capacity = event.capacity ?? 0;
   const taken = event.registrationsCount;
   const progress = capacity
@@ -254,7 +253,7 @@ function RegisterCard({
             rel={event.registrationType === "external" ? "noreferrer" : undefined}
             target={event.registrationType === "external" ? "_blank" : undefined}
           >
-            {locale === "ar" ? `التسجيل في ${contentNoun}` : `Register for ${contentNoun}`}
+            {locale === "ar" ? "التسجيل" : "Register"}
           </Link>
           <p className="text-center text-[10px] text-on-surface-variant">
             {locale === "ar"
