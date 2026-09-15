@@ -7,8 +7,8 @@ import { getAnimatedCategoryIcons } from "@/lib/content/category-icons";
 import { getFeaturedPrograms } from "@/lib/content/queries";
 import { db } from "@/lib/db";
 import { LOCALE_DIRECTION, isSupportedLocale, type AppLocale } from "@/lib/i18n/config";
+import { buildAbsoluteUrl, buildMetadataWithLocaleAlternates, jsonLdScript } from "@/lib/seo";
 import { getLocalizedSiteSettings } from "@/lib/settings";
-import { buildMetadataWithLocaleAlternates } from "@/lib/seo";
 
 function localizeMenuHref(href: string, locale: AppLocale): string {
   if (!href.startsWith("/")) return href;
@@ -51,6 +51,33 @@ export default async function LocaleLayout({
     notFound();
   }
   const siteSettings = await getLocalizedSiteSettings(locale);
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: siteSettings.siteName,
+    url: buildAbsoluteUrl(`/${locale}`),
+    logo: buildAbsoluteUrl("/brand/kayan-logo.svg"),
+    description: siteSettings.siteDescription,
+    email: siteSettings.contactEmail,
+    telephone: siteSettings.contactPhone,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: siteSettings.contactAddress,
+      addressCountry: "OM",
+    },
+    sameAs: siteSettings.socialLinks.map((link) => link.url),
+  };
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: siteSettings.siteName,
+    url: buildAbsoluteUrl(`/${locale}`),
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${buildAbsoluteUrl(`/${locale}/search`)}?q={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  };
   const footerCategoryIcons = siteSettings.footerShowAnimatedCategoryIcons
     ? await getAnimatedCategoryIcons(locale)
     : [];
@@ -119,6 +146,14 @@ export default async function LocaleLayout({
 
   return (
     <div data-locale={locale} dir={LOCALE_DIRECTION[locale]}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(organizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(websiteJsonLd) }}
+      />
       <LocaleShell
         locale={locale}
         menuItems={menuItems}
