@@ -26,28 +26,17 @@ const nextConfig: NextConfig = {
   },
   // sharp is in Next's default serverExternalPackages list, so it isn't bundled —
   // Next's own output tracing has to pick up its native binaries and small
-  // transitive deps instead. pnpm stores those several symlink hops deep under
-  // node_modules/.pnpm/<pkg>@<version>/node_modules/<pkg> (not as descendants of
-  // node_modules/sharp itself), which tracing missed — "Cannot find module
-  // 'detect-libc'" crashed every SSR request that touches an opengraph-image/
-  // twitter-image route on Amplify's Lambda runtime (linux). Force-include
-  // sharp's own tree plus only the linux x64/arm64 native binaries (the ones a
-  // Lambda runtime can actually be) — a broader `@img+sharp-*` glob previously
-  // pulled in darwin/win32/wasm32/musl/ppc64/etc binaries on every single route
-  // via the `/*` key, ballooning every function bundle and failing to deploy on
-  // Vercel (function size limit) even though the build itself succeeded.
+  // transitive deps (detect-libc, semver, @img/colour) on its own. Under pnpm's
+  // default nested-symlink node_modules layout those live several hops away
+  // from node_modules/sharp, which tracing missed ("Cannot find module
+  // 'detect-libc'", crashing every SSR request that touches an opengraph-image/
+  // twitter-image route), and hand-listing exact pnpm store paths to fix that
+  // caused duplicate/colliding symlink+real-file entries during Amplify's
+  // bundling step instead. Switched to node-linker=hoisted in .npmrc (flat,
+  // symlink-free node_modules) so the plain include below — matching Next's own
+  // documented example — is correct and sufficient.
   outputFileTracingIncludes: {
-    "/*": [
-      "node_modules/sharp/**/*",
-      "node_modules/.pnpm/sharp@*/node_modules/**/*",
-      "node_modules/.pnpm/@img+sharp-linux-x64@*/node_modules/**/*",
-      "node_modules/.pnpm/@img+sharp-linux-arm64@*/node_modules/**/*",
-      "node_modules/.pnpm/@img+sharp-libvips-linux-x64@*/node_modules/**/*",
-      "node_modules/.pnpm/@img+sharp-libvips-linux-arm64@*/node_modules/**/*",
-      "node_modules/.pnpm/@img+colour@*/node_modules/**/*",
-      "node_modules/.pnpm/detect-libc@*/node_modules/**/*",
-      "node_modules/.pnpm/semver@*/node_modules/**/*",
-    ],
+    "/*": ["node_modules/sharp/**/*"],
   },
   images: {
     qualities: [72, 75],
