@@ -24,6 +24,24 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  // sharp is in Next's default serverExternalPackages list, so it isn't bundled —
+  // Next's own output tracing has to pick up its native binaries and small
+  // transitive deps instead. pnpm stores those several symlink hops deep under
+  // node_modules/.pnpm/<pkg>@<version>/node_modules/<pkg> (not as descendants of
+  // node_modules/sharp itself), which tracing missed — "Cannot find module
+  // 'detect-libc'" crashed every SSR request that touches an opengraph-image/
+  // twitter-image route on Amplify's Lambda runtime. Force-include the whole
+  // pnpm store entries for sharp and its runtime dependencies.
+  outputFileTracingIncludes: {
+    "/*": [
+      "node_modules/sharp/**/*",
+      "node_modules/.pnpm/sharp@*/node_modules/**/*",
+      "node_modules/.pnpm/@img+sharp-*/node_modules/**/*",
+      "node_modules/.pnpm/@img+colour@*/node_modules/**/*",
+      "node_modules/.pnpm/detect-libc@*/node_modules/**/*",
+      "node_modules/.pnpm/semver@*/node_modules/**/*",
+    ],
+  },
   images: {
     qualities: [72, 75],
     remotePatterns: [
