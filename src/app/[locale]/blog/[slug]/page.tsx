@@ -20,7 +20,6 @@ export async function generateMetadata({
   if (!post) return {};
   return buildMetadataWithLocaleAlternates({
     description: post.seoDescription || post.excerpt || post.title,
-    image: post.seoImage || post.coverImage,
     locale: activeLocale,
     path: `/blog/${slug}`,
     title: post.seoTitle || post.title,

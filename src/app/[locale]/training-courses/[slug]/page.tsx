@@ -48,7 +48,6 @@ export async function generateMetadata({
   if (!event) return {};
   return buildMetadataWithLocaleAlternates({
     description: event.seoDescription || event.excerpt || event.title,
-    image: event.seoImage || event.coverImage,
     locale: activeLocale,
     path: `/training-courses/${slug}`,
     title: event.seoTitle || event.title,

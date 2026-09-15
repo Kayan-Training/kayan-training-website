@@ -14,17 +14,11 @@ export function buildMetadataWithLocaleAlternates(input: {
   path: string;
   title: Metadata["title"];
   description: string;
-  image?: string | null;
 }): Metadata {
-  const { locale, path, title, description, image } = input;
+  const { locale, path, title, description } = input;
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const url = `${getBaseUrl()}/${locale}${normalized}`;
   const plainTitle = typeof title === "string" ? title : undefined;
-  const absoluteImage = image
-    ? /^https?:\/\//i.test(image)
-      ? image
-      : buildAbsoluteUrl(image)
-    : undefined;
 
   return {
     title,
@@ -38,19 +32,20 @@ export function buildMetadataWithLocaleAlternates(input: {
         "x-default": `${getBaseUrl()}/ar${normalized}`,
       },
     },
+    // No `images` here: the opengraph-image.tsx/twitter-image.tsx file-convention
+    // routes generate the real branded share image and Next auto-attaches it —
+    // setting images explicitly here would override that with the raw source photo.
     openGraph: {
       title: plainTitle,
       description,
       type: "website",
       locale,
       url,
-      images: absoluteImage ? [absoluteImage] : undefined,
     },
     twitter: {
       card: "summary_large_image",
       title: plainTitle,
       description,
-      images: absoluteImage ? [absoluteImage] : undefined,
     },
   };
 }
