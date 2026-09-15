@@ -5512,19 +5512,43 @@ export function EventForm({
                                   status={downloadUploadStatus}
                                 />
                               )}
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                className="cursor-pointer"
-                                onClick={() => downloads.remove(index)}
-                              >
-                                <HugeiconsIcon
-                                  icon={Delete02Icon}
-                                  className="text-destructive"
-                                />
-                                Remove Item
-                              </Button>
+                              <div className="flex items-center justify-between">
+                                <div className="flex gap-1">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon-sm"
+                                    className="cursor-pointer"
+                                    disabled={index === 0}
+                                    onClick={() => downloads.move(index, index - 1)}
+                                  >
+                                    <ChevronUp className="size-4" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon-sm"
+                                    className="cursor-pointer"
+                                    disabled={index === downloads.fields.length - 1}
+                                    onClick={() => downloads.move(index, index + 1)}
+                                  >
+                                    <ChevronDown className="size-4" />
+                                  </Button>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  className="cursor-pointer"
+                                  onClick={() => downloads.remove(index)}
+                                >
+                                  <HugeiconsIcon
+                                    icon={Delete02Icon}
+                                    className="text-destructive"
+                                  />
+                                  Remove Item
+                                </Button>
+                              </div>
                             </div>
                           );
                         })}
