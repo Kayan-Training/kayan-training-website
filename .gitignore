@@ -36,7 +36,6 @@ public/example-assets
 AGENTS.md
 CLAUDE.md
 /src/generated/prisma
-/prisma/migrations
 tmp-*
 .vscode
 TODO*
