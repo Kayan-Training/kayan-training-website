@@ -30,13 +30,20 @@ const nextConfig: NextConfig = {
   // node_modules/.pnpm/<pkg>@<version>/node_modules/<pkg> (not as descendants of
   // node_modules/sharp itself), which tracing missed — "Cannot find module
   // 'detect-libc'" crashed every SSR request that touches an opengraph-image/
-  // twitter-image route on Amplify's Lambda runtime. Force-include the whole
-  // pnpm store entries for sharp and its runtime dependencies.
+  // twitter-image route on Amplify's Lambda runtime (linux). Force-include
+  // sharp's own tree plus only the linux x64/arm64 native binaries (the ones a
+  // Lambda runtime can actually be) — a broader `@img+sharp-*` glob previously
+  // pulled in darwin/win32/wasm32/musl/ppc64/etc binaries on every single route
+  // via the `/*` key, ballooning every function bundle and failing to deploy on
+  // Vercel (function size limit) even though the build itself succeeded.
   outputFileTracingIncludes: {
     "/*": [
       "node_modules/sharp/**/*",
       "node_modules/.pnpm/sharp@*/node_modules/**/*",
-      "node_modules/.pnpm/@img+sharp-*/node_modules/**/*",
+      "node_modules/.pnpm/@img+sharp-linux-x64@*/node_modules/**/*",
+      "node_modules/.pnpm/@img+sharp-linux-arm64@*/node_modules/**/*",
+      "node_modules/.pnpm/@img+sharp-libvips-linux-x64@*/node_modules/**/*",
+      "node_modules/.pnpm/@img+sharp-libvips-linux-arm64@*/node_modules/**/*",
       "node_modules/.pnpm/@img+colour@*/node_modules/**/*",
       "node_modules/.pnpm/detect-libc@*/node_modules/**/*",
       "node_modules/.pnpm/semver@*/node_modules/**/*",
