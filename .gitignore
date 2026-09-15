@@ -23,7 +23,7 @@
 # misc
 .DS_Store
 *.pem
-docs
+.claude
 .source
 assets
 !assets/fonts
