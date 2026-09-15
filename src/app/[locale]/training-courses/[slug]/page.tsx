@@ -465,13 +465,47 @@ export default async function TrainingCourseDetailPage({
     event.heroPeopleLabel.trim() ||
     (activeLocale === "ar" ? "متحدثاً خبيراً" : "Expert Speakers");
   const eventUrl = buildAbsoluteUrl(`/${activeLocale}/training-courses/${slug}`);
+  const offers =
+    event.priceTiers.length > 0
+      ? event.priceTiers.map((tier) => ({
+          "@type": "Offer",
+          name: tier.title,
+          price: tier.price,
+          priceCurrency: tier.currency,
+          availability: event.registrationsOpen
+            ? "https://schema.org/InStock"
+            : "https://schema.org/SoldOut",
+          url: eventUrl,
+        }))
+      : event.isFree
+        ? undefined
+        : [
+            {
+              "@type": "Offer",
+              price: event.price,
+              priceCurrency: "OMR",
+              availability: event.registrationsOpen
+                ? "https://schema.org/InStock"
+                : "https://schema.org/SoldOut",
+              url: eventUrl,
+            },
+          ];
+  const hasCourseInstance = {
+    "@type": "CourseInstance",
+    courseMode: "Onsite",
+    startDate: new Date(event.startDate).toISOString(),
+    endDate: new Date(event.endDate).toISOString(),
+    location: event.location ? { "@type": "Place", name: event.location } : undefined,
+  };
   const eventJsonLd = {
     "@context": "https://schema.org",
     "@type": "Course",
     description: event.seoDescription || event.excerpt || undefined,
+    hasCourseInstance,
     image: event.coverImage ? [event.coverImage] : undefined,
     inLanguage: activeLocale,
     name: event.seoTitle || event.title,
+    offers,
     provider: {
       "@type": "Organization",
       name: "Kayan Training & Consulting",
