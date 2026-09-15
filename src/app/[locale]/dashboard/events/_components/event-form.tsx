@@ -284,6 +284,8 @@ const eventSchema = z.object({
   seoDescriptionEn: z.string(),
   seoTitleAr: z.string(),
   seoTitleEn: z.string(),
+  seoImageAr: z.string(),
+  seoImageEn: z.string(),
   showMapEmbed: z.boolean(),
   shortAr: z.string().max(160),
   shortEn: z.string().max(160),
@@ -2093,9 +2095,14 @@ export function EventForm({
   const shortDescriptionInputId = `${idPrefix}-short-description-input`;
   const seoTitleInputId = `${idPrefix}-seo-title-input`;
   const seoDescriptionInputId = `${idPrefix}-seo-description-input`;
+  const seoImageInputId = `${idPrefix}-seo-image-input`;
   const [trainerCandidate, setTrainerCandidate] = useState("");
   const heroProgramLogoInputRef = useRef<HTMLInputElement>(null);
   const heroCollaboratorLogosInputRef = useRef<HTMLInputElement>(null);
+  const seoImageInputRef = useRef<HTMLInputElement>(null);
+  const [isSeoImageUploading, setIsSeoImageUploading] = useState(false);
+  const [seoImageUploadProgress, setSeoImageUploadProgress] = useState(0);
+  const [seoImageUploadStatus, setSeoImageUploadStatus] = useState("");
   const draftStorageKey = useMemo(
     () => `event-form-draft:${eventId ?? "new"}:${locale}`,
     [eventId, locale],
@@ -2181,6 +2188,8 @@ export function EventForm({
       seoDescriptionEn: "",
       seoTitleAr: "",
       seoTitleEn: "",
+      seoImageAr: "",
+      seoImageEn: "",
       showMapEmbed: false,
       shortAr: "",
       shortEn: "",
@@ -2284,6 +2293,9 @@ export function EventForm({
   const selectedTrainerIds = form.watch("trainerIds");
   const selectedCategoryIds = form.watch("categories");
   const coverImage = form.watch("coverImage");
+  const seoImage = form.watch(
+    activeLocale === "en" ? "seoImageEn" : "seoImageAr",
+  );
   const heroProgramLogo = form.watch("heroProgramLogo");
   const heroCollaboratorLogosText = form.watch("heroCollaboratorLogos");
   const heroCollaboratorLogos = heroCollaboratorLogosText
@@ -2774,6 +2786,33 @@ export function EventForm({
       toast.error(err instanceof Error ? err.message : "Upload failed.");
     } finally {
       setIsCoverUploading(false);
+    }
+  }
+
+  async function uploadSeoImage(file: File | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file.");
+      return;
+    }
+    setIsSeoImageUploading(true);
+    setSeoImageUploadProgress(0);
+    setSeoImageUploadStatus("");
+    try {
+      const media = await uploadMediaFile(file, {
+        onProgress: (percent) => setSeoImageUploadProgress(percent),
+        onStatus: (status) => setSeoImageUploadStatus(status),
+      });
+      form.setValue(
+        activeLocale === "en" ? "seoImageEn" : "seoImageAr",
+        media.url,
+        { shouldDirty: true },
+      );
+      toast.success("SEO image uploaded.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setIsSeoImageUploading(false);
     }
   }
 
@@ -3933,6 +3972,114 @@ export function EventForm({
                           <FieldDescription>
                             Keep this concise for better click-through in
                             listings.
+                          </FieldDescription>
+                        </Field>
+                        <Field className="grid gap-2">
+                          <FieldLabel htmlFor={seoImageInputId}>
+                            SEO Image ({activeLocale.toUpperCase()})
+                          </FieldLabel>
+                          <input
+                            ref={seoImageInputRef}
+                            accept="image/*"
+                            className="sr-only"
+                            id={seoImageInputId}
+                            type="file"
+                            onChange={(e) =>
+                              void uploadSeoImage(e.target.files?.[0])
+                            }
+                          />
+                          <button
+                            className={cn(
+                              "group relative flex w-full cursor-pointer items-center justify-center overflow-hidden",
+                              "rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50 transition-colors",
+                              "hover:border-teal-400 hover:bg-teal-50/30",
+                              isSeoImageUploading &&
+                                "pointer-events-none opacity-60",
+                            )}
+                            style={{ height: 172 }}
+                            type="button"
+                            onClick={() => seoImageInputRef.current?.click()}
+                          >
+                            {seoImage ? (
+                              <>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  alt="SEO"
+                                  className="absolute inset-0 h-full w-full object-cover"
+                                  src={seoImage}
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                                  <Upload className="size-4 text-white" />
+                                  <span className="text-[13px] font-semibold text-white">
+                                    Replace image
+                                  </span>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="flex flex-col items-center gap-2 text-zinc-400">
+                                {isSeoImageUploading ? (
+                                  <Loader2 className="size-6 animate-spin text-teal-500" />
+                                ) : (
+                                  <ImageIcon className="size-7 text-zinc-300" />
+                                )}
+                                <span className="text-[13px] font-medium">
+                                  {isSeoImageUploading
+                                    ? `Uploading… ${seoImageUploadProgress}%`
+                                    : "Upload SEO image"}
+                                </span>
+                                <span className="text-[11.5px] text-zinc-300">
+                                  JPG, PNG or WebP · Recommended 1200 × 630
+                                </span>
+                                <UploadProgress
+                                  className="w-full max-w-[260px]"
+                                  isActive={isSeoImageUploading}
+                                  percent={seoImageUploadProgress}
+                                  status={seoImageUploadStatus}
+                                />
+                              </div>
+                            )}
+                          </button>
+                          {seoImage ? (
+                            <div className="mt-2 flex gap-2">
+                              <Button
+                                className="h-7 text-[11.5px]"
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                                onClick={() =>
+                                  seoImageInputRef.current?.click()
+                                }
+                              >
+                                <Upload className="mr-1 size-3" /> Replace
+                              </Button>
+                              <Button
+                                className="h-7 text-[11.5px] text-red-500 hover:text-red-600"
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                                onClick={() =>
+                                  form.setValue(
+                                    activeLocale === "en"
+                                      ? "seoImageEn"
+                                      : "seoImageAr",
+                                    "",
+                                    { shouldDirty: true },
+                                  )
+                                }
+                              >
+                                <X className="mr-1 size-3" /> Remove
+                              </Button>
+                            </div>
+                          ) : null}
+                          <FieldError
+                            errors={[
+                              activeLocale === "en"
+                                ? form.formState.errors.seoImageEn
+                                : form.formState.errors.seoImageAr,
+                            ]}
+                          />
+                          <FieldDescription>
+                            Used for social sharing previews (Open Graph).
                           </FieldDescription>
                         </Field>
                       </FieldSet>

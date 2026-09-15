@@ -49,7 +49,9 @@ import {
   Redo2,
   Search,
   Undo2,
+  Upload,
   Video,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -115,6 +117,8 @@ export type PageData = {
   seoTitleAr: string;
   seoDescriptionEn: string;
   seoDescriptionAr: string;
+  seoImageEn: string;
+  seoImageAr: string;
   blocksEn: Block[];
   blocksAr: Block[];
 };
@@ -157,6 +161,102 @@ function Field({
         {label}
       </label>
       {child}
+    </div>
+  );
+}
+
+function SeoImageUploadControl({
+  image,
+  inputRef,
+  isUploading,
+  uploadProgress,
+  uploadStatus,
+  onUpload,
+  onRemove,
+}: {
+  image: string;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  isUploading: boolean;
+  uploadProgress: number;
+  uploadStatus: string;
+  onUpload: (file: File | undefined) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <input
+        ref={inputRef}
+        accept="image/*"
+        className="sr-only"
+        type="file"
+        onChange={(e) => onUpload(e.target.files?.[0])}
+      />
+      <button
+        className={cn(
+          "group relative flex w-full items-center justify-center overflow-hidden",
+          "rounded-xl border-2 border-dashed border-border/60 bg-card/70 transition-colors",
+          "hover:border-primary hover:bg-primary/10",
+          isUploading && "pointer-events-none opacity-60",
+        )}
+        style={{ height: 140 }}
+        type="button"
+        onClick={() => inputRef.current?.click()}
+      >
+        {image ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              alt="SEO preview"
+              className="absolute inset-0 h-full w-full object-cover"
+              src={image}
+            />
+            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+              <Upload className="size-4 text-white" />
+              <span className="text-[13px] font-semibold text-white">
+                Replace image
+              </span>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+            {isUploading ? (
+              <Loader2 className="size-6 animate-spin text-primary" />
+            ) : (
+              <ImageIcon className="size-6" />
+            )}
+            <span className="text-[13px] font-medium">
+              {isUploading ? `Uploading… ${uploadProgress}%` : "Upload image"}
+            </span>
+          </div>
+        )}
+      </button>
+      {image ? (
+        <div className="flex gap-2">
+          <Button
+            className="h-7 text-[11.5px]"
+            size="sm"
+            type="button"
+            variant="outline"
+            onClick={() => inputRef.current?.click()}
+          >
+            <Upload className="mr-1 size-3" /> Replace
+          </Button>
+          <Button
+            className="h-7 text-[11.5px] text-destructive"
+            size="sm"
+            type="button"
+            variant="outline"
+            onClick={onRemove}
+          >
+            <X className="mr-1 size-3" /> Remove
+          </Button>
+        </div>
+      ) : null}
+      <UploadProgress
+        isActive={isUploading}
+        percent={uploadProgress}
+        status={uploadStatus}
+      />
     </div>
   );
 }
@@ -4779,6 +4879,12 @@ export function PageEditor({
   const [seoTitleAr, setSeoTitleAr] = useState(pageData.seoTitleAr);
   const [seoDescEn, setSeoDescEn] = useState(pageData.seoDescriptionEn);
   const [seoDescAr, setSeoDescAr] = useState(pageData.seoDescriptionAr);
+  const [seoImageEn, setSeoImageEn] = useState(pageData.seoImageEn);
+  const [seoImageAr, setSeoImageAr] = useState(pageData.seoImageAr);
+  const [isSeoImageUploading, setIsSeoImageUploading] = useState(false);
+  const [seoImageUploadProgress, setSeoImageUploadProgress] = useState(0);
+  const [seoImageUploadStatus, setSeoImageUploadStatus] = useState("");
+  const seoImageInputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState(pageData.status);
   const [blocksEn, setBlocksEn] = useState<Block[]>(() =>
     migrateBlocks(pageData.blocksEn),
@@ -4793,6 +4899,8 @@ export function PageEditor({
     seoDescEn: string;
     seoTitleAr: string;
     seoTitleEn: string;
+    seoImageAr: string;
+    seoImageEn: string;
     status: string;
     titleAr: string;
     titleEn: string;
@@ -4805,6 +4913,8 @@ export function PageEditor({
     seoTitleAr,
     seoDescEn,
     seoDescAr,
+    seoImageEn,
+    seoImageAr,
     blocksEn,
     blocksAr,
   });
@@ -4816,6 +4926,8 @@ export function PageEditor({
     setSeoTitleAr(snapshot.seoTitleAr);
     setSeoDescEn(snapshot.seoDescEn);
     setSeoDescAr(snapshot.seoDescAr);
+    setSeoImageEn(snapshot.seoImageEn);
+    setSeoImageAr(snapshot.seoImageAr);
     setBlocksEn(snapshot.blocksEn);
     setBlocksAr(snapshot.blocksAr);
   };
@@ -4829,6 +4941,8 @@ export function PageEditor({
     seoTitleAr: pageData.seoTitleAr,
     seoDescEn: pageData.seoDescriptionEn,
     seoDescAr: pageData.seoDescriptionAr,
+    seoImageEn: pageData.seoImageEn,
+    seoImageAr: pageData.seoImageAr,
     blocksEn: migrateBlocks(pageData.blocksEn),
     blocksAr: migrateBlocks(pageData.blocksAr),
   });
@@ -5075,6 +5189,30 @@ export function PageEditor({
     );
   }
 
+  async function uploadSeoImage(file: File | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file.");
+      return;
+    }
+    setIsSeoImageUploading(true);
+    setSeoImageUploadProgress(0);
+    setSeoImageUploadStatus("");
+    try {
+      const media = await uploadMediaFile(file, {
+        onProgress: (percent) => setSeoImageUploadProgress(percent),
+        onStatus: (status) => setSeoImageUploadStatus(status),
+      });
+      if (activeLocale === "en") setSeoImageEn(media.url);
+      else setSeoImageAr(media.url);
+      toast.success("SEO image uploaded.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setIsSeoImageUploading(false);
+    }
+  }
+
   function handleSave() {
     startTransition(async () => {
       const result = await updatePageAction(pageData.id, locale, {
@@ -5085,6 +5223,8 @@ export function PageEditor({
         seoTitleAr,
         seoDescriptionEn: seoDescEn,
         seoDescriptionAr: seoDescAr,
+        seoImageEn,
+        seoImageAr,
         blocksEn,
         blocksAr,
       });
@@ -5151,6 +5291,8 @@ export function PageEditor({
       seoTitleAr,
       seoDescriptionEn: seoDescEn,
       seoDescriptionAr: seoDescAr,
+      seoImageEn,
+      seoImageAr,
       blocksEn,
       blocksAr,
     });
@@ -5191,6 +5333,8 @@ export function PageEditor({
     seoTitleAr,
     seoDescEn,
     seoDescAr,
+    seoImageEn,
+    seoImageAr,
     blocksEn,
     blocksAr,
   ]);
@@ -5807,6 +5951,17 @@ export function PageEditor({
                               onChange={(e) => setSeoDescEn(e.target.value)}
                             />
                           </Field>
+                          <Field label="SEO Image (English)">
+                            <SeoImageUploadControl
+                              image={seoImageEn}
+                              inputRef={seoImageInputRef}
+                              isUploading={isSeoImageUploading}
+                              uploadProgress={seoImageUploadProgress}
+                              uploadStatus={seoImageUploadStatus}
+                              onRemove={() => setSeoImageEn("")}
+                              onUpload={(file) => void uploadSeoImage(file)}
+                            />
+                          </Field>
                         </>
                       ) : (
                         <>
@@ -5828,6 +5983,17 @@ export function PageEditor({
                               placeholder="وصف مختصر يظهر في نتائج البحث"
                               value={seoDescAr}
                               onChange={(e) => setSeoDescAr(e.target.value)}
+                            />
+                          </Field>
+                          <Field label="SEO Image (Arabic)">
+                            <SeoImageUploadControl
+                              image={seoImageAr}
+                              inputRef={seoImageInputRef}
+                              isUploading={isSeoImageUploading}
+                              uploadProgress={seoImageUploadProgress}
+                              uploadStatus={seoImageUploadStatus}
+                              onRemove={() => setSeoImageAr("")}
+                              onUpload={(file) => void uploadSeoImage(file)}
                             />
                           </Field>
                         </>

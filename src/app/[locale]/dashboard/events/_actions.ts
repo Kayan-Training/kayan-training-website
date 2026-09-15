@@ -226,6 +226,7 @@ export async function updateEventAction(
         description: values.contentEn ? { html: values.contentEn, type: "html" } : undefined,
         seoTitle: values.seoTitleEn || null,
         seoDescription: values.seoDescriptionEn || null,
+        seoImage: values.seoImageEn || null,
       },
       update: {
         title: values.titleEn,
@@ -233,6 +234,7 @@ export async function updateEventAction(
         description: values.contentEn ? { html: values.contentEn, type: "html" } : undefined,
         seoTitle: values.seoTitleEn || null,
         seoDescription: values.seoDescriptionEn || null,
+        seoImage: values.seoImageEn || null,
       },
     });
 
@@ -246,6 +248,7 @@ export async function updateEventAction(
         description: values.contentAr ? { html: values.contentAr, type: "html" } : undefined,
         seoTitle: values.seoTitleAr || null,
         seoDescription: values.seoDescriptionAr || null,
+        seoImage: values.seoImageAr || null,
       },
       update: {
         title: values.titleAr,
@@ -253,6 +256,7 @@ export async function updateEventAction(
         description: values.contentAr ? { html: values.contentAr, type: "html" } : undefined,
         seoTitle: values.seoTitleAr || null,
         seoDescription: values.seoDescriptionAr || null,
+        seoImage: values.seoImageAr || null,
       },
     });
 
@@ -496,6 +500,7 @@ export async function createEventAction(
               description: values.contentEn ? { html: values.contentEn, type: "html" } : undefined,
               seoTitle: values.seoTitleEn || null,
               seoDescription: values.seoDescriptionEn || null,
+              seoImage: values.seoImageEn || null,
             },
             {
               locale: "ar",
@@ -504,6 +509,7 @@ export async function createEventAction(
               description: values.contentAr ? { html: values.contentAr, type: "html" } : undefined,
               seoTitle: values.seoTitleAr || null,
               seoDescription: values.seoDescriptionAr || null,
+              seoImage: values.seoImageAr || null,
             },
           ],
         },

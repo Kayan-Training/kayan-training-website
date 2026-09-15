@@ -217,6 +217,8 @@ export default async function EditProgramPage({
     seoTitleAr: trAr?.seoTitle ?? "",
     seoDescriptionEn: trEn?.seoDescription ?? "",
     seoDescriptionAr: trAr?.seoDescription ?? "",
+    seoImageEn: trEn?.seoImage ?? "",
+    seoImageAr: trAr?.seoImage ?? "",
     trainerIds: event.trainers.map((et) => et.trainerId),
     categories: event.categories.map((ec) => ec.categoryId),
     agenda: event.agendaSessions.map((s) => {

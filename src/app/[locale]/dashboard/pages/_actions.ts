@@ -58,6 +58,8 @@ export async function updatePageAction(
     seoTitleAr: string;
     seoDescriptionEn: string;
     seoDescriptionAr: string;
+    seoImageEn: string;
+    seoImageAr: string;
     blocksEn: unknown;
     blocksAr: unknown;
   },
@@ -77,12 +79,14 @@ export async function updatePageAction(
         title: values.titleEn,
         seoTitle: values.seoTitleEn || null,
         seoDescription: values.seoDescriptionEn || null,
+        seoImage: values.seoImageEn || null,
         blocks: values.blocksEn ?? undefined,
       },
       update: {
         title: values.titleEn,
         seoTitle: values.seoTitleEn || null,
         seoDescription: values.seoDescriptionEn || null,
+        seoImage: values.seoImageEn || null,
         blocks: values.blocksEn ?? undefined,
       },
     });
@@ -95,12 +99,14 @@ export async function updatePageAction(
         title: values.titleAr,
         seoTitle: values.seoTitleAr || null,
         seoDescription: values.seoDescriptionAr || null,
+        seoImage: values.seoImageAr || null,
         blocks: values.blocksAr ?? undefined,
       },
       update: {
         title: values.titleAr,
         seoTitle: values.seoTitleAr || null,
         seoDescription: values.seoDescriptionAr || null,
+        seoImage: values.seoImageAr || null,
         blocks: values.blocksAr ?? undefined,
       },
     });

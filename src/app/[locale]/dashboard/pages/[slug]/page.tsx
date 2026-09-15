@@ -68,6 +68,8 @@ export default async function DashboardPageEditor({
     seoTitleAr: trAr?.seoTitle ?? "",
     seoDescriptionEn: trEn?.seoDescription ?? "",
     seoDescriptionAr: trAr?.seoDescription ?? "",
+    seoImageEn: trEn?.seoImage ?? "",
+    seoImageAr: trAr?.seoImage ?? "",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     blocksEn: parseBlocks(trEn?.blocks) as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
