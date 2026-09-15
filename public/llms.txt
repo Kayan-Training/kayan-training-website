@@ -1,0 +1,16 @@
+# Kayan Training & Consulting
+
+Kayan is an Omani consulting and training firm building operational excellence,
+lean management, and continuous improvement capabilities across organizations in
+Oman and the wider GCC region.
+
+## Main sections
+
+- Events: https://kayan.om/en/events — conferences and one-off training events.
+- Training Courses: https://kayan.om/en/training-courses — recurring professional
+  training programs.
+- Blog: https://kayan.om/en/blog — articles on operational excellence, lean, and
+  continuous improvement.
+- Contact: https://kayan.om/en/contact-us
+
+Arabic versions of every page are available at the equivalent /ar/ path.
