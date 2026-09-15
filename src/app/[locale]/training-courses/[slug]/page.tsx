@@ -479,6 +479,30 @@ export default async function TrainingCourseDetailPage({
     },
     url: eventUrl,
   };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: activeLocale === "ar" ? "الرئيسية" : "Home",
+        item: buildAbsoluteUrl(`/${activeLocale}`),
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: activeLocale === "ar" ? "الدورات التدريبية" : "Training Courses",
+        item: buildAbsoluteUrl(`/${activeLocale}/training-courses`),
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: event.seoTitle || event.title,
+        item: eventUrl,
+      },
+    ],
+  };
 
   if (event.isFeatured) {
     return (
@@ -486,6 +510,10 @@ export default async function TrainingCourseDetailPage({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdScript(eventJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd) }}
         />
         <section className="relative flex min-h-screen items-end overflow-hidden pt-16">
           <div className="absolute inset-0 z-0 overflow-hidden">
@@ -668,6 +696,10 @@ export default async function TrainingCourseDetailPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(eventJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd) }}
       />
       <div className="relative h-64 overflow-hidden md:h-96">
         <Image

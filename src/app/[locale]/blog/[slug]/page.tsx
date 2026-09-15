@@ -154,12 +154,40 @@ export default async function PostDetailPage({
     mainEntityOfPage: pageUrl,
     url: pageUrl,
   };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: activeLocale === "ar" ? "الرئيسية" : "Home",
+        item: buildAbsoluteUrl(`/${activeLocale}`),
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: activeLocale === "ar" ? "المقالات" : "Posts",
+        item: buildAbsoluteUrl(`/${activeLocale}/blog`),
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: post.seoTitle || post.title,
+        item: pageUrl,
+      },
+    ],
+  };
 
   return (
     <main className="pt-16">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(articleJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd) }}
       />
       {/* ── Hero ── */}
       <section className="relative h-[52vh] min-h-[380px] overflow-hidden">
