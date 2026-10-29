@@ -1,0 +1,9 @@
+# Independent people groups
+
+Approved direction: people profiles are shared globally, while groups belong independently to each program/event. Editors name groups in English/Arabic using the existing locale switcher, reorder groups and members, and drag members between groups. A profile may appear in multiple groups, never twice within one group. Public event and training-course pages render populated groups in saved order with localized names and fallback to the other language.
+
+Store ordered groups as versioned structured display metadata alongside existing event display metadata. Retain EventTrainer as the unique union of referenced people so profile and agenda connections continue working. Missing group metadata means legacy content: derive one group using the current custom people heading (or Trainers/المدربون) and assignment order. Explicit empty groups must not resurrect legacy assignments. Validate metadata server-side, and save groups and assignment union atomically. No schema migration or production backfill is necessary.
+
+Removing a member affects that group only. Moving into a group that already contains the person removes only the source membership. Group removal requires confirmation when populated; profile deletion keeps the existing behavior, while public reads filter stale IDs. Keep the existing dashboard URL for compatibility but rename visible directory copy to People. Include keyboard controls, touch dragging, non-drag move/reorder controls, empty-group drop targets, cancellation, and dirty-state integration.
+
+Verification: focused tests for legacy fallback, localization, explicit empty state, duplicate rules, movement/reordering, invalid metadata, and orphan filtering. Run typecheck and existing event-form tests. Inspect editor and public rendering in desktop/mobile/RTL with a local review fixture if authenticated runtime is unavailable.

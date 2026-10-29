@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
+import { peopleGroupsSchema, readPeopleGroups, uniquePeopleIds } from "@/lib/events/people-groups";
 import { requireAdminSession } from "@/lib/session";
 import type { EventFormValues } from "./_components/event-form";
 
@@ -111,269 +112,277 @@ export async function updateEventAction(
     return { error: "Unauthorized" };
   }
   try {
-    await db.event.update({
-      where: { id },
-      data: {
-        slug: values.slug,
-        status: values.status,
-        eventKind: values.eventKind,
-        type: values.type,
-        language: values.language,
-        coverImage: values.coverImage || null,
-        location: values.locationEn.trim() || values.locationAr.trim() || values.location || null,
-        capacity: values.capacity ? Number(values.capacity) : null,
-        startDate: new Date(values.startDate),
-        endDate: new Date(values.endDate),
-        registrationDeadline: values.registrationDeadline ? new Date(values.registrationDeadline) : null,
-        price: values.price,
-        isFree: values.isFree,
-        isFeatured: values.isFeatured,
-        isCertified: values.isCertified,
-        registrationsOpen: values.registrationsOpen,
-        registrationType: values.registrationType,
-        externalRegistrationUrl:
-          values.registrationType === "external"
-            ? (values.externalRegistrationUrl || null)
-            : null,
-        meetingLink: values.meetingLink || null,
-        meetingPlatform: values.meetingLink ? values.meetingPlatform : null,
-        paymentMethods: values.paymentMethods,
-        bankTransferDetails: {
-          map: {
-            showEmbed: values.showMapEmbed,
-            url: values.googleMapsLink || null,
-          },
-          payment: {
-            bankName: values.bankName || null,
-            accountName: values.bankAccountName || null,
-            iban: values.bankIban || null,
-            swift: values.bankSwift || null,
-            instructions: {
-              en: values.bankInstructionsEn || null,
-              ar: values.bankInstructionsAr || null,
+    const groups = peopleGroupsSchema.parse(values.peopleGroups ?? readPeopleGroups({ hero: { peopleLabel: { en: values.heroPeopleLabelEn, ar: values.heroPeopleLabelAr } } }, values.trainerIds));
+    const memberIds = uniquePeopleIds(groups);
+    await db.$transaction(async (tx) => {
+      await tx.event.update({
+        where: { id },
+        data: {
+          slug: values.slug,
+          status: values.status,
+          eventKind: values.eventKind,
+          type: values.type,
+          language: values.language,
+          coverImage: values.coverImage || null,
+          location: values.locationEn.trim() || values.locationAr.trim() || values.location || null,
+          capacity: values.capacity ? Number(values.capacity) : null,
+          startDate: new Date(values.startDate),
+          endDate: new Date(values.endDate),
+          registrationDeadline: values.registrationDeadline ? new Date(values.registrationDeadline) : null,
+          price: values.price,
+          isFree: values.isFree,
+          isFeatured: values.isFeatured,
+          isCertified: values.isCertified,
+          registrationsOpen: values.registrationsOpen,
+          registrationType: values.registrationType,
+          externalRegistrationUrl:
+            values.registrationType === "external"
+              ? (values.externalRegistrationUrl || null)
+              : null,
+          meetingLink: values.meetingLink || null,
+          meetingPlatform: values.meetingLink ? values.meetingPlatform : null,
+          paymentMethods: values.paymentMethods,
+          bankTransferDetails: {
+            peopleGroups: { version: 1, groups },
+            map: {
+              showEmbed: values.showMapEmbed,
+              url: values.googleMapsLink || null,
             },
-          },
-          gallery: {
-            mode: values.galleryMode,
-            mediaIds: values.galleryMediaIds,
-          },
-          hero: {
-            programLogo: values.heroProgramLogo || null,
-            collaboratorLogos: values.heroCollaboratorLogos
-              .split("\n")
-              .map((value) => value.trim())
-              .filter(Boolean),
-            featuredStats: {
-              sessions: values.featuredSessionsStat.trim() || null,
-              fullDay: values.featuredFullDayStat.trim() || null,
+            payment: {
+              bankName: values.bankName || null,
+              accountName: values.bankAccountName || null,
+              iban: values.bankIban || null,
+              swift: values.bankSwift || null,
+              instructions: {
+                en: values.bankInstructionsEn || null,
+                ar: values.bankInstructionsAr || null,
+              },
             },
-            tags: {
-              en: values.heroTagsEn
+            gallery: {
+              mode: values.galleryMode,
+              mediaIds: values.galleryMediaIds,
+            },
+            hero: {
+              programLogo: values.heroProgramLogo || null,
+              collaboratorLogos: values.heroCollaboratorLogos
                 .split("\n")
                 .map((value) => value.trim())
                 .filter(Boolean),
-              ar: values.heroTagsAr
-                .split("\n")
-                .map((value) => value.trim())
-                .filter(Boolean),
+              featuredStats: {
+                sessions: values.featuredSessionsStat.trim() || null,
+                fullDay: values.featuredFullDayStat.trim() || null,
+              },
+              tags: {
+                en: values.heroTagsEn
+                  .split("\n")
+                  .map((value) => value.trim())
+                  .filter(Boolean),
+                ar: values.heroTagsAr
+                  .split("\n")
+                  .map((value) => value.trim())
+                  .filter(Boolean),
+              },
+              peopleLabel: {
+                en: values.heroPeopleLabelEn.trim() || null,
+                ar: values.heroPeopleLabelAr.trim() || null,
+              },
             },
-            peopleLabel: {
-              en: values.heroPeopleLabelEn.trim() || null,
-              ar: values.heroPeopleLabelAr.trim() || null,
+            ui: {
+              sidebar: {
+                showSeatsFulfillment: values.showSidebarSeatsFulfillment,
+                showPayment: values.showSidebarPayment,
+              },
+              location: {
+                en: values.locationEn.trim() || null,
+                ar: values.locationAr.trim() || null,
+              },
+              registrationOpenLabel: {
+                en: values.registrationOpenLabelEn.trim() || null,
+                ar: values.registrationOpenLabelAr.trim() || null,
+              },
             },
+            agenda: values.agenda.map((item, i) => ({
+              order: i,
+              title: {
+                en: item.titleEn,
+                ar: item.titleAr,
+              },
+              speakerNames: {
+                en: item.speakerNamesEn,
+                ar: item.speakerNamesAr,
+              },
+              highlighted: item.highlighted,
+            })),
           },
-          ui: {
-            sidebar: {
-              showSeatsFulfillment: values.showSidebarSeatsFulfillment,
-              showPayment: values.showSidebarPayment,
-            },
-            location: {
-              en: values.locationEn.trim() || null,
-              ar: values.locationAr.trim() || null,
-            },
-            registrationOpenLabel: {
-              en: values.registrationOpenLabelEn.trim() || null,
-              ar: values.registrationOpenLabelAr.trim() || null,
-            },
-          },
-          agenda: values.agenda.map((item, i) => ({
+          showMapEmbed: values.showMapEmbed,
+          googleMapsLink: values.googleMapsLink || null,
+          pricingHeadingEn: values.pricingHeadingEn || null,
+          pricingHeadingAr: values.pricingHeadingAr || null,
+        },
+      });
+
+      await tx.eventTranslation.upsert({
+        where: { eventId_locale: { eventId: id, locale: "en" } },
+        create: {
+          eventId: id,
+          locale: "en",
+          title: values.titleEn,
+          shortDescription: values.shortEn || null,
+          description: values.contentEn ? { html: values.contentEn, type: "html" } : undefined,
+          seoTitle: values.seoTitleEn || null,
+          seoDescription: values.seoDescriptionEn || null,
+          seoImage: values.seoImageEn || null,
+        },
+        update: {
+          title: values.titleEn,
+          shortDescription: values.shortEn || null,
+          description: values.contentEn ? { html: values.contentEn, type: "html" } : undefined,
+          seoTitle: values.seoTitleEn || null,
+          seoDescription: values.seoDescriptionEn || null,
+          seoImage: values.seoImageEn || null,
+        },
+      });
+
+      await tx.eventTranslation.upsert({
+        where: { eventId_locale: { eventId: id, locale: "ar" } },
+        create: {
+          eventId: id,
+          locale: "ar",
+          title: values.titleAr,
+          shortDescription: values.shortAr || null,
+          description: values.contentAr ? { html: values.contentAr, type: "html" } : undefined,
+          seoTitle: values.seoTitleAr || null,
+          seoDescription: values.seoDescriptionAr || null,
+          seoImage: values.seoImageAr || null,
+        },
+        update: {
+          title: values.titleAr,
+          shortDescription: values.shortAr || null,
+          description: values.contentAr ? { html: values.contentAr, type: "html" } : undefined,
+          seoTitle: values.seoTitleAr || null,
+          seoDescription: values.seoDescriptionAr || null,
+          seoImage: values.seoImageAr || null,
+        },
+      });
+
+      await tx.eventTrainer.deleteMany({ where: { eventId: id } });
+      if (memberIds.length > 0) {
+        await tx.eventTrainer.createMany({
+          data: memberIds.map((trainerId, i) => ({ eventId: id, trainerId, sortOrder: i })),
+        });
+      }
+
+      await tx.agendaSession.deleteMany({ where: { eventId: id } });
+      if (values.agenda.length > 0) {
+        await tx.agendaSession.createMany({
+          data: values.agenda.map((item, i) => ({
+            eventId: id,
+            day: item.day,
+            time: item.time,
+            title: item.titleEn || item.titleAr || item.title || "",
+            type: item.type,
+            trainerId: item.trainerId || null,
             order: i,
-            title: {
-              en: item.titleEn,
-              ar: item.titleAr,
-            },
-            speakerNames: {
-              en: item.speakerNamesEn,
-              ar: item.speakerNamesAr,
-            },
-            highlighted: item.highlighted,
           })),
-        },
-        showMapEmbed: values.showMapEmbed,
-        googleMapsLink: values.googleMapsLink || null,
-        pricingHeadingEn: values.pricingHeadingEn || null,
-        pricingHeadingAr: values.pricingHeadingAr || null,
-      },
-    });
+        });
+      }
 
-    await db.eventTranslation.upsert({
-      where: { eventId_locale: { eventId: id, locale: "en" } },
-      create: {
-        eventId: id,
-        locale: "en",
-        title: values.titleEn,
-        shortDescription: values.shortEn || null,
-        description: values.contentEn ? { html: values.contentEn, type: "html" } : undefined,
-        seoTitle: values.seoTitleEn || null,
-        seoDescription: values.seoDescriptionEn || null,
-        seoImage: values.seoImageEn || null,
-      },
-      update: {
-        title: values.titleEn,
-        shortDescription: values.shortEn || null,
-        description: values.contentEn ? { html: values.contentEn, type: "html" } : undefined,
-        seoTitle: values.seoTitleEn || null,
-        seoDescription: values.seoDescriptionEn || null,
-        seoImage: values.seoImageEn || null,
-      },
-    });
+      await tx.eventCategory.deleteMany({ where: { eventId: id } });
+      if (values.categories.length > 0) {
+        await tx.eventCategory.createMany({
+          data: values.categories.map((categoryId) => ({ eventId: id, categoryId })),
+        });
+      }
 
-    await db.eventTranslation.upsert({
-      where: { eventId_locale: { eventId: id, locale: "ar" } },
-      create: {
-        eventId: id,
-        locale: "ar",
-        title: values.titleAr,
-        shortDescription: values.shortAr || null,
-        description: values.contentAr ? { html: values.contentAr, type: "html" } : undefined,
-        seoTitle: values.seoTitleAr || null,
-        seoDescription: values.seoDescriptionAr || null,
-        seoImage: values.seoImageAr || null,
-      },
-      update: {
-        title: values.titleAr,
-        shortDescription: values.shortAr || null,
-        description: values.contentAr ? { html: values.contentAr, type: "html" } : undefined,
-        seoTitle: values.seoTitleAr || null,
-        seoDescription: values.seoDescriptionAr || null,
-        seoImage: values.seoImageAr || null,
-      },
-    });
-
-    await db.eventTrainer.deleteMany({ where: { eventId: id } });
-    if (values.trainerIds.length > 0) {
-      await db.eventTrainer.createMany({
-        data: values.trainerIds.map((trainerId, i) => ({ eventId: id, trainerId, sortOrder: i })),
-      });
-    }
-
-    await db.agendaSession.deleteMany({ where: { eventId: id } });
-    if (values.agenda.length > 0) {
-      await db.agendaSession.createMany({
-        data: values.agenda.map((item, i) => ({
-          eventId: id,
-          day: item.day,
-          time: item.time,
-          title: item.titleEn || item.titleAr || item.title || "",
-          type: item.type,
-          trainerId: item.trainerId || null,
-          order: i,
-        })),
-      });
-    }
-
-    await db.eventCategory.deleteMany({ where: { eventId: id } });
-    if (values.categories.length > 0) {
-      await db.eventCategory.createMany({
-        data: values.categories.map((categoryId) => ({ eventId: id, categoryId })),
-      });
-    }
-
-    await db.registrationFormField.deleteMany({ where: { eventId: id } });
-    for (let i = 0; i < values.registrationFields.length; i++) {
-      const field = values.registrationFields[i];
-      await db.registrationFormField.create({
-        data: {
-          eventId: id,
-          type: field.type,
-          required: field.required,
-          order: i,
-          translations: {
-            create: [
-              { locale: "en", label: field.labelEn, placeholder: field.placeholderEn || null },
-              { locale: "ar", label: field.labelAr, placeholder: field.placeholderAr || null },
-            ],
+      await tx.registrationFormField.deleteMany({ where: { eventId: id } });
+      for (let i = 0; i < values.registrationFields.length; i++) {
+        const field = values.registrationFields[i];
+        await tx.registrationFormField.create({
+          data: {
+            eventId: id,
+            type: field.type,
+            required: field.required,
+            order: i,
+            translations: {
+              create: [
+                { locale: "en", label: field.labelEn, placeholder: field.placeholderEn || null },
+                { locale: "ar", label: field.labelAr, placeholder: field.placeholderAr || null },
+              ],
+            },
           },
-        },
-      });
-    }
+        });
+      }
 
-    await db.eventContactNumber.deleteMany({ where: { eventId: id } });
-    if (values.contactNumbers.length > 0) {
-      await db.eventContactNumber.createMany({
-        data: values.contactNumbers.map((c, i) => ({
-          eventId: id,
-          number: c.number,
-          labelEn: c.labelEn || null,
-          labelAr: c.labelAr || null,
-          order: i,
-        })),
-      });
-    }
+      await tx.eventContactNumber.deleteMany({ where: { eventId: id } });
+      if (values.contactNumbers.length > 0) {
+        await tx.eventContactNumber.createMany({
+          data: values.contactNumbers.map((c, i) => ({
+            eventId: id,
+            number: c.number,
+            labelEn: c.labelEn || null,
+            labelAr: c.labelAr || null,
+            order: i,
+          })),
+        });
+      }
 
-    await db.eventPriceTier.deleteMany({ where: { eventId: id } });
-    for (let i = 0; i < values.priceTiers.length; i++) {
-      const tier = values.priceTiers[i];
-      await db.eventPriceTier.create({
-        data: {
-          eventId: id,
-          price: tier.price,
-          currency: tier.currency || "OMR",
-          secondaryDisplayPrice: tier.secondaryDisplayPrice || null,
-          order: i,
-          translations: {
-            create: [
-              { locale: "en", title: tier.titleEn, description: tier.descriptionEn || null },
-              { locale: "ar", title: tier.titleAr, description: tier.descriptionAr || null },
-            ],
+      await tx.eventPriceTier.deleteMany({ where: { eventId: id } });
+      for (let i = 0; i < values.priceTiers.length; i++) {
+        const tier = values.priceTiers[i];
+        await tx.eventPriceTier.create({
+          data: {
+            eventId: id,
+            price: tier.price,
+            currency: tier.currency || "OMR",
+            secondaryDisplayPrice: tier.secondaryDisplayPrice || null,
+            order: i,
+            translations: {
+              create: [
+                { locale: "en", title: tier.titleEn, description: tier.descriptionEn || null },
+                { locale: "ar", title: tier.titleAr, description: tier.descriptionAr || null },
+              ],
+            },
           },
-        },
-      });
-    }
+        });
+      }
 
-    await db.eventDownload.deleteMany({ where: { eventId: id } });
-    if (values.downloads.length > 0) {
-      await db.eventDownload.createMany({
-        data: values.downloads.map((d, i) => ({
-          eventId: id,
-          fileUrl: d.fileUrl,
-          mimeType: d.mimeType,
-          labelEn: d.labelEn,
-          labelAr: d.labelAr,
-          order: i,
-        })),
-      });
-    }
+      await tx.eventDownload.deleteMany({ where: { eventId: id } });
+      if (values.downloads.length > 0) {
+        await tx.eventDownload.createMany({
+          data: values.downloads.map((d, i) => ({
+            eventId: id,
+            fileUrl: d.fileUrl,
+            mimeType: d.mimeType,
+            labelEn: d.labelEn,
+            labelAr: d.labelAr,
+            order: i,
+          })),
+        });
+      }
 
-    await db.eventSidebarCta.deleteMany({ where: { eventId: id } });
-    if (values.sidebarCtas.length > 0) {
-      await db.eventSidebarCta.createMany({
-        data: values.sidebarCtas.map((c, i) => ({
-          eventId: id,
-          labelEn: c.labelEn,
-          labelAr: c.labelAr,
-          url: c.url,
-          style: c.style,
-          order: i,
-        })),
-      });
-    }
+      await tx.eventSidebarCta.deleteMany({ where: { eventId: id } });
+      if (values.sidebarCtas.length > 0) {
+        await tx.eventSidebarCta.createMany({
+          data: values.sidebarCtas.map((c, i) => ({
+            eventId: id,
+            labelEn: c.labelEn,
+            labelAr: c.labelAr,
+            url: c.url,
+            style: c.style,
+            order: i,
+          })),
+        });
+      }
+
+    }, { timeout: 30000 });
 
     revalidatePath(`/${locale}/dashboard/programs`);
     revalidatePath(`/${locale}/events`);
     revalidatePath(`/${locale}/training-courses`);
-    revalidatePath(`/${locale}/events/${values.slug}`);
-    revalidatePath(`/${locale}/training-courses/${values.slug}`);
+    for (const language of ["en", "ar"]) {
+      revalidatePath(`/${language}/events/${values.slug}`);
+      revalidatePath(`/${language}/training-courses/${values.slug}`);
+    }
     return {};
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to save event" };
@@ -390,6 +399,8 @@ export async function createEventAction(
   }
   let createdId: string;
   try {
+    const groups = peopleGroupsSchema.parse(values.peopleGroups ?? readPeopleGroups({ hero: { peopleLabel: { en: values.heroPeopleLabelEn, ar: values.heroPeopleLabelAr } } }, values.trainerIds));
+    const memberIds = uniquePeopleIds(groups);
     const created = await db.event.create({
       data: {
         slug: values.slug,
@@ -417,6 +428,7 @@ export async function createEventAction(
         meetingPlatform: values.meetingLink ? values.meetingPlatform : null,
         paymentMethods: values.paymentMethods,
         bankTransferDetails: {
+          peopleGroups: { version: 1, groups },
           map: {
             showEmbed: values.showMapEmbed,
             url: values.googleMapsLink || null,
@@ -514,8 +526,8 @@ export async function createEventAction(
           ],
         },
         trainers:
-          values.trainerIds.length > 0
-            ? { create: values.trainerIds.map((trainerId, i) => ({ trainerId, sortOrder: i })) }
+          memberIds.length > 0
+            ? { create: memberIds.map((trainerId, i) => ({ trainerId, sortOrder: i })) }
             : undefined,
         agendaSessions:
           values.agenda.length > 0

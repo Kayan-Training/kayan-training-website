@@ -95,7 +95,7 @@ function TrainerForm({
           <label className={labelCls}>Email</label>
           <input
             className={inputCls}
-            placeholder="trainer@kayan.com"
+            placeholder="person@kayan.com"
             type="email"
             value={form.email}
             onChange={(e) => set("email", e.target.value)}
@@ -285,7 +285,7 @@ export function TrainersManager({
         toast.error(result.error);
         return;
       }
-      toast.success("Trainer created");
+      toast.success("Person created");
       setAddOpen(false);
     });
   }
@@ -297,7 +297,7 @@ export function TrainersManager({
         toast.error(result.error);
         return;
       }
-      toast.success("Trainer updated");
+      toast.success("Person updated");
       setEditing(null);
     });
   }
@@ -306,7 +306,7 @@ export function TrainersManager({
     startTransition(async () => {
       const result = await deleteTrainer(id, locale);
       if (result.error) toast.error(result.error);
-      else toast.success("Trainer deleted");
+      else toast.success("Person deleted");
     });
   }
 
@@ -323,7 +323,7 @@ export function TrainersManager({
     startTransition(async () => {
       const result = await saveTrainerOrder(orderedIds, locale);
       if (result.error) toast.error(result.error);
-      else toast.success("Trainer order saved.");
+      else toast.success("People order saved.");
     });
   }
 
@@ -331,12 +331,12 @@ export function TrainersManager({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-card px-5 py-4">
         <div>
-          <p className="text-sm font-semibold">{trainers.length} trainer{trainers.length === 1 ? "" : "s"}</p>
+          <p className="text-sm font-semibold">{trainers.length} {trainers.length === 1 ? "person" : "people"}</p>
           <p className="text-xs text-muted-foreground">Build and maintain profile cards used in programs</p>
         </div>
         <Button className="h-10 gap-2" type="button" onClick={() => setAddOpen(true)}>
           <Plus className="size-4" />
-          New Trainer
+          New Person
         </Button>
       </div>
 
@@ -375,7 +375,7 @@ export function TrainersManager({
 
       <div className="rounded-xl border border-border/70 bg-card p-4">
         <div className="mb-3 flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold">Trainer Order (Drag & Drop)</p>
+          <p className="text-sm font-semibold">People Order (Drag & Drop)</p>
           <Button className="h-8 text-xs" disabled={isPending} size="sm" type="button" onClick={handleSaveOrder}>
             Save Order
           </Button>
@@ -404,9 +404,9 @@ export function TrainersManager({
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{trainer.nameEn || "Unnamed Trainer"}</p>
+                  <p className="truncate text-sm font-semibold">{trainer.nameEn || "Unnamed Person"}</p>
                   <p className="truncate text-xs text-muted-foreground">{trainer.nameAr || "-"}</p>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">{trainer.specializationEn || "Trainer"}</p>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">{trainer.specializationEn || "Person"}</p>
                 </div>
               </div>
 
@@ -437,7 +437,7 @@ export function TrainersManager({
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete "{trainer.nameEn || "this trainer"}"?</AlertDialogTitle>
+                      <AlertDialogTitle>Delete "{trainer.nameEn || "this person"}"?</AlertDialogTitle>
                       <AlertDialogDescription>
                         This removes the profile and unlinks it from related program agenda/speaker references.
                       </AlertDialogDescription>
@@ -457,13 +457,13 @@ export function TrainersManager({
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Trainer</DialogTitle>
+            <DialogTitle>Add Person</DialogTitle>
           </DialogHeader>
           <TrainerForm
             entities={entities}
             onCancel={() => setAddOpen(false)}
             onSave={handleCreate}
-            submitLabel={isPending ? "Creating..." : "Create Trainer"}
+            submitLabel={isPending ? "Creating..." : "Create Person"}
           />
         </DialogContent>
       </Dialog>
@@ -525,8 +525,8 @@ function SortableOrderRow({ trainer }: { trainer: TrainerItem }) {
         )}
       </div>
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium">{trainer.nameEn || "Unnamed Trainer"}</p>
-        <p className="truncate text-xs text-muted-foreground">{trainer.specializationEn || "Trainer"}</p>
+        <p className="truncate text-sm font-medium">{trainer.nameEn || "Unnamed Person"}</p>
+        <p className="truncate text-xs text-muted-foreground">{trainer.specializationEn || "Person"}</p>
       </div>
     </div>
   );

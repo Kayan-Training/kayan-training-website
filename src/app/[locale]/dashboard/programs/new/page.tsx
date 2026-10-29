@@ -30,6 +30,8 @@ export default async function NewProgramPage({
   const trainerOptions = allTrainers.map((t) => ({
     imageUrl: t.imageUrl ?? t.avatar?.url ?? "",
     value: t.id,
+    labelAr: t.translations.find((tr) => tr.locale === "ar")?.name ?? "",
+    subtitleAr: t.translations.find((tr) => tr.locale === "ar")?.title ?? "",
     label: t.translations.find((tr) => tr.locale === "en")?.name ?? t.name ?? t.id,
     subtitle:
       t.translations.find((tr) => tr.locale === "en")?.title ??

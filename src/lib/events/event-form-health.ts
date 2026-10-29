@@ -113,7 +113,7 @@ export function computeSectionHealth(input: EventFormHealthInputs): SectionHealt
     downloads: errorPaths.filter((path) => path.startsWith("downloads.")).length,
     sidebarCtas: errorPaths.filter((path) => path.startsWith("sidebarCtas.")).length,
     agenda: errorPaths.filter((path) => path.startsWith("agenda.")).length,
-    trainers: errorPaths.filter((path) => path.startsWith("trainerIds")).length,
+    trainers: errorPaths.filter((path) => (path.startsWith("trainerIds") || path.startsWith("peopleGroups"))).length,
     categories: errorPaths.filter((path) => path.startsWith("categories"))
       .length,
     registrationForm: errorPaths.filter((path) =>

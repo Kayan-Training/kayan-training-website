@@ -1,3 +1,4 @@
+import { readPeopleGroups } from "@/lib/events/people-groups";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -220,6 +221,7 @@ export default async function EditProgramPage({
     seoImageEn: trEn?.seoImage ?? "",
     seoImageAr: trAr?.seoImage ?? "",
     trainerIds: event.trainers.map((et) => et.trainerId),
+    peopleGroups: readPeopleGroups(event.bankTransferDetails, event.trainers.map((et) => et.trainerId)),
     categories: event.categories.map((ec) => ec.categoryId),
     agenda: event.agendaSessions.map((s) => {
       const agendaMeta = Array.isArray(galleryDetails.agenda)
@@ -264,6 +266,8 @@ export default async function EditProgramPage({
   const trainerOptions = allTrainers.map((t) => ({
     imageUrl: t.imageUrl ?? t.avatar?.url ?? "",
     value: t.id,
+    labelAr: t.translations.find((tr) => tr.locale === "ar")?.name ?? "",
+    subtitleAr: t.translations.find((tr) => tr.locale === "ar")?.title ?? "",
     label: t.translations.find((tr) => tr.locale === "en")?.name ?? t.name ?? t.id,
     subtitle:
       t.translations.find((tr) => tr.locale === "en")?.title ??

@@ -28,7 +28,6 @@ import {
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import {
   arrayMove,
-  rectSortingStrategy,
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
@@ -94,6 +93,8 @@ import {
   DashboardSectionHeading,
 } from "@/components/dashboard/editor-primitives";
 // ── shadcn/ui ─────────────────────────────────────────────────────────────────
+import { PeopleGroupsEditor } from "@/components/dashboard/people-groups-editor";
+import { peopleGroupsSchema, readPeopleGroups, uniquePeopleIds } from "@/lib/events/people-groups";
 import { RichTextEditor } from "@/components/dashboard/rich-text-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -295,6 +296,7 @@ const eventSchema = z.object({
   titleAr: z.string().min(1),
   titleEn: z.string().min(1),
   trainerIds: z.array(z.string()),
+  peopleGroups: peopleGroupsSchema,
   type: z.enum(["onsite", "online", "hybrid"]),
 });
 
@@ -1821,40 +1823,6 @@ function SortableFieldItem({
   );
 }
 
-function SortableTrainerItem({
-  id,
-  children,
-}: {
-  id: string;
-  children: (
-    dragHandleProps: React.HTMLAttributes<HTMLButtonElement>,
-  ) => React.ReactNode;
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-  return (
-    <div
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.4 : 1,
-      }}
-    >
-      {children({
-        ...attributes,
-        ...listeners,
-      } as React.HTMLAttributes<HTMLButtonElement>)}
-    </div>
-  );
-}
-
 function AgendaSpeakersCombobox({
   options,
   value,
@@ -1919,7 +1887,7 @@ function AgendaSpeakersCombobox({
                   </CommandItem>
                 </CommandGroup>
               ) : null}
-              <CommandGroup heading="Trainers">
+              <CommandGroup heading="People">
                 {available.map((item) => (
                   <CommandItem key={item} onSelect={() => addSpeaker(item)}>
                     {item}
@@ -2030,6 +1998,8 @@ export function EventForm({
   trainerOptions: Array<{
     imageUrl?: string;
     label: string;
+    labelAr?: string;
+    subtitleAr?: string;
     subtitle?: string;
     value: string;
   }>;
@@ -2096,7 +2066,6 @@ export function EventForm({
   const seoTitleInputId = `${idPrefix}-seo-title-input`;
   const seoDescriptionInputId = `${idPrefix}-seo-description-input`;
   const seoImageInputId = `${idPrefix}-seo-image-input`;
-  const [trainerCandidate, setTrainerCandidate] = useState("");
   const heroProgramLogoInputRef = useRef<HTMLInputElement>(null);
   const heroCollaboratorLogosInputRef = useRef<HTMLInputElement>(null);
   const seoImageInputRef = useRef<HTMLInputElement>(null);
@@ -2208,6 +2177,7 @@ export function EventForm({
       pricingHeadingAr: "",
       ...defaultValues,
       agenda: normalizedAgendaDefaults,
+      peopleGroups: defaultValues?.peopleGroups ?? readPeopleGroups({ hero: { peopleLabel: { en: defaultValues?.heroPeopleLabelEn, ar: defaultValues?.heroPeopleLabelAr } } }, defaultValues?.trainerIds ?? []),
     }),
     [defaultValues, normalizedAgendaDefaults],
   );
@@ -2290,7 +2260,8 @@ export function EventForm({
   });
   const paymentMethods = form.watch("paymentMethods");
   const registrationType = form.watch("registrationType");
-  const selectedTrainerIds = form.watch("trainerIds");
+  const peopleGroups = form.watch("peopleGroups");
+  const selectedTrainerIds = uniquePeopleIds(peopleGroups);
   const selectedCategoryIds = form.watch("categories");
   const coverImage = form.watch("coverImage");
   const seoImage = form.watch(
@@ -2390,16 +2361,6 @@ export function EventForm({
     [form.formState.errors],
   );
 
-  const chosenTrainers = useMemo(
-    () => trainerOptions.filter((t) => selectedTrainerIds.includes(t.value)),
-    [selectedTrainerIds, trainerOptions],
-  );
-
-  const availableTrainers = useMemo(
-    () => trainerOptions.filter((t) => !selectedTrainerIds.includes(t.value)),
-    [selectedTrainerIds, trainerOptions],
-  );
-
   const activeTitle = form
     .watch(activeLocale === "en" ? "titleEn" : "titleAr")
     .trim();
@@ -2426,7 +2387,7 @@ export function EventForm({
     { icon: Download, id: "downloads", label: "Downloads" },
     { icon: SquareMousePointer, id: "sidebarCtas", label: "Sidebar CTAs" },
     { icon: LayoutList, id: "agenda", label: "Agenda" },
-    { icon: Users, id: "trainers", label: "Trainers" },
+    { icon: Users, id: "trainers", label: "People groups" },
     { icon: Tag, id: "categories", label: "Categories" },
     ...(visibility.showRegistrationFormSection
       ? [
@@ -2645,7 +2606,7 @@ export function EventForm({
       const raw = sessionStorage.getItem(draftStorageKey);
       if (!raw) return;
       const parsed = JSON.parse(raw) as EventFormValues;
-      form.reset(parsed);
+      form.reset({ ...parsed, peopleGroups: parsed.peopleGroups ?? readPeopleGroups({ hero: { peopleLabel: { en: parsed.heroPeopleLabelEn, ar: parsed.heroPeopleLabelAr } } }, parsed.trainerIds ?? []) });
       toast.info("Recovered unsaved draft.");
     } catch {}
     // run once for current record/locale key
@@ -2720,25 +2681,6 @@ export function EventForm({
     } catch {}
     form.reset(initialFormValues);
     isDiscardingDraftRef.current = false;
-  }
-
-  function addTrainer() {
-    const id = trainerCandidate;
-    if (!id) return;
-    form.setValue(
-      "trainerIds",
-      Array.from(new Set([...selectedTrainerIds, id])),
-      { shouldDirty: true },
-    );
-    setTrainerCandidate("");
-  }
-
-  function removeTrainer(id: string) {
-    form.setValue(
-      "trainerIds",
-      selectedTrainerIds.filter((t) => t !== id),
-      { shouldDirty: true },
-    );
   }
 
   function toggleCategory(id: string) {
@@ -3037,25 +2979,13 @@ export function EventForm({
     if (from !== -1 && to !== -1) regFields.move(from, to);
   }
 
-  function handleTrainerDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const ids = form.getValues("trainerIds");
-    const from = ids.indexOf(active.id as string);
-    const to = ids.indexOf(over.id as string);
-    if (from !== -1 && to !== -1)
-      form.setValue("trainerIds", arrayMove(ids, from, to), {
-        shouldDirty: true,
-      });
-  }
-
   // ─────────────────────────────────────────────────────────────────────────
   // Render
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <>
       <form
-        className="flex min-h-screen flex-col bg-zinc-50 lg:h-screen lg:flex-row lg:overflow-hidden"
+        className="flex min-h-screen min-w-0 w-full flex-col bg-zinc-50 lg:h-screen lg:flex-row lg:overflow-hidden"
         onSubmit={form.handleSubmit(save, (errors) => {
           const paths = flattenErrorPaths(errors);
           const first = paths[0] ?? "";
@@ -3104,7 +3034,7 @@ export function EventForm({
             first.startsWith("galleryMediaIds")
           ) {
             setActiveSection("gallery");
-          } else if (first.startsWith("trainerIds")) {
+          } else if (first.startsWith("trainerIds") || first.startsWith("peopleGroups")) {
             setActiveSection("trainers");
           } else if (first.startsWith("categories")) {
             setActiveSection("categories");
@@ -3147,7 +3077,7 @@ export function EventForm({
             MAIN PANEL  flex-1
             Only the active section renders (tabbed, not scroll)
         ════════════════════════════════════════════════════════════════ */}
-        <main className="order-2 flex min-h-0 flex-1 flex-col overflow-hidden lg:h-full">
+        <main className="order-2 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:h-full">
           {/* Breadcrumb bar */}
           <div className="hidden shrink-0 items-center gap-2 border-b border-zinc-100 bg-white px-7 py-3 text-[12px] lg:flex">
             <span className="text-zinc-400">Programs</span>
@@ -3248,8 +3178,8 @@ export function EventForm({
           </div>
 
           {/* Section content — scrollable */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5 lg:px-7 lg:py-7">
-            <div className="mx-auto max-w-4xl">
+          <div className="min-w-0 flex-1 overflow-y-auto [scrollbar-gutter:stable] px-4 py-4 sm:px-5 sm:py-5 lg:px-7 lg:py-7">
+            <div className="mx-auto w-full min-w-0 max-w-4xl">
               <InlineErrorSummary
                 blockingItems={healthSummary.blockingItems}
                 errors={healthSummary.errors}
@@ -3257,7 +3187,7 @@ export function EventForm({
               />
               <AnimatePresence initial={false} mode="wait">
                 <motion.div
-                  animate={{ opacity: 1, y: 0 }}
+                  animate={{ opacity: 1, x: 0, y: 0 }}
                   aria-labelledby={`section-tab-${activeSection}`}
                   id={getSectionDomId(activeSection)}
                   role="region"
@@ -3599,13 +3529,13 @@ export function EventForm({
                       </FieldGroup>
                       <Field className="grid gap-2">
                         <FieldLabel>
-                          People Label ({activeLocale.toUpperCase()})
+                          Hero People Label ({activeLocale.toUpperCase()})
                         </FieldLabel>
                         <Input
                           className={inputCls}
                           dir={activeLocale === "ar" ? "rtl" : "ltr"}
                           placeholder={
-                            activeLocale === "ar" ? "المدربون" : "Trainers"
+                            activeLocale === "ar" ? "الأشخاص" : "People"
                           }
                           value={form.watch(
                             activeLocale === "en"
@@ -3623,7 +3553,7 @@ export function EventForm({
                           }
                         />
                         <FieldDescription>
-                          If empty, default label is used automatically.
+                          Label for the people count in the hero. Section headings are set in People groups.
                         </FieldDescription>
                       </Field>
                       <FieldGroup className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -6086,136 +6016,19 @@ export function EventForm({
                   Select from existing trainers · displayed as grid cards
               ───────────────────────────────────────────────────────── */}
                   {activeSection === "trainers" && (
-                    <FieldSet className="">
-                      <SectionHeader
-                        description="People leading this event"
-                        icon={Users}
-                        number="08"
-                        title="Trainers"
+                    <FieldSet className="min-w-0">
+                      <SectionHeader description="Organize people into groups for this program or event" icon={Users} number="08" title="People groups" />
+                      <PeopleGroupsEditor
+                        groups={peopleGroups}
+                        people={trainerOptions}
+                        locale={activeLocale}
+                        disabled={isPending}
+                        error={formErrorPaths.some((path) => path.startsWith("peopleGroups")) ? (activeLocale === "ar" ? "أدخل اسمًا بالعربية أو الإنجليزية لكل مجموعة. لا يمكن تكرار الشخص داخل المجموعة نفسها." : "Give every group an English or Arabic name. Each person can appear only once per group.") : undefined}
+                        onChange={(groups) => {
+                          form.setValue("peopleGroups", groups, { shouldDirty: true, shouldValidate: form.formState.isSubmitted });
+                          form.setValue("trainerIds", uniquePeopleIds(groups), { shouldDirty: true });
+                        }}
                       />
-
-                      {/* Search + add */}
-                      <div className="flex gap-2">
-                        <Select
-                          value={trainerCandidate}
-                          onValueChange={(v) => setTrainerCandidate(v ?? "")}
-                        >
-                          <SelectTrigger
-                            className={cn(
-                              inputCls,
-                              "flex-1 cursor-pointer h-9!",
-                            )}
-                          >
-                            <span
-                              className={
-                                trainerCandidate
-                                  ? "text-zinc-900"
-                                  : "text-zinc-400"
-                              }
-                            >
-                              {trainerCandidate
-                                ? trainerOptions.find(
-                                    (t) => t.value === trainerCandidate,
-                                  )?.label
-                                : "Search existing trainers…"}
-                            </span>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              {availableTrainers.length === 0 ? (
-                                <div className="px-3 py-2 text-[12px] text-zinc-400">
-                                  All trainers already added
-                                </div>
-                              ) : (
-                                availableTrainers.map((t) => (
-                                  <SelectItem key={t.value} value={t.value}>
-                                    {t.label}
-                                  </SelectItem>
-                                ))
-                              )}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          className="h-9 shrink-0 bg-teal-600 text-[13px] hover:bg-teal-700"
-                          disabled={!trainerCandidate}
-                          type="button"
-                          onClick={addTrainer}
-                        >
-                          <Plus className="mr-1.5 size-3.5" /> Add trainer
-                        </Button>
-                      </div>
-
-                      {/* Cards */}
-                      <DndContext
-                        sensors={dndSensors}
-                        onDragEnd={handleTrainerDragEnd}
-                      >
-                        <SortableContext
-                          items={chosenTrainers.map((t) => t.value)}
-                          strategy={rectSortingStrategy}
-                        >
-                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                            {chosenTrainers.map((trainer) => (
-                              <SortableTrainerItem
-                                id={trainer.value}
-                                key={trainer.value}
-                              >
-                                {(dragHandleProps) => (
-                                  <div className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs transition-shadow hover:shadow-sm">
-                                    <button
-                                      aria-label={`Remove ${trainer.label}`}
-                                      className="absolute right-2 top-2 z-10 flex size-5 items-center justify-center rounded-full bg-white/90 text-zinc-400 opacity-0 shadow-xs transition-all group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
-                                      type="button"
-                                      onClick={() =>
-                                        removeTrainer(trainer.value)
-                                      }
-                                    >
-                                      <X className="size-2.5" />
-                                    </button>
-                                    <div className="flex h-24 items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-zinc-100">
-                                      {trainer.imageUrl ? (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img
-                                          alt={trainer.label}
-                                          className="h-full w-full object-cover"
-                                          src={trainer.imageUrl}
-                                        />
-                                      ) : (
-                                        <Users className="size-7 text-zinc-200" />
-                                      )}
-                                    </div>
-                                    <div className="px-3 pb-3 pt-2.5">
-                                      <p className="truncate text-[13px] font-semibold text-zinc-800">
-                                        {trainer.label}
-                                      </p>
-                                      <p className="mt-0.5 text-[11.5px] text-zinc-400">
-                                        {trainer.subtitle?.trim() || "Trainer"}
-                                      </p>
-                                    </div>
-                                    <button
-                                      {...dragHandleProps}
-                                      aria-label="Drag to reorder"
-                                      className="absolute bottom-2 right-2 cursor-grab text-zinc-300 hover:text-zinc-500 active:cursor-grabbing"
-                                      type="button"
-                                    >
-                                      <GripVertical className="size-3.5" />
-                                    </button>
-                                  </div>
-                                )}
-                              </SortableTrainerItem>
-                            ))}
-                            {chosenTrainers.length === 0 && (
-                              <div className="col-span-3 flex flex-col items-center gap-2 rounded-xl border border-dashed border-zinc-200 py-10 text-center">
-                                <Users className="size-6 text-zinc-200" />
-                                <p className="text-[13px] text-zinc-400">
-                                  No trainers assigned yet
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </SortableContext>
-                      </DndContext>
                     </FieldSet>
                   )}
 

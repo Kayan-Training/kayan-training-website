@@ -1,3 +1,4 @@
+import { PeopleGroups } from "@/components/events/people-groups";
 import {
   ArrowDown01Icon,
   ArrowRight01Icon,
@@ -458,7 +459,7 @@ export default async function EventDetailPage({
   const heroTags = event.heroTags.slice(0, 8);
   const peopleLabel =
     event.heroPeopleLabel.trim() ||
-    (activeLocale === "ar" ? "المدربون" : "Trainers");
+    (activeLocale === "ar" ? "الأشخاص" : "People");
   const peopleStatLabel =
     event.heroPeopleLabel.trim() ||
     (activeLocale === "ar" ? "متحدثاً خبيراً" : "Expert Speakers");
@@ -690,7 +691,7 @@ export default async function EventDetailPage({
                 dangerouslySetInnerHTML={{ __html: descriptionHtml }}
               />
             </div>
-            <AgendaAndTrainers event={event} locale={activeLocale} peopleLabel={peopleLabel} />
+            <AgendaAndPeople event={event} locale={activeLocale} />
             {showGallery && event.gallery.length > 0 ? (
               <ProgramGallery items={event.gallery} locale={activeLocale} />
             ) : null}
@@ -789,7 +790,7 @@ export default async function EventDetailPage({
             className="prose prose-invert prose-img:rounded-[12px] prose-img:border prose-sm max-w-none mb-10 break-words text-sm prose-a:text-primary [&_img]:max-w-full [&_table]:w-full"
             dangerouslySetInnerHTML={{ __html: descriptionHtml }}
           />
-          <AgendaAndTrainers event={event} locale={activeLocale} peopleLabel={peopleLabel} />
+          <AgendaAndPeople event={event} locale={activeLocale} />
           {showGallery && event.gallery.length > 0 ? (
             <ProgramGallery items={event.gallery} locale={activeLocale} />
           ) : null}
@@ -982,14 +983,12 @@ function VenueMapSection({
   );
 }
 
-function AgendaAndTrainers({
+function AgendaAndPeople({
   event,
   locale,
-  peopleLabel,
 }: {
   event: NonNullable<Awaited<ReturnType<typeof getEventDetailBySlug>>>;
   locale: "ar" | "en";
-  peopleLabel: string;
 }) {
   return (
     <>
@@ -1001,45 +1000,7 @@ function AgendaAndTrainers({
           <AgendaDayTabs items={event.agenda} locale={locale} />
         </div>
       ) : null}
-      {event.trainers.length ? (
-        <div className="mb-10">
-          <h2 className="mb-6 border-b border-outline-variant/20 pb-3 text-xl font-semibold">
-            {peopleLabel}
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {event.trainers.map((trainer) => (
-              <div
-                className="flex items-center gap-5 bg-surface-container-lowest p-5 ghost-border"
-                key={trainer.name}
-              >
-                <div className="relative h-16 w-16 shrink-0 overflow-hidden">
-                  <Image
-                    alt={trainer.name}
-                    className="object-cover grayscale"
-                    fill
-                    sizes="64px"
-                    src={trainer.image}
-                  />
-                </div>
-                <div>
-                  <h3 className="mb-1 text-sm font-semibold">
-                    {trainer.link ? (
-                      <Link className="underline-offset-4 hover:text-primary hover:underline" href={trainer.link} rel="noreferrer" target="_blank">
-                        {trainer.name}
-                      </Link>
-                    ) : (
-                      trainer.name
-                    )}
-                  </h3>
-                  <p className="text-xs text-on-surface-variant">
-                    {trainer.title}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
+      <PeopleGroups groups={event.peopleGroups} />
       {event.categories.length ? (
         <div>
           <h2 className="mb-4 border-b border-outline-variant/20 pb-3 text-xl font-semibold">

@@ -2,6 +2,7 @@
  * Content query helpers for localized public pages.
  */
 import { db } from "@/lib/db";
+import { readPeopleGroups, resolvePeopleGroups } from "@/lib/events/people-groups";
 import { getLocalizedSiteSettings } from "@/lib/settings";
 
 function buildGoogleMapsEmbedUrl(
@@ -443,6 +444,28 @@ export async function getEventDetailBySlug(
       ? contactNumbers
       : [{ number: siteSettings.contactPhone, label: null }];
 
+  const people = event.trainers.map((entry) => {
+    const translation = entry.trainer.translations.find((t) => t.locale === locale);
+    const fallback = entry.trainer.translations.find((t) => t.locale !== locale);
+    return {
+      id: entry.trainerId,
+      image:
+        entry.trainer.imageUrl ??
+        entry.trainer.avatar?.url ??
+        "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&q=80",
+      link:
+        Array.isArray(entry.trainer.links)
+          ? entry.trainer.links.find((value): value is string => typeof value === "string" && value.trim().length > 0) ?? ""
+          : "",
+      name: translation?.name ?? fallback?.name ?? entry.trainer.name ?? (locale === "ar" ? "شخص" : "Person"),
+      title:
+        translation?.title ??
+        fallback?.title ??
+        entry.trainer.specialization ??
+        "",
+    };
+  });
+
   return {
     id: event.id,
     description: event.translations[0]?.description ?? null,
@@ -562,7 +585,8 @@ export async function getEventDetailBySlug(
             : agendaMeta?.speakerNames?.en
       )?.filter((name): name is string => typeof name === "string" && name.trim().length > 0) ?? [];
       const trainerName = trainerTranslation?.name ?? trainerFallback?.name ?? item.trainer?.name ?? "";
-      return {
+
+  return {
         trainerLink:
           Array.isArray(item.trainer?.links)
             ? item.trainer?.links.find((value): value is string => typeof value === "string" && value.trim().length > 0) ?? ""
@@ -578,26 +602,8 @@ export async function getEventDetailBySlug(
         type: item.type,
       };
     }),
-    trainers: event.trainers.map((entry) => {
-      const translation = entry.trainer.translations.find((t) => t.locale === locale);
-      const fallback = entry.trainer.translations.find((t) => t.locale !== locale);
-      return {
-        image:
-          entry.trainer.imageUrl ??
-          entry.trainer.avatar?.url ??
-          "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&q=80",
-        link:
-          Array.isArray(entry.trainer.links)
-            ? entry.trainer.links.find((value): value is string => typeof value === "string" && value.trim().length > 0) ?? ""
-            : "",
-        name: translation?.name ?? fallback?.name ?? entry.trainer.name ?? "Trainer",
-        title:
-          translation?.title ??
-          fallback?.title ??
-          entry.trainer.specialization ??
-          (locale === "ar" ? "مدرب" : "Trainer"),
-      };
-    }),
+    trainers: people,
+    peopleGroups: resolvePeopleGroups(readPeopleGroups(event.bankTransferDetails, event.trainers.map((entry) => entry.trainerId)), people, locale),
     categories: event.categories.map((entry) => {
       const translation = entry.category.translations.find((t) => t.locale === locale);
       const fallback = entry.category.translations.find((t) => t.locale !== locale);

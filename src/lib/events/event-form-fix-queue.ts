@@ -112,6 +112,15 @@ export function buildEventFormFixQueue(input: {
           title: "Complete registration status labels",
         };
       }
+      if (path.startsWith("peopleGroups") || path.startsWith("trainerIds")) {
+        return {
+          path,
+          reason: "Give each group a name and keep each person unique within the group.",
+          sectionId: "trainers",
+          severity: "P1",
+          title: "Check people groups",
+        };
+      }
       if (path.startsWith("gallery")) {
         return {
           path,

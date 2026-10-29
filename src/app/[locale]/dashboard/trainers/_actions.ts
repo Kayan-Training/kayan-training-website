@@ -38,7 +38,7 @@ function validateTrainer(payload: TrainerPayload): { error?: string } {
     return { error: "Invalid email format." };
   }
   if (payload.links.some((link) => !link.trim())) {
-    return { error: "Trainer links cannot be empty." };
+    return { error: "Profile links cannot be empty." };
   }
   return {};
 }
@@ -87,13 +87,15 @@ export async function createTrainer(
       },
     });
     revalidatePath(`/${locale}/dashboard/trainers`);
+    revalidatePath("/[locale]/events/[slug]", "page");
+    revalidatePath("/[locale]/training-courses/[slug]", "page");
     revalidatePath(`/${locale}/dashboard/programs`);
     revalidatePath(`/${locale}/events`);
     revalidatePath(`/${locale}/training-courses`);
     return {};
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return { error: `Failed to create trainer. ${message}` };
+    return { error: `Failed to create person. ${message}` };
   }
 }
 
@@ -154,13 +156,15 @@ export async function updateTrainer(
     });
 
     revalidatePath(`/${locale}/dashboard/trainers`);
+    revalidatePath("/[locale]/events/[slug]", "page");
+    revalidatePath("/[locale]/training-courses/[slug]", "page");
     revalidatePath(`/${locale}/dashboard/programs`);
     revalidatePath(`/${locale}/events`);
     revalidatePath(`/${locale}/training-courses`);
     return {};
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return { error: `Failed to update trainer. ${message}` };
+    return { error: `Failed to update person. ${message}` };
   }
 }
 
@@ -175,13 +179,15 @@ export async function deleteTrainer(
   try {
     await db.trainer.delete({ where: { id } });
     revalidatePath(`/${locale}/dashboard/trainers`);
+    revalidatePath("/[locale]/events/[slug]", "page");
+    revalidatePath("/[locale]/training-courses/[slug]", "page");
     revalidatePath(`/${locale}/dashboard/programs`);
     revalidatePath(`/${locale}/events`);
     revalidatePath(`/${locale}/training-courses`);
     return {};
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return { error: `Failed to delete trainer. ${message}` };
+    return { error: `Failed to delete person. ${message}` };
   }
 }
 
@@ -194,7 +200,7 @@ export async function saveTrainerOrder(
     return { error: "Unauthorized" };
   }
   if (!Array.isArray(ids) || ids.length === 0) {
-    return { error: "No trainers to reorder." };
+    return { error: "No people to reorder." };
   }
 
   try {
@@ -202,6 +208,8 @@ export async function saveTrainerOrder(
       ids.map((id, index) => db.trainer.update({ where: { id }, data: { sortOrder: index } })),
     );
     revalidatePath(`/${locale}/dashboard/trainers`);
+    revalidatePath("/[locale]/events/[slug]", "page");
+    revalidatePath("/[locale]/training-courses/[slug]", "page");
     revalidatePath(`/${locale}/dashboard/programs`);
     return {};
   } catch (error) {

@@ -3,7 +3,7 @@ import { isSupportedLocale } from "@/lib/i18n/config";
 import type { LinkPickerEntities } from "@/components/ui/link-picker-input";
 import { TrainersManager, type TrainerItem } from "./trainers-manager";
 
-export const metadata = { title: "Trainers" };
+export const metadata = { title: "People" };
 
 export default async function TrainersDashboardPage({
   params,
@@ -80,9 +80,9 @@ export default async function TrainersDashboardPage({
   return (
     <section className="mx-auto max-w-6xl space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold">Trainers</h1>
+        <h1 className="text-2xl font-semibold">People</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage trainer profiles used across programs, speakers, and agenda sessions.
+          Manage people profiles used across programs, speakers, and agenda sessions.
         </p>
       </div>
       <TrainersManager entities={entities} locale={activeLocale} trainers={items} />
